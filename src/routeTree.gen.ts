@@ -10,33 +10,53 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuditoriasIndexRouteImport } from './routes/auditorias.index'
+import { Route as AuditoriasNovaRouteImport } from './routes/auditorias.nova'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuditoriasIndexRoute = AuditoriasIndexRouteImport.update({
+  id: '/auditorias/',
+  path: '/auditorias/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuditoriasNovaRoute = AuditoriasNovaRouteImport.update({
+  id: '/auditorias/nova',
+  path: '/auditorias/nova',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auditorias/nova': typeof AuditoriasNovaRoute
+  '/auditorias/': typeof AuditoriasIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auditorias/nova': typeof AuditoriasNovaRoute
+  '/auditorias': typeof AuditoriasIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/auditorias/nova': typeof AuditoriasNovaRoute
+  '/auditorias/': typeof AuditoriasIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/auditorias/nova' | '/auditorias/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/auditorias/nova' | '/auditorias'
+  id: '__root__' | '/' | '/auditorias/nova' | '/auditorias/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuditoriasNovaRoute: typeof AuditoriasNovaRoute
+  AuditoriasIndexRoute: typeof AuditoriasIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +68,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auditorias/': {
+      id: '/auditorias/'
+      path: '/auditorias'
+      fullPath: '/auditorias/'
+      preLoaderRoute: typeof AuditoriasIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auditorias/nova': {
+      id: '/auditorias/nova'
+      path: '/auditorias/nova'
+      fullPath: '/auditorias/nova'
+      preLoaderRoute: typeof AuditoriasNovaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuditoriasNovaRoute: AuditoriasNovaRoute,
+  AuditoriasIndexRoute: AuditoriasIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -77,7 +77,7 @@ function NovaAuditoria() {
         seiketsu: scores.seiketsu,
         shitsuke: scores.shitsuke,
         pontuacao_total: total,
-        percentual: percentual.toFixed(2),
+        percentual: Number(percentual.toFixed(2)),
         observacoes,
         status: "concluida",
       })
