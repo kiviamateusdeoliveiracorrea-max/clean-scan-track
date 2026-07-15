@@ -14,7 +14,183 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      areas: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          id: string
+          nome: string
+          setor: string | null
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          setor?: string | null
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          setor?: string | null
+        }
+        Relationships: []
+      }
+      auditores: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          matricula: string | null
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          matricula?: string | null
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          matricula?: string | null
+          nome?: string
+        }
+        Relationships: []
+      }
+      auditorias: {
+        Row: {
+          area_id: string | null
+          auditor_id: string | null
+          created_at: string
+          data_auditoria: string
+          id: string
+          observacoes: string | null
+          percentual: number
+          pontuacao_total: number
+          seiketsu: number
+          seiri: number
+          seiso: number
+          seiton: number
+          shitsuke: number
+          status: string
+        }
+        Insert: {
+          area_id?: string | null
+          auditor_id?: string | null
+          created_at?: string
+          data_auditoria?: string
+          id?: string
+          observacoes?: string | null
+          percentual?: number
+          pontuacao_total?: number
+          seiketsu?: number
+          seiri?: number
+          seiso?: number
+          seiton?: number
+          shitsuke?: number
+          status?: string
+        }
+        Update: {
+          area_id?: string | null
+          auditor_id?: string | null
+          created_at?: string
+          data_auditoria?: string
+          id?: string
+          observacoes?: string | null
+          percentual?: number
+          pontuacao_total?: number
+          seiketsu?: number
+          seiri?: number
+          seiso?: number
+          seiton?: number
+          shitsuke?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auditorias_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "auditorias_auditor_id_fkey"
+            columns: ["auditor_id"]
+            isOneToOne: false
+            referencedRelation: "auditores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nao_conformidades: {
+        Row: {
+          area_id: string | null
+          auditoria_id: string | null
+          created_at: string
+          criterio: string
+          descricao: string
+          foto_url: string | null
+          id: string
+          plano_acao: string | null
+          prazo: string | null
+          responsavel: string | null
+          severidade: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          area_id?: string | null
+          auditoria_id?: string | null
+          created_at?: string
+          criterio: string
+          descricao: string
+          foto_url?: string | null
+          id?: string
+          plano_acao?: string | null
+          prazo?: string | null
+          responsavel?: string | null
+          severidade?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          area_id?: string | null
+          auditoria_id?: string | null
+          created_at?: string
+          criterio?: string
+          descricao?: string
+          foto_url?: string | null
+          id?: string
+          plano_acao?: string | null
+          prazo?: string | null
+          responsavel?: string | null
+          severidade?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nao_conformidades_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nao_conformidades_auditoria_id_fkey"
+            columns: ["auditoria_id"]
+            isOneToOne: false
+            referencedRelation: "auditorias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
