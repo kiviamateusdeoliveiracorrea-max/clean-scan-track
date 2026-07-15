@@ -300,7 +300,7 @@ function NovaNCDialog({
   onCreated: () => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [criterio, setCriterio] = useState(CRITERIOS_5S[0].nome);
+  const [criterio, setCriterio] = useState<string>(CRITERIOS_5S[0].nome);
   const [descricao, setDescricao] = useState("");
   const [severidade, setSeveridade] = useState("media");
   const [planoAcao, setPlanoAcao] = useState("");
