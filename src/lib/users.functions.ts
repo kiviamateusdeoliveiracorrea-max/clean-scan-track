@@ -70,14 +70,16 @@ export const bootstrapFirstAdmin = createServerFn({ method: "POST" })
       throw new Error("Já existe um administrador. Solicite acesso a um administrador.");
     }
 
-    const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
-      email: data.email,
-      password: data.password,
-      email_confirm: true,
-      user_metadata: { nome: data.nome, role: "administrador" },
+    const created = await adminAuthFetch("/admin/users", {
+      method: "POST",
+      body: JSON.stringify({
+        email: data.email,
+        password: data.password,
+        email_confirm: true,
+        user_metadata: { nome: data.nome, role: "administrador" },
+      }),
     });
-    if (error) throw new Error(error.message);
-    return { ok: true, userId: created.user?.id };
+    return { ok: true, userId: created?.id };
   });
 
 /** Verifica se o sistema ainda não tem administrador (para exibir tela de bootstrap). */
