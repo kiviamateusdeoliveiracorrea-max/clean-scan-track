@@ -116,24 +116,32 @@ function NCList() {
     setResolving(n);
     setPlanoAcao(n.plano_acao ?? "");
     setNovoStatus(n.status === "concluida" ? "concluida" : "concluida");
-    setFoto(null);
-    if (fotoPreview) URL.revokeObjectURL(fotoPreview);
-    setFotoPreview(null);
+    setFotos([]);
+    fotosPreview.forEach((u) => URL.revokeObjectURL(u));
+    setFotosPreview([]);
   };
 
   const closeResolve = () => {
     setResolving(null);
-    setFoto(null);
-    if (fotoPreview) URL.revokeObjectURL(fotoPreview);
-    setFotoPreview(null);
+    setFotos([]);
+    fotosPreview.forEach((u) => URL.revokeObjectURL(u));
+    setFotosPreview([]);
   };
 
   const onPickFoto = (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    const f = files[0];
-    setFoto(f);
-    if (fotoPreview) URL.revokeObjectURL(fotoPreview);
-    setFotoPreview(URL.createObjectURL(f));
+    const arr = Array.from(files);
+    setFotos((prev) => [...prev, ...arr]);
+    setFotosPreview((prev) => [...prev, ...arr.map((f) => URL.createObjectURL(f))]);
+  };
+
+  const removeFoto = (idx: number) => {
+    setFotos((prev) => prev.filter((_, i) => i !== idx));
+    setFotosPreview((prev) => {
+      const url = prev[idx];
+      if (url) URL.revokeObjectURL(url);
+      return prev.filter((_, i) => i !== idx);
+    });
   };
 
   const saveResolve = async () => {
@@ -143,28 +151,34 @@ function NCList() {
       return;
     }
     setResolveSaving(true);
-    let fotoPath: string | undefined;
-    if (foto) {
-      const ext = foto.name.split(".").pop() || "jpg";
-      const path = `${resolving.auditoria_id ?? "nc"}/tratativa-${resolving.id}-${Date.now()}.${ext}`;
+    const uploadedPaths: string[] = [];
+    for (const f of fotos) {
+      const ext = f.name.split(".").pop() || "jpg";
+      const path = `${resolving.auditoria_id ?? "nc"}/tratativa-${resolving.id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
       const { error: upErr } = await supabase.storage
         .from("audit-photos")
-        .upload(path, foto);
+        .upload(path, f);
       if (upErr) {
         setResolveSaving(false);
         return toast.error("Erro no upload: " + upErr.message);
       }
-      fotoPath = path;
+      uploadedPaths.push(path);
     }
+    const existing: string[] = Array.isArray(resolving.foto_urls) ? resolving.foto_urls : [];
+    const merged = [...existing, ...uploadedPaths];
     const update: {
       plano_acao: string;
       status: string;
+      foto_urls?: string[];
       foto_url?: string;
     } = {
       plano_acao: planoAcao.trim(),
       status: novoStatus,
     };
-    if (fotoPath) update.foto_url = fotoPath;
+    if (uploadedPaths.length > 0) {
+      update.foto_urls = merged;
+      if (!resolving.foto_url) update.foto_url = uploadedPaths[0];
+    }
     const { error } = await supabase
       .from("nao_conformidades")
       .update(update)
