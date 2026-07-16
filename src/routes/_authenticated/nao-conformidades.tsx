@@ -60,9 +60,13 @@ function NCList() {
   // Tratativa / conclusão
   const [resolving, setResolving] = useState<any | null>(null);
   const [planoAcao, setPlanoAcao] = useState("");
+  const [causaRaiz, setCausaRaiz] = useState("");
+  const [acaoCorretiva, setAcaoCorretiva] = useState("");
+  const [acaoPreventiva, setAcaoPreventiva] = useState("");
   const [novoStatus, setNovoStatus] = useState<string>("concluida");
   const [fotos, setFotos] = useState<File[]>([]);
   const [fotosPreview, setFotosPreview] = useState<string[]>([]);
+  const [docs, setDocs] = useState<File[]>([]);
   const [resolveSaving, setResolveSaving] = useState(false);
 
   const { data = [] } = useQuery({
