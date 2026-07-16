@@ -95,15 +95,14 @@ export const listUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context.supabase, context.userId);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data: profiles, error: pErr } = await supabaseAdmin
+    const { data: profiles, error: pErr } = await context.supabase
       .from("profiles")
       .select("id, nome, email, cargo, area_id, ativo, created_at, areas(nome)")
       .order("created_at", { ascending: false });
     if (pErr) throw new Error(pErr.message);
 
-    const { data: roles, error: rErr } = await supabaseAdmin
+    const { data: roles, error: rErr } = await context.supabase
       .from("user_roles")
       .select("user_id, role");
     if (rErr) throw new Error(rErr.message);
