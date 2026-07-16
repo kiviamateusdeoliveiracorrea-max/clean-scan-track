@@ -405,6 +405,32 @@ function KpiCard({
   );
 }
 
+function SeverityCard({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: number;
+  tone: "critical" | "high" | "medium" | "low";
+}) {
+  const styles: Record<string, string> = {
+    critical: "border-red-300 bg-red-50 text-red-700 ring-2 ring-red-400/40",
+    high: "border-amber-200 bg-amber-50 text-amber-700",
+    medium: "border-blue-200 bg-blue-50 text-blue-700",
+    low: "border-slate-200 bg-slate-50 text-slate-700",
+  };
+  return (
+    <div className={`rounded-lg border p-3 ${styles[tone]}`}>
+      <p className="text-[11px] font-semibold uppercase tracking-wider opacity-80">{label}</p>
+      <p className="text-2xl md:text-3xl font-extrabold mt-1">{value}</p>
+      <p className="text-[10px] opacity-70 mt-0.5">
+        {tone === "critical" ? "Ação imediata" : "Abertas"}
+      </p>
+    </div>
+  );
+}
+
 function EmptyChart() {
   return (
     <div className="h-[240px] grid place-items-center text-sm text-muted-foreground">
