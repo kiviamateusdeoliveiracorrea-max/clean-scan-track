@@ -57,6 +57,7 @@ export const bootstrapFirstAdmin = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const email = normalizeUserEmail(data.email);
 
     const { count, error: cErr } = await supabaseAdmin
       .from("user_roles")
@@ -67,13 +68,29 @@ export const bootstrapFirstAdmin = createServerFn({ method: "POST" })
       throw new Error("Já existe um administrador. Solicite acesso a um administrador.");
     }
 
-    const anon = createAnonClient();
-    const { data: created, error } = await anon.auth.signUp({
-      email: normalizeUserEmail(data.email),
+    const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
+      email,
       password: data.password,
-      options: { data: { nome: data.nome, role: "administrador" } },
+      email_confirm: true,
+      user_metadata: { nome: data.nome, role: "administrador" },
     });
     if (error) throw new Error(error.message);
+
+    if (created.user?.id) {
+      const { error: profileError } = await supabaseAdmin.from("profiles").upsert({
+        id: created.user.id,
+        nome: data.nome,
+        email,
+      });
+      if (profileError) throw new Error(profileError.message);
+
+      const { error: roleError } = await supabaseAdmin.from("user_roles").upsert(
+        { user_id: created.user.id, role: "administrador" },
+        { onConflict: "user_id,role" },
+      );
+      if (roleError) throw new Error(roleError.message);
+    }
+
     return { ok: true, userId: created.user?.id };
   });
 
@@ -145,13 +162,32 @@ export const createUser = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
-    const anon = createAnonClient();
-    const { data: created, error } = await anon.auth.signUp({
-      email: normalizeUserEmail(data.email),
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const email = normalizeUserEmail(data.email);
+
+    const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
+      email,
       password: data.password,
-      options: { data: { nome: data.nome, role: data.role } },
+      email_confirm: true,
+      user_metadata: { nome: data.nome, role: data.role },
     });
     if (error) throw new Error(error.message);
+
+    if (created.user?.id) {
+      const { error: profileError } = await supabaseAdmin.from("profiles").upsert({
+        id: created.user.id,
+        nome: data.nome,
+        email,
+      });
+      if (profileError) throw new Error(profileError.message);
+
+      const { error: roleError } = await supabaseAdmin.from("user_roles").upsert(
+        { user_id: created.user.id, role: data.role },
+        { onConflict: "user_id,role" },
+      );
+      if (roleError) throw new Error(roleError.message);
+    }
+
     return { ok: true, userId: created.user?.id };
   });
 
