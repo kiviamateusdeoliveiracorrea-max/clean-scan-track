@@ -66,10 +66,13 @@ export type Database = {
         Row: {
           area_id: string | null
           auditor_id: string | null
+          cancelada_em: string | null
+          cancelada_por: string | null
           created_at: string
           data_auditoria: string
           fotos: string[]
           id: string
+          justificativa_cancelamento: string | null
           observacoes: string | null
           percentual: number
           pontuacao_total: number
@@ -83,10 +86,13 @@ export type Database = {
         Insert: {
           area_id?: string | null
           auditor_id?: string | null
+          cancelada_em?: string | null
+          cancelada_por?: string | null
           created_at?: string
           data_auditoria?: string
           fotos?: string[]
           id?: string
+          justificativa_cancelamento?: string | null
           observacoes?: string | null
           percentual?: number
           pontuacao_total?: number
@@ -100,10 +106,13 @@ export type Database = {
         Update: {
           area_id?: string | null
           auditor_id?: string | null
+          cancelada_em?: string | null
+          cancelada_por?: string | null
           created_at?: string
           data_auditoria?: string
           fotos?: string[]
           id?: string
+          justificativa_cancelamento?: string | null
           observacoes?: string | null
           percentual?: number
           pontuacao_total?: number
@@ -127,6 +136,60 @@ export type Database = {
             columns: ["auditor_id"]
             isOneToOne: false
             referencedRelation: "auditores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "auditorias_cancelada_por_fkey"
+            columns: ["cancelada_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      auditorias_log: {
+        Row: {
+          acao: string
+          area_id: string | null
+          area_nome: string | null
+          auditoria_id: string | null
+          created_at: string
+          data_auditoria: string | null
+          executado_por: string | null
+          executado_por_nome: string | null
+          id: string
+          justificativa: string | null
+        }
+        Insert: {
+          acao: string
+          area_id?: string | null
+          area_nome?: string | null
+          auditoria_id?: string | null
+          created_at?: string
+          data_auditoria?: string | null
+          executado_por?: string | null
+          executado_por_nome?: string | null
+          id?: string
+          justificativa?: string | null
+        }
+        Update: {
+          acao?: string
+          area_id?: string | null
+          area_nome?: string | null
+          auditoria_id?: string | null
+          created_at?: string
+          data_auditoria?: string | null
+          executado_por?: string | null
+          executado_por_nome?: string | null
+          id?: string
+          justificativa?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auditorias_log_executado_por_fkey"
+            columns: ["executado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
