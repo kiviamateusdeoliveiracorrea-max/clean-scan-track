@@ -454,7 +454,18 @@ function NovaNCDialog({
               <div>
                 <Label>Prazo</Label>
                 <Input type="date" value={prazo} onChange={(e) => setPrazo(e.target.value)} />
-              </div>
+            </div>
+            <div>
+              <Label>E-mail do responsável</Label>
+              <Input
+                type="email"
+                placeholder="responsavel@empresa.com"
+                value={responsavelEmail}
+                onChange={(e) => setResponsavelEmail(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Usado para enviar notificações automáticas de prazo.
+              </p>
             </div>
           </div>
         </div>
