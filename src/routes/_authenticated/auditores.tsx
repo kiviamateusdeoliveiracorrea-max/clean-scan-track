@@ -17,7 +17,7 @@ import {
 import { UserCog, Plus, Trash2, Mail } from "lucide-react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/auditores")({
+export const Route = createFileRoute("/_authenticated/auditores")({
   component: AuditoresPage,
 });
 

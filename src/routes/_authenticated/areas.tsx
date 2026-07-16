@@ -18,7 +18,7 @@ import {
 import { MapPin, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/areas")({
+export const Route = createFileRoute("/_authenticated/areas")({
   component: AreasPage,
 });
 

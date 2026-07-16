@@ -19,7 +19,7 @@ import { ArrowLeft, Save } from "lucide-react";
 import { CRITERIOS_5S, classificaPontuacao, type Criterio5SKey } from "@/lib/audit-constants";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/auditorias/nova")({
+export const Route = createFileRoute("/_authenticated/auditorias/nova")({
   component: NovaAuditoria,
 });
 

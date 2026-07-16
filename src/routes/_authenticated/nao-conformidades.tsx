@@ -14,7 +14,7 @@ import {
 import { AlertTriangle, Calendar, User, MapPin } from "lucide-react";
 import { STATUS_NC, SEVERIDADES } from "@/lib/audit-constants";
 
-export const Route = createFileRoute("/nao-conformidades")({
+export const Route = createFileRoute("/_authenticated/nao-conformidades")({
   component: NCList,
 });
 

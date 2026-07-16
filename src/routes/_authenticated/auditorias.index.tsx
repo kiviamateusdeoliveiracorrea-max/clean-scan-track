@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Plus, Search, MapPin, Calendar, User } from "lucide-react";
 import { classificaPontuacao } from "@/lib/audit-constants";
 
-export const Route = createFileRoute("/auditorias/")({
+export const Route = createFileRoute("/_authenticated/auditorias/")({
   component: AuditoriasList,
 });
 

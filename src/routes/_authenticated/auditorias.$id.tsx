@@ -41,7 +41,7 @@ import {
 } from "@/lib/audit-constants";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/auditorias/$id")({
+export const Route = createFileRoute("/_authenticated/auditorias/$id")({
   component: AuditoriaDetail,
 });
 
