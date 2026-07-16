@@ -50,10 +50,10 @@ function AuditPhotos({ paths }: { paths: string[] }) {
     return null;
   };
 
-  useState(() => {
+  useEffect(() => {
     paths.forEach((p) => void loadUrl(p));
-    return undefined as any;
-  });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paths.join("|")]);
 
   return (
     <>
