@@ -88,7 +88,20 @@ function NovaAuditoria() {
       if (error) throw error;
       return data ?? [];
     },
+  const usuariosQ = useQuery({
+    queryKey: ["profiles-ativos"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, nome, email, cargo, areas(nome)")
+        .eq("ativo", true)
+        .order("nome");
+      if (error) throw error;
+      return data ?? [];
+    },
   });
+
+
 
   const total = Object.values(scores).reduce((a, b) => a + b, 0);
   const percentual = (total / 50) * 100;
