@@ -243,17 +243,44 @@ function NCList() {
     setResolveSaving(true);
     const uploadedPhotos: string[] = [];
     for (const f of fotos) {
-      const ext = f.name.split(".").pop() || "jpg";
+      const typeOk = ALLOWED_IMAGE_TYPES.includes(f.type) ||
+        /\.(jpe?g|png|webp|gif)$/i.test(f.name);
+      if (!typeOk) {
+        setResolveSaving(false);
+        console.error("[Evidence] tipo inválido", { name: f.name, type: f.type });
+        return toast.error(`Formato não suportado: ${f.name}. Use JPG, PNG, WEBP ou GIF.`);
+      }
+      if (f.size > MAX_UPLOAD_MB * 1024 * 1024) {
+        setResolveSaving(false);
+        return toast.error(`Arquivo ${f.name} excede ${MAX_UPLOAD_MB}MB.`);
+      }
+      const ext = (f.name.split(".").pop() || "jpg").toLowerCase();
       const path = `${resolving.auditoria_id ?? "nc"}/tratativa-${resolving.id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
-      const { error: upErr } = await supabase.storage.from("audit-photos").upload(path, f);
+      const { error: upErr } = await supabase.storage
+        .from("audit-photos")
+        .upload(path, f, { contentType: f.type || `image/${ext === "jpg" ? "jpeg" : ext}`, upsert: false });
       if (upErr) {
         setResolveSaving(false);
+        console.error("[Evidence] upload foto falhou", { path, error: upErr });
         return toast.error("Erro no upload: " + upErr.message);
+      }
+      // Confirma que o arquivo existe no bucket antes de gravar no banco.
+      const { data: check, error: checkErr } = await supabase.storage
+        .from("audit-photos")
+        .createSignedUrl(path, 60);
+      if (checkErr || !check?.signedUrl) {
+        setResolveSaving(false);
+        console.error("[Evidence] verificação pós-upload falhou", { path, error: checkErr });
+        return toast.error("Upload não pôde ser confirmado. Tente novamente.");
       }
       uploadedPhotos.push(path);
     }
     const uploadedDocs: string[] = [];
     for (const f of docs) {
+      if (f.size > MAX_UPLOAD_MB * 1024 * 1024) {
+        setResolveSaving(false);
+        return toast.error(`Documento ${f.name} excede ${MAX_UPLOAD_MB}MB.`);
+      }
       const ext = f.name.split(".").pop() || "pdf";
       const path = `${resolving.auditoria_id ?? "nc"}/doc-${resolving.id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
       const { error: upErr } = await supabase.storage
@@ -261,6 +288,7 @@ function NCList() {
         .upload(path, f, { contentType: f.type || undefined });
       if (upErr) {
         setResolveSaving(false);
+        console.error("[Evidence] upload documento falhou", { path, error: upErr });
         return toast.error("Erro no upload do documento: " + upErr.message);
       }
       uploadedDocs.push(path);
