@@ -156,7 +156,7 @@ const navItems: NavItem[] = [
   { to: "/historico", label: "Histórico", icon: History },
   { to: "/areas", label: "Áreas", icon: MapPin },
   { to: "/auditores", label: "Auditores", icon: UserCog },
-  { to: "/usuarios", label: "Usuários", icon: Users, adminOnly: true },
+  { to: "/usuarios", label: "Usuários", icon: Users },
 ];
 
 function AppShell({ children }: { children: ReactNode }) {
