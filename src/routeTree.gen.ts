@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as AuthenticatedNaoConformidadesRouteImport } from './routes/_authenticated/nao-conformidades'
 import { Route as AuthenticatedHistoricoRouteImport } from './routes/_authenticated/historico'
 import { Route as AuthenticatedAuditoresRouteImport } from './routes/_authenticated/auditores'
@@ -32,6 +33,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
+  id: '/usuarios',
+  path: '/usuarios',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedNaoConformidadesRoute =
@@ -81,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/auditores': typeof AuthenticatedAuditoresRoute
   '/historico': typeof AuthenticatedHistoricoRoute
   '/nao-conformidades': typeof AuthenticatedNaoConformidadesRoute
+  '/usuarios': typeof AuthenticatedUsuariosRoute
   '/auditorias/$id': typeof AuthenticatedAuditoriasIdRoute
   '/auditorias/nova': typeof AuthenticatedAuditoriasNovaRoute
   '/auditorias/': typeof AuthenticatedAuditoriasIndexRoute
@@ -91,6 +98,7 @@ export interface FileRoutesByTo {
   '/auditores': typeof AuthenticatedAuditoresRoute
   '/historico': typeof AuthenticatedHistoricoRoute
   '/nao-conformidades': typeof AuthenticatedNaoConformidadesRoute
+  '/usuarios': typeof AuthenticatedUsuariosRoute
   '/': typeof AuthenticatedIndexRoute
   '/auditorias/$id': typeof AuthenticatedAuditoriasIdRoute
   '/auditorias/nova': typeof AuthenticatedAuditoriasNovaRoute
@@ -104,6 +112,7 @@ export interface FileRoutesById {
   '/_authenticated/auditores': typeof AuthenticatedAuditoresRoute
   '/_authenticated/historico': typeof AuthenticatedHistoricoRoute
   '/_authenticated/nao-conformidades': typeof AuthenticatedNaoConformidadesRoute
+  '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/auditorias/$id': typeof AuthenticatedAuditoriasIdRoute
   '/_authenticated/auditorias/nova': typeof AuthenticatedAuditoriasNovaRoute
@@ -118,6 +127,7 @@ export interface FileRouteTypes {
     | '/auditores'
     | '/historico'
     | '/nao-conformidades'
+    | '/usuarios'
     | '/auditorias/$id'
     | '/auditorias/nova'
     | '/auditorias/'
@@ -128,6 +138,7 @@ export interface FileRouteTypes {
     | '/auditores'
     | '/historico'
     | '/nao-conformidades'
+    | '/usuarios'
     | '/'
     | '/auditorias/$id'
     | '/auditorias/nova'
@@ -140,6 +151,7 @@ export interface FileRouteTypes {
     | '/_authenticated/auditores'
     | '/_authenticated/historico'
     | '/_authenticated/nao-conformidades'
+    | '/_authenticated/usuarios'
     | '/_authenticated/'
     | '/_authenticated/auditorias/$id'
     | '/_authenticated/auditorias/nova'
@@ -172,6 +184,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/usuarios': {
+      id: '/_authenticated/usuarios'
+      path: '/usuarios'
+      fullPath: '/usuarios'
+      preLoaderRoute: typeof AuthenticatedUsuariosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/nao-conformidades': {
@@ -231,6 +250,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAuditoresRoute: typeof AuthenticatedAuditoresRoute
   AuthenticatedHistoricoRoute: typeof AuthenticatedHistoricoRoute
   AuthenticatedNaoConformidadesRoute: typeof AuthenticatedNaoConformidadesRoute
+  AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedAuditoriasIdRoute: typeof AuthenticatedAuditoriasIdRoute
   AuthenticatedAuditoriasNovaRoute: typeof AuthenticatedAuditoriasNovaRoute
@@ -242,6 +262,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAuditoresRoute: AuthenticatedAuditoresRoute,
   AuthenticatedHistoricoRoute: AuthenticatedHistoricoRoute,
   AuthenticatedNaoConformidadesRoute: AuthenticatedNaoConformidadesRoute,
+  AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedAuditoriasIdRoute: AuthenticatedAuditoriasIdRoute,
   AuthenticatedAuditoriasNovaRoute: AuthenticatedAuditoriasNovaRoute,
