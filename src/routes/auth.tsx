@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Boxes } from "lucide-react";
 import { toast } from "sonner";
+import { getLoginEmailCandidates, normalizeUserEmail } from "@/lib/email-normalization";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -29,12 +30,34 @@ function AuthPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      toast.success("Bem-vindo!");
-      navigate({ to: "/" });
+      const candidates = getLoginEmailCandidates(email);
+      let lastError: Error | null = null;
+
+      for (const candidate of candidates) {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: candidate,
+          password,
+        });
+        if (!error) {
+          setEmail(normalizeUserEmail(candidate));
+          toast.success("Bem-vindo!");
+          navigate({ to: "/" });
+          return;
+        }
+
+        lastError = error;
+        if (!/invalid login credentials/i.test(error.message)) {
+          throw error;
+        }
+      }
+
+      throw lastError ?? new Error("E-mail ou senha inválidos");
     } catch (err: any) {
-      toast.error(err.message ?? "Falha ao entrar");
+      toast.error(
+        /invalid login credentials/i.test(err.message ?? "")
+          ? "E-mail ou senha inválidos"
+          : err.message ?? "Falha ao entrar",
+      );
     } finally {
       setLoading(false);
     }
@@ -66,6 +89,7 @@ function AuthPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  onBlur={() => setEmail((value) => normalizeUserEmail(value))}
                   required
                 />
               </div>

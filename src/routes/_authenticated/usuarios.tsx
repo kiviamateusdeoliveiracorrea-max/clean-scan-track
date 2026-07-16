@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Trash2, UserPlus, Loader2 } from "lucide-react";
+import { normalizeUserEmail } from "@/lib/email-normalization";
 
 export const Route = createFileRoute("/_authenticated/usuarios")({
   component: UsuariosPage,
@@ -128,6 +129,7 @@ function UsuariosPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                onBlur={() => setEmail((value) => normalizeUserEmail(value))}
                 required
               />
             </div>

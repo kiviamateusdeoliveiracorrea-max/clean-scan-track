@@ -1,33 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { createClient } from "@supabase/supabase-js";
-import type { Database } from "@/integrations/supabase/types";
 import { z } from "zod";
+import { normalizeUserEmail } from "@/lib/email-normalization";
 
 const ROLES = ["administrador", "auditor", "gestor", "consulta"] as const;
 export type AppRole = (typeof ROLES)[number];
-
-/**
- * Cria um cliente Supabase server-side com a chave publishable (anon).
- * Usa fetch shim para chaves opacas sb_publishable_ (não são JWT).
- */
-function createAnonClient() {
-  const url = process.env.SUPABASE_URL!;
-  const key = process.env.SUPABASE_PUBLISHABLE_KEY!;
-  return createClient<Database>(url, key, {
-    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-    global: {
-      fetch: (input, init) => {
-        const h = new Headers(init?.headers);
-        if (key.startsWith("sb_") && h.get("Authorization") === `Bearer ${key}`) {
-          h.delete("Authorization");
-        }
-        h.set("apikey", key);
-        return fetch(input, { ...init, headers: h });
-      },
-    },
-  });
-}
 
 async function assertAdmin(supabase: any, userId: string) {
   const { data, error } = await supabase
@@ -56,6 +33,7 @@ export const bootstrapFirstAdmin = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const email = normalizeUserEmail(data.email);
 
     const { count, error: cErr } = await supabaseAdmin
       .from("user_roles")
@@ -66,13 +44,29 @@ export const bootstrapFirstAdmin = createServerFn({ method: "POST" })
       throw new Error("Já existe um administrador. Solicite acesso a um administrador.");
     }
 
-    const anon = createAnonClient();
-    const { data: created, error } = await anon.auth.signUp({
-      email: data.email,
+    const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
+      email,
       password: data.password,
-      options: { data: { nome: data.nome, role: "administrador" } },
+      email_confirm: true,
+      user_metadata: { nome: data.nome, role: "administrador" },
     });
     if (error) throw new Error(error.message);
+
+    if (created.user?.id) {
+      const { error: profileError } = await supabaseAdmin.from("profiles").upsert({
+        id: created.user.id,
+        nome: data.nome,
+        email,
+      });
+      if (profileError) throw new Error(profileError.message);
+
+      const { error: roleError } = await supabaseAdmin.from("user_roles").upsert(
+        { user_id: created.user.id, role: "administrador" },
+        { onConflict: "user_id,role" },
+      );
+      if (roleError) throw new Error(roleError.message);
+    }
+
     return { ok: true, userId: created.user?.id };
   });
 
@@ -144,13 +138,32 @@ export const createUser = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
-    const anon = createAnonClient();
-    const { data: created, error } = await anon.auth.signUp({
-      email: data.email,
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const email = normalizeUserEmail(data.email);
+
+    const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
+      email,
       password: data.password,
-      options: { data: { nome: data.nome, role: data.role } },
+      email_confirm: true,
+      user_metadata: { nome: data.nome, role: data.role },
     });
     if (error) throw new Error(error.message);
+
+    if (created.user?.id) {
+      const { error: profileError } = await supabaseAdmin.from("profiles").upsert({
+        id: created.user.id,
+        nome: data.nome,
+        email,
+      });
+      if (profileError) throw new Error(profileError.message);
+
+      const { error: roleError } = await supabaseAdmin.from("user_roles").upsert(
+        { user_id: created.user.id, role: data.role },
+        { onConflict: "user_id,role" },
+      );
+      if (roleError) throw new Error(roleError.message);
+    }
+
     return { ok: true, userId: created.user?.id };
   });
 
