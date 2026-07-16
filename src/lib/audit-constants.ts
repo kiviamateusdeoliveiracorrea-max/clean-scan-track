@@ -95,6 +95,10 @@ export const SEVERIDADES = [
 export const STATUS_NC = [
   { value: "aberta", label: "Aberta" },
   { value: "em_andamento", label: "Em andamento" },
+  { value: "aguardando_aprovacao", label: "Aguardando Aprovação" },
+  { value: "aprovada", label: "Aprovada" },
+  { value: "reprovada", label: "Reprovada" },
+  { value: "encerrada", label: "Encerrada" },
   { value: "concluida", label: "Concluída" },
   { value: "cancelada", label: "Cancelada" },
 ] as const;
