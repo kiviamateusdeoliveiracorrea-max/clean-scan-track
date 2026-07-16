@@ -661,7 +661,7 @@ function NCList() {
                     </div>
                   )}
 
-                  {(n.plano_acao || allFotos.length > 0) && (
+                  {(n.plano_acao || allEvidencias.length > 0) && (
                     <div className="rounded-md border bg-muted/30 p-3 space-y-2">
                       <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         Tratativa realizada
@@ -669,18 +669,8 @@ function NCList() {
                       {n.plano_acao && (
                         <p className="text-sm whitespace-pre-wrap">{n.plano_acao}</p>
                       )}
-                      {allFotos.length > 0 && (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                          {allFotos.map((url, i) => (
-                            <a key={url} href={url} target="_blank" rel="noreferrer">
-                              <img
-                                src={url}
-                                alt={`Foto da tratativa ${i + 1}`}
-                                className="w-full aspect-square rounded-md border object-cover"
-                              />
-                            </a>
-                          ))}
-                        </div>
+                      {allEvidencias.length > 0 && (
+                        <EvidenceThumbs paths={allEvidencias} />
                       )}
                     </div>
                   )}
