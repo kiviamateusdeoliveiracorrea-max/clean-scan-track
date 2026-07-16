@@ -481,6 +481,8 @@ function NCList() {
                         <RespInfo label="Resp. NC" user={n.resp_nc} />
                         <RespInfo label="Resp. Ação" user={n.resp_acao} />
                         <RespInfo label="Aprovador" user={n.aprovador} />
+                      </div>
+
 
                       <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
                         {n.areas?.nome && (
