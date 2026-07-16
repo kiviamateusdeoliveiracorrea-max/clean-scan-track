@@ -1,3 +1,4 @@
+import logoAsset from "@/assets/logo-empresas.png.asset.json";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -90,6 +91,13 @@ function Dashboard() {
 
   return (
     <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto">
+      <div className="flex justify-center">
+        <img
+          src={logoAsset.url}
+          alt="Grupo JSL — Intralog, JSL Digital, Fadel, Trans Moreno, TPC Rodomeu, Marvel, Truckpad, IC Transportes, FSJ"
+          className="h-12 md:h-16 w-auto max-w-full object-contain"
+        />
+      </div>
       <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <p className="text-xs font-semibold text-accent uppercase tracking-wider">
