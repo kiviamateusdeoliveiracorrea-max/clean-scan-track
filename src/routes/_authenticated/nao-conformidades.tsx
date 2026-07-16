@@ -292,7 +292,11 @@ function NCList() {
       ) : (
         <div className="space-y-3">
           {filtered.map((n: any) => {
-            const foto = fotoPublicUrl(n.foto_url);
+            const legacy = fotoPublicUrl(n.foto_url);
+            const extras = Array.isArray(n.foto_urls)
+              ? (n.foto_urls as string[]).map((p) => fotoPublicUrl(p)).filter(Boolean) as string[]
+              : [];
+            const allFotos = Array.from(new Set([...(legacy ? [legacy] : []), ...extras]));
             const isPend = n.status === "aberta" || n.status === "em_andamento";
             return (
               <Card key={n.id} className="hover:border-accent transition-colors">
@@ -312,6 +316,17 @@ function NCList() {
                             n.severidade}
                         </Badge>
                         <Badge variant="outline">{n.criterio}</Badge>
+                        <Badge
+                          variant="outline"
+                          className={
+                            n.responsavel
+                              ? "border-primary/40 text-primary bg-primary/5"
+                              : "border-dashed text-muted-foreground"
+                          }
+                        >
+                          <User className="h-3 w-3 mr-1" />
+                          {n.responsavel || "Sem responsável"}
+                        </Badge>
                       </div>
                       <p className="text-sm font-medium">{n.descricao}</p>
                       <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
@@ -325,12 +340,6 @@ function NCList() {
                           <span className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
                             {new Date(n.auditorias.data_auditoria).toLocaleDateString("pt-BR")}
-                          </span>
-                        )}
-                        {n.responsavel && (
-                          <span className="flex items-center gap-1">
-                            <User className="h-3 w-3" />
-                            {n.responsavel}
                           </span>
                         )}
                         {n.prazo && (
@@ -348,7 +357,7 @@ function NCList() {
                           <CheckCircle2 className="h-3 w-3 mr-1" /> Tratativa
                         </Button>
                       )}
-                      {canResolveNC && !isPend && (n.plano_acao || n.foto_url) && (
+                      {canResolveNC && !isPend && (n.plano_acao || allFotos.length > 0) && (
                         <Button variant="outline" size="sm" onClick={() => openResolve(n)}>
                           <Pencil className="h-3 w-3 mr-1" /> Tratativa
                         </Button>
@@ -361,7 +370,7 @@ function NCList() {
                     </div>
                   </div>
 
-                  {(n.plano_acao || foto) && (
+                  {(n.plano_acao || allFotos.length > 0) && (
                     <div className="rounded-md border bg-muted/30 p-3 space-y-2">
                       <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         Tratativa realizada
@@ -369,14 +378,18 @@ function NCList() {
                       {n.plano_acao && (
                         <p className="text-sm whitespace-pre-wrap">{n.plano_acao}</p>
                       )}
-                      {foto && (
-                        <a href={foto} target="_blank" rel="noreferrer">
-                          <img
-                            src={foto}
-                            alt="Foto da tratativa"
-                            className="max-h-48 rounded-md border object-cover"
-                          />
-                        </a>
+                      {allFotos.length > 0 && (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {allFotos.map((url, i) => (
+                            <a key={url} href={url} target="_blank" rel="noreferrer">
+                              <img
+                                src={url}
+                                alt={`Foto da tratativa ${i + 1}`}
+                                className="w-full aspect-square rounded-md border object-cover"
+                              />
+                            </a>
+                          ))}
+                        </div>
                       )}
                     </div>
                   )}
