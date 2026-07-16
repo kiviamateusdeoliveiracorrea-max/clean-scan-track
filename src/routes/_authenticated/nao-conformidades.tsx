@@ -354,7 +354,7 @@ function NCList() {
 
       {/* Dialog: editar responsabilidade */}
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar responsabilidade</DialogTitle>
           </DialogHeader>
