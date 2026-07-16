@@ -135,17 +135,21 @@ export type Database = {
         Row: {
           acao_corretiva: string | null
           acao_preventiva: string | null
+          aprovado_por: string | null
           aprovador_id: string | null
           area_id: string | null
           auditoria_id: string | null
           causa_raiz: string | null
           created_at: string
           criterio: string
+          data_aprovacao: string | null
+          data_conclusao: string | null
           descricao: string
           documento_urls: string[]
           foto_url: string | null
           foto_urls: string[]
           id: string
+          parecer_aprovador: string | null
           plano_acao: string | null
           prazo: string | null
           responsavel: string | null
@@ -160,17 +164,21 @@ export type Database = {
         Insert: {
           acao_corretiva?: string | null
           acao_preventiva?: string | null
+          aprovado_por?: string | null
           aprovador_id?: string | null
           area_id?: string | null
           auditoria_id?: string | null
           causa_raiz?: string | null
           created_at?: string
           criterio: string
+          data_aprovacao?: string | null
+          data_conclusao?: string | null
           descricao: string
           documento_urls?: string[]
           foto_url?: string | null
           foto_urls?: string[]
           id?: string
+          parecer_aprovador?: string | null
           plano_acao?: string | null
           prazo?: string | null
           responsavel?: string | null
@@ -185,17 +193,21 @@ export type Database = {
         Update: {
           acao_corretiva?: string | null
           acao_preventiva?: string | null
+          aprovado_por?: string | null
           aprovador_id?: string | null
           area_id?: string | null
           auditoria_id?: string | null
           causa_raiz?: string | null
           created_at?: string
           criterio?: string
+          data_aprovacao?: string | null
+          data_conclusao?: string | null
           descricao?: string
           documento_urls?: string[]
           foto_url?: string | null
           foto_urls?: string[]
           id?: string
+          parecer_aprovador?: string | null
           plano_acao?: string | null
           prazo?: string | null
           responsavel?: string | null
@@ -208,6 +220,13 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "nao_conformidades_aprovado_por_fkey"
+            columns: ["aprovado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "nao_conformidades_aprovador_id_fkey"
             columns: ["aprovador_id"]
