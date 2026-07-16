@@ -267,6 +267,20 @@ function NCList() {
             ))}
           </SelectContent>
         </Select>
+        <Select value={resp} onValueChange={setResp}>
+          <SelectTrigger className="sm:w-56">
+            <SelectValue placeholder="Responsável" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos os responsáveis</SelectItem>
+            <SelectItem value="sem">Sem responsável</SelectItem>
+            {responsaveis.map((r) => (
+              <SelectItem key={r} value={r}>
+                {r}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {filtered.length === 0 ? (
