@@ -99,13 +99,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "Plataforma de auditoria 5S e processos para operações logísticas: não conformidades, planos de ação, fotos e indicadores.",
       },
-      { property: "og:title", content: "AuditLog 5S" },
+      { property: "og:title", content: "AuditLog 5S — Auditoria de Housekeeping Logístico" },
       {
         property: "og:description",
-        content: "Auditorias 5S para operações logísticas com dashboard e plano de ação.",
+        content: "Plataforma de auditoria 5S e processos para operações logísticas: não conformidades, planos de ação, fotos e indicadores.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "AuditLog 5S — Auditoria de Housekeeping Logístico" },
+      { name: "twitter:description", content: "Plataforma de auditoria 5S e processos para operações logísticas: não conformidades, planos de ação, fotos e indicadores." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/05c37092-f008-48fe-a140-079199af8231/id-preview-b2dfa49e--e5f87ba2-a049-45ed-aa3e-e9188999c1f2.lovable.app-1784209071403.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/05c37092-f008-48fe-a140-079199af8231/id-preview-b2dfa49e--e5f87ba2-a049-45ed-aa3e-e9188999c1f2.lovable.app-1784209071403.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
