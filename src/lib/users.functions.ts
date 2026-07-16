@@ -187,6 +187,7 @@ export const setUserRole = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertManager(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     if (data.userId === context.userId) {
       if (data.role !== "administrador") {
@@ -195,13 +196,13 @@ export const setUserRole = createServerFn({ method: "POST" })
       return { ok: true };
     }
 
-    const { error: deleteError } = await context.supabase
+    const { error: deleteError } = await supabaseAdmin
       .from("user_roles")
       .delete()
       .eq("user_id", data.userId);
     if (deleteError) throw new Error(deleteError.message);
 
-    const { error } = await context.supabase
+    const { error } = await supabaseAdmin
       .from("user_roles")
       .insert({ user_id: data.userId, role: data.role });
     if (error) throw new Error(error.message);
@@ -223,6 +224,7 @@ export const updateUserProfile = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertManager(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const patch: {
       nome?: string;
@@ -235,7 +237,7 @@ export const updateUserProfile = createServerFn({ method: "POST" })
     if (data.area_id !== undefined) patch.area_id = data.area_id;
     if (data.ativo !== undefined) patch.ativo = data.ativo;
 
-    const { error } = await context.supabase
+    const { error } = await supabaseAdmin
       .from("profiles")
       .update(patch)
       .eq("id", data.userId);
@@ -251,9 +253,10 @@ export const deleteUser = createServerFn({ method: "POST" })
     if (data.userId === context.userId) {
       throw new Error("Você não pode excluir a si mesmo.");
     }
-    const { error } = await context.supabase.from("user_roles").delete().eq("user_id", data.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("user_roles").delete().eq("user_id", data.userId);
     if (error) throw new Error(error.message);
-    const { error: profileError } = await context.supabase
+    const { error: profileError } = await supabaseAdmin
       .from("profiles")
       .update({ ativo: false })
       .eq("id", data.userId);
