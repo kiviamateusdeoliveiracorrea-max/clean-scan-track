@@ -132,11 +132,22 @@ function UsuariosPage() {
       <div>
         <h1 className="text-2xl font-bold">Usuários</h1>
         <p className="text-sm text-muted-foreground">
-          Gerencie contas, cargos, áreas e permissões. Apenas administradores têm acesso.
+          {canManageUsers
+            ? "Gerencie contas, cargos, áreas e permissões. Apenas administradores e gestores podem alterar cadastros."
+            : "Consulta de usuários cadastrados. Apenas administradores e gestores podem realizar alterações."}
         </p>
+        {!canManageUsers && !roleLoading && (
+          <div className="mt-3 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+            <Lock className="h-4 w-4 mt-0.5 shrink-0" />
+            <span>
+              Acesso somente leitura. Solicite a um administrador ou gestor para criar, editar,
+              alterar perfis ou excluir usuários.
+            </span>
+          </div>
+        )}
       </div>
 
-      <Card>
+      {canManageUsers && (
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <UserPlus className="h-4 w-4" /> Novo usuário
