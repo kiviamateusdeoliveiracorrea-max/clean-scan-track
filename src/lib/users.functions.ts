@@ -199,13 +199,20 @@ export const updateUserProfile = createServerFn({ method: "POST" })
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const patch: Record<string, any> = {};
+    const patch: {
+      nome?: string;
+      cargo?: string | null;
+      area_id?: string | null;
+      ativo?: boolean;
+    } = {};
     if (data.nome !== undefined) patch.nome = data.nome;
     if (data.cargo !== undefined) patch.cargo = data.cargo;
     if (data.area_id !== undefined) patch.area_id = data.area_id;
     if (data.ativo !== undefined) patch.ativo = data.ativo;
 
-    const { error } = await supabaseAdmin.from("profiles").update(patch).eq("id", data.userId);
+    const { error } = await (supabaseAdmin.from("profiles") as any)
+      .update(patch)
+      .eq("id", data.userId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
