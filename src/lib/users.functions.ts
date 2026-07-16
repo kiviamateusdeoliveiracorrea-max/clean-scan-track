@@ -6,15 +6,16 @@ import { normalizeUserEmail } from "@/lib/email-normalization";
 const ROLES = ["administrador", "auditor", "gestor", "consulta"] as const;
 export type AppRole = (typeof ROLES)[number];
 
-async function assertAdmin(supabase: any, userId: string) {
+async function assertManager(supabase: any, userId: string) {
   const { data, error } = await supabase
     .from("user_roles")
     .select("role")
     .eq("user_id", userId)
-    .eq("role", "administrador")
-    .maybeSingle();
+    .in("role", ["administrador", "gestor"]);
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("Forbidden: apenas administradores");
+  if (!data || data.length === 0) {
+    throw new Error("Acesso negado: apenas administradores ou gestores podem realizar esta ação.");
+  }
 }
 
 export const bootstrapFirstAdmin = createServerFn({ method: "POST" })
