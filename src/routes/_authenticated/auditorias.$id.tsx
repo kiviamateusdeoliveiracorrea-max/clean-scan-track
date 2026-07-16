@@ -142,6 +142,20 @@ function AuditoriaDetail() {
         </Card>
       )}
 
+      {Array.isArray((audit as any).fotos) && (audit as any).fotos.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Camera className="h-4 w-4" /> Fotos da auditoria ({(audit as any).fotos.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AuditPhotos paths={(audit as any).fotos as string[]} />
+          </CardContent>
+        </Card>
+      )}
+
+
       <Card>
         <CardHeader className="flex-row items-center justify-between">
           <CardTitle className="text-base">
