@@ -40,13 +40,19 @@ export const bootstrapFirstAdmin = createServerFn({ method: "POST" })
       throw new Error("Já existe um administrador. Solicite acesso a um administrador.");
     }
 
-    const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
+    const { createClient } = await import("@supabase/supabase-js");
+    const signupClient = createClient(
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_PUBLISHABLE_KEY!,
+      { auth: { persistSession: false, autoRefreshToken: false } },
+    );
+    const { data: created, error } = await signupClient.auth.signUp({
       email,
       password: data.password,
-      email_confirm: true,
-      user_metadata: { nome: data.nome, role: "administrador" },
+      options: { data: { nome: data.nome, role: "administrador" } },
     });
     if (error) throw new Error(error.message);
+
 
     if (created.user?.id) {
       await supabaseAdmin.from("profiles").upsert({
