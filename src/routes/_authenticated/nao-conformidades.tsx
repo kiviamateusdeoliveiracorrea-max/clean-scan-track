@@ -35,6 +35,10 @@ import {
   History,
 } from "lucide-react";
 import { STATUS_NC, SEVERIDADES } from "@/lib/audit-constants";
+import { EvidenceThumbs } from "@/components/EvidenceThumbs";
+
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
+const MAX_UPLOAD_MB = 10;
 import { useCurrentRole } from "@/hooks/use-current-role";
 import { toast } from "sonner";
 
