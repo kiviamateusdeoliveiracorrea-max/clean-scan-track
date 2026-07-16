@@ -26,7 +26,7 @@ import {
 } from "recharts";
 import { classificaPontuacao } from "@/lib/audit-constants";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_authenticated/")({
   component: Dashboard,
 });
 

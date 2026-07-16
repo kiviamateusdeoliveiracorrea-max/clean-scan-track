@@ -9,201 +9,272 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as NaoConformidadesRouteImport } from './routes/nao-conformidades'
-import { Route as HistoricoRouteImport } from './routes/historico'
-import { Route as AuditoresRouteImport } from './routes/auditores'
-import { Route as AreasRouteImport } from './routes/areas'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuditoriasIndexRouteImport } from './routes/auditorias.index'
-import { Route as AuditoriasNovaRouteImport } from './routes/auditorias.nova'
-import { Route as AuditoriasIdRouteImport } from './routes/auditorias.$id'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
+import { Route as AuthenticatedNaoConformidadesRouteImport } from './routes/_authenticated/nao-conformidades'
+import { Route as AuthenticatedHistoricoRouteImport } from './routes/_authenticated/historico'
+import { Route as AuthenticatedAuditoresRouteImport } from './routes/_authenticated/auditores'
+import { Route as AuthenticatedAreasRouteImport } from './routes/_authenticated/areas'
+import { Route as AuthenticatedAuditoriasIndexRouteImport } from './routes/_authenticated/auditorias.index'
+import { Route as AuthenticatedAuditoriasNovaRouteImport } from './routes/_authenticated/auditorias.nova'
+import { Route as AuthenticatedAuditoriasIdRouteImport } from './routes/_authenticated/auditorias.$id'
 
-const NaoConformidadesRoute = NaoConformidadesRouteImport.update({
-  id: '/nao-conformidades',
-  path: '/nao-conformidades',
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const HistoricoRoute = HistoricoRouteImport.update({
-  id: '/historico',
-  path: '/historico',
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuditoresRoute = AuditoresRouteImport.update({
-  id: '/auditores',
-  path: '/auditores',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AreasRoute = AreasRouteImport.update({
-  id: '/areas',
-  path: '/areas',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const IndexRoute = IndexRouteImport.update({
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuditoriasIndexRoute = AuditoriasIndexRouteImport.update({
-  id: '/auditorias/',
-  path: '/auditorias/',
-  getParentRoute: () => rootRouteImport,
+const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
+  id: '/usuarios',
+  path: '/usuarios',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuditoriasNovaRoute = AuditoriasNovaRouteImport.update({
-  id: '/auditorias/nova',
-  path: '/auditorias/nova',
-  getParentRoute: () => rootRouteImport,
+const AuthenticatedNaoConformidadesRoute =
+  AuthenticatedNaoConformidadesRouteImport.update({
+    id: '/nao-conformidades',
+    path: '/nao-conformidades',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedHistoricoRoute = AuthenticatedHistoricoRouteImport.update({
+  id: '/historico',
+  path: '/historico',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuditoriasIdRoute = AuditoriasIdRouteImport.update({
-  id: '/auditorias/$id',
-  path: '/auditorias/$id',
-  getParentRoute: () => rootRouteImport,
+const AuthenticatedAuditoresRoute = AuthenticatedAuditoresRouteImport.update({
+  id: '/auditores',
+  path: '/auditores',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAreasRoute = AuthenticatedAreasRouteImport.update({
+  id: '/areas',
+  path: '/areas',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAuditoriasIndexRoute =
+  AuthenticatedAuditoriasIndexRouteImport.update({
+    id: '/auditorias/',
+    path: '/auditorias/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAuditoriasNovaRoute =
+  AuthenticatedAuditoriasNovaRouteImport.update({
+    id: '/auditorias/nova',
+    path: '/auditorias/nova',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAuditoriasIdRoute =
+  AuthenticatedAuditoriasIdRouteImport.update({
+    id: '/auditorias/$id',
+    path: '/auditorias/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/areas': typeof AreasRoute
-  '/auditores': typeof AuditoresRoute
-  '/historico': typeof HistoricoRoute
-  '/nao-conformidades': typeof NaoConformidadesRoute
-  '/auditorias/$id': typeof AuditoriasIdRoute
-  '/auditorias/nova': typeof AuditoriasNovaRoute
-  '/auditorias/': typeof AuditoriasIndexRoute
+  '/': typeof AuthenticatedIndexRoute
+  '/auth': typeof AuthRoute
+  '/areas': typeof AuthenticatedAreasRoute
+  '/auditores': typeof AuthenticatedAuditoresRoute
+  '/historico': typeof AuthenticatedHistoricoRoute
+  '/nao-conformidades': typeof AuthenticatedNaoConformidadesRoute
+  '/usuarios': typeof AuthenticatedUsuariosRoute
+  '/auditorias/$id': typeof AuthenticatedAuditoriasIdRoute
+  '/auditorias/nova': typeof AuthenticatedAuditoriasNovaRoute
+  '/auditorias/': typeof AuthenticatedAuditoriasIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/areas': typeof AreasRoute
-  '/auditores': typeof AuditoresRoute
-  '/historico': typeof HistoricoRoute
-  '/nao-conformidades': typeof NaoConformidadesRoute
-  '/auditorias/$id': typeof AuditoriasIdRoute
-  '/auditorias/nova': typeof AuditoriasNovaRoute
-  '/auditorias': typeof AuditoriasIndexRoute
+  '/auth': typeof AuthRoute
+  '/areas': typeof AuthenticatedAreasRoute
+  '/auditores': typeof AuthenticatedAuditoresRoute
+  '/historico': typeof AuthenticatedHistoricoRoute
+  '/nao-conformidades': typeof AuthenticatedNaoConformidadesRoute
+  '/usuarios': typeof AuthenticatedUsuariosRoute
+  '/': typeof AuthenticatedIndexRoute
+  '/auditorias/$id': typeof AuthenticatedAuditoriasIdRoute
+  '/auditorias/nova': typeof AuthenticatedAuditoriasNovaRoute
+  '/auditorias': typeof AuthenticatedAuditoriasIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/areas': typeof AreasRoute
-  '/auditores': typeof AuditoresRoute
-  '/historico': typeof HistoricoRoute
-  '/nao-conformidades': typeof NaoConformidadesRoute
-  '/auditorias/$id': typeof AuditoriasIdRoute
-  '/auditorias/nova': typeof AuditoriasNovaRoute
-  '/auditorias/': typeof AuditoriasIndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/_authenticated/areas': typeof AuthenticatedAreasRoute
+  '/_authenticated/auditores': typeof AuthenticatedAuditoresRoute
+  '/_authenticated/historico': typeof AuthenticatedHistoricoRoute
+  '/_authenticated/nao-conformidades': typeof AuthenticatedNaoConformidadesRoute
+  '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
+  '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/auditorias/$id': typeof AuthenticatedAuditoriasIdRoute
+  '/_authenticated/auditorias/nova': typeof AuthenticatedAuditoriasNovaRoute
+  '/_authenticated/auditorias/': typeof AuthenticatedAuditoriasIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/auth'
     | '/areas'
     | '/auditores'
     | '/historico'
     | '/nao-conformidades'
+    | '/usuarios'
     | '/auditorias/$id'
     | '/auditorias/nova'
     | '/auditorias/'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
+    | '/auth'
     | '/areas'
     | '/auditores'
     | '/historico'
     | '/nao-conformidades'
+    | '/usuarios'
+    | '/'
     | '/auditorias/$id'
     | '/auditorias/nova'
     | '/auditorias'
   id:
     | '__root__'
-    | '/'
-    | '/areas'
-    | '/auditores'
-    | '/historico'
-    | '/nao-conformidades'
-    | '/auditorias/$id'
-    | '/auditorias/nova'
-    | '/auditorias/'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/areas'
+    | '/_authenticated/auditores'
+    | '/_authenticated/historico'
+    | '/_authenticated/nao-conformidades'
+    | '/_authenticated/usuarios'
+    | '/_authenticated/'
+    | '/_authenticated/auditorias/$id'
+    | '/_authenticated/auditorias/nova'
+    | '/_authenticated/auditorias/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  AreasRoute: typeof AreasRoute
-  AuditoresRoute: typeof AuditoresRoute
-  HistoricoRoute: typeof HistoricoRoute
-  NaoConformidadesRoute: typeof NaoConformidadesRoute
-  AuditoriasIdRoute: typeof AuditoriasIdRoute
-  AuditoriasNovaRoute: typeof AuditoriasNovaRoute
-  AuditoriasIndexRoute: typeof AuditoriasIndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/nao-conformidades': {
-      id: '/nao-conformidades'
-      path: '/nao-conformidades'
-      fullPath: '/nao-conformidades'
-      preLoaderRoute: typeof NaoConformidadesRouteImport
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/historico': {
-      id: '/historico'
-      path: '/historico'
-      fullPath: '/historico'
-      preLoaderRoute: typeof HistoricoRouteImport
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auditores': {
-      id: '/auditores'
-      path: '/auditores'
-      fullPath: '/auditores'
-      preLoaderRoute: typeof AuditoresRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/areas': {
-      id: '/areas'
-      path: '/areas'
-      fullPath: '/areas'
-      preLoaderRoute: typeof AreasRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/': {
-      id: '/'
+    '/_authenticated/': {
+      id: '/_authenticated/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/auditorias/': {
-      id: '/auditorias/'
+    '/_authenticated/usuarios': {
+      id: '/_authenticated/usuarios'
+      path: '/usuarios'
+      fullPath: '/usuarios'
+      preLoaderRoute: typeof AuthenticatedUsuariosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/nao-conformidades': {
+      id: '/_authenticated/nao-conformidades'
+      path: '/nao-conformidades'
+      fullPath: '/nao-conformidades'
+      preLoaderRoute: typeof AuthenticatedNaoConformidadesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/historico': {
+      id: '/_authenticated/historico'
+      path: '/historico'
+      fullPath: '/historico'
+      preLoaderRoute: typeof AuthenticatedHistoricoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/auditores': {
+      id: '/_authenticated/auditores'
+      path: '/auditores'
+      fullPath: '/auditores'
+      preLoaderRoute: typeof AuthenticatedAuditoresRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/areas': {
+      id: '/_authenticated/areas'
+      path: '/areas'
+      fullPath: '/areas'
+      preLoaderRoute: typeof AuthenticatedAreasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/auditorias/': {
+      id: '/_authenticated/auditorias/'
       path: '/auditorias'
       fullPath: '/auditorias/'
-      preLoaderRoute: typeof AuditoriasIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedAuditoriasIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/auditorias/nova': {
-      id: '/auditorias/nova'
+    '/_authenticated/auditorias/nova': {
+      id: '/_authenticated/auditorias/nova'
       path: '/auditorias/nova'
       fullPath: '/auditorias/nova'
-      preLoaderRoute: typeof AuditoriasNovaRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedAuditoriasNovaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/auditorias/$id': {
-      id: '/auditorias/$id'
+    '/_authenticated/auditorias/$id': {
+      id: '/_authenticated/auditorias/$id'
       path: '/auditorias/$id'
       fullPath: '/auditorias/$id'
-      preLoaderRoute: typeof AuditoriasIdRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedAuditoriasIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAreasRoute: typeof AuthenticatedAreasRoute
+  AuthenticatedAuditoresRoute: typeof AuthenticatedAuditoresRoute
+  AuthenticatedHistoricoRoute: typeof AuthenticatedHistoricoRoute
+  AuthenticatedNaoConformidadesRoute: typeof AuthenticatedNaoConformidadesRoute
+  AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedAuditoriasIdRoute: typeof AuthenticatedAuditoriasIdRoute
+  AuthenticatedAuditoriasNovaRoute: typeof AuthenticatedAuditoriasNovaRoute
+  AuthenticatedAuditoriasIndexRoute: typeof AuthenticatedAuditoriasIndexRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAreasRoute: AuthenticatedAreasRoute,
+  AuthenticatedAuditoresRoute: AuthenticatedAuditoresRoute,
+  AuthenticatedHistoricoRoute: AuthenticatedHistoricoRoute,
+  AuthenticatedNaoConformidadesRoute: AuthenticatedNaoConformidadesRoute,
+  AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
+  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedAuditoriasIdRoute: AuthenticatedAuditoriasIdRoute,
+  AuthenticatedAuditoriasNovaRoute: AuthenticatedAuditoriasNovaRoute,
+  AuthenticatedAuditoriasIndexRoute: AuthenticatedAuditoriasIndexRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  AreasRoute: AreasRoute,
-  AuditoresRoute: AuditoresRoute,
-  HistoricoRoute: HistoricoRoute,
-  NaoConformidadesRoute: NaoConformidadesRoute,
-  AuditoriasIdRoute: AuditoriasIdRoute,
-  AuditoriasNovaRoute: AuditoriasNovaRoute,
-  AuditoriasIndexRoute: AuditoriasIndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

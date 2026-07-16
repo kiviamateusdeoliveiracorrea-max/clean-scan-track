@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { History, MapPin, Calendar, User } from "lucide-react";
 import { classificaPontuacao } from "@/lib/audit-constants";
 
-export const Route = createFileRoute("/historico")({
+export const Route = createFileRoute("/_authenticated/historico")({
   component: Historico,
 });
 
