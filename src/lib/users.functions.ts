@@ -5,34 +5,6 @@ import { z } from "zod";
 const ROLES = ["administrador", "auditor", "gestor", "consulta"] as const;
 export type AppRole = (typeof ROLES)[number];
 
-/**
- * Chama o endpoint GoTrue Admin diretamente.
- * O cliente supabase-js auto-gerado remove o Authorization para chaves sb_secret_,
- * mas os endpoints /auth/v1/admin/* exigem Bearer com service_role.
- */
-async function adminAuthFetch(path: string, init: RequestInit = {}) {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) {
-    throw new Error("Configuração do backend ausente (SUPABASE_URL/SERVICE_ROLE_KEY).");
-  }
-  const res = await fetch(`${url}/auth/v1${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      apikey: key,
-      Authorization: `Bearer ${key}`,
-      ...(init.headers ?? {}),
-    },
-  });
-  const text = await res.text();
-  const body = text ? JSON.parse(text) : null;
-  if (!res.ok) {
-    throw new Error(body?.msg || body?.error_description || body?.error || `Erro ${res.status}`);
-  }
-  return body;
-}
-
 async function assertAdmin(supabase: any, userId: string) {
   const { data, error } = await supabase
     .from("user_roles")
@@ -70,16 +42,14 @@ export const bootstrapFirstAdmin = createServerFn({ method: "POST" })
       throw new Error("Já existe um administrador. Solicite acesso a um administrador.");
     }
 
-    const created = await adminAuthFetch("/admin/users", {
-      method: "POST",
-      body: JSON.stringify({
-        email: data.email,
-        password: data.password,
-        email_confirm: true,
-        user_metadata: { nome: data.nome, role: "administrador" },
-      }),
+    const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
+      email: data.email,
+      password: data.password,
+      email_confirm: true,
+      user_metadata: { nome: data.nome, role: "administrador" },
     });
-    return { ok: true, userId: created?.id };
+    if (error) throw new Error(error.message);
+    return { ok: true, userId: created.user?.id };
   });
 
 /** Verifica se o sistema ainda não tem administrador (para exibir tela de bootstrap). */
@@ -150,16 +120,15 @@ export const createUser = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
-    const created = await adminAuthFetch("/admin/users", {
-      method: "POST",
-      body: JSON.stringify({
-        email: data.email,
-        password: data.password,
-        email_confirm: true,
-        user_metadata: { nome: data.nome, role: data.role },
-      }),
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
+      email: data.email,
+      password: data.password,
+      email_confirm: true,
+      user_metadata: { nome: data.nome, role: data.role },
     });
-    return { ok: true, userId: created?.id };
+    if (error) throw new Error(error.message);
+    return { ok: true, userId: created.user?.id };
   });
 
 /** Altera o papel de um usuário (admin). */
@@ -189,6 +158,8 @@ export const deleteUser = createServerFn({ method: "POST" })
     if (data.userId === context.userId) {
       throw new Error("Você não pode excluir a si mesmo.");
     }
-    await adminAuthFetch(`/admin/users/${data.userId}`, { method: "DELETE" });
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
+    if (error) throw new Error(error.message);
     return { ok: true };
   });
