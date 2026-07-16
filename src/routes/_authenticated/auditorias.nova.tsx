@@ -40,12 +40,14 @@ function NovaAuditoria() {
     seiketsu: 7,
     shitsuke: 7,
   });
-  const [ncs, setNcs] = useState<Record<Criterio5SKey, { marked: boolean; descricao: string }>>({
-    seiri: { marked: false, descricao: "" },
-    seiton: { marked: false, descricao: "" },
-    seiso: { marked: false, descricao: "" },
-    seiketsu: { marked: false, descricao: "" },
-    shitsuke: { marked: false, descricao: "" },
+  type NcEntry = { marked: boolean; descricao: string; responsavel: string; responsavel_email: string; prazo: string };
+  const emptyNc: NcEntry = { marked: false, descricao: "", responsavel: "", responsavel_email: "", prazo: "" };
+  const [ncs, setNcs] = useState<Record<Criterio5SKey, NcEntry>>({
+    seiri: { ...emptyNc },
+    seiton: { ...emptyNc },
+    seiso: { ...emptyNc },
+    seiketsu: { ...emptyNc },
+    shitsuke: { ...emptyNc },
   });
 
   const addFotos = (files: FileList | null) => {
@@ -137,14 +139,20 @@ function NovaAuditoria() {
     // Gerar ações corretivas para critérios marcados como Não Conforme
     const ncRows = CRITERIOS_5S
       .filter((c) => ncs[c.key].marked)
-      .map((c) => ({
-        auditoria_id: inserted.id,
-        area_id: areaId,
-        criterio: c.nome,
-        descricao: ncs[c.key].descricao.trim() || `Não conformidade identificada em ${c.nome}`,
-        severidade: "media",
-        status: "aberta",
-      }));
+      .map((c) => {
+        const n = ncs[c.key];
+        return {
+          auditoria_id: inserted.id,
+          area_id: areaId,
+          criterio: c.nome,
+          descricao: n.descricao.trim() || `Não conformidade identificada em ${c.nome}`,
+          severidade: "media",
+          status: "aberta",
+          responsavel: n.responsavel.trim() || null,
+          responsavel_email: n.responsavel_email.trim() || null,
+          prazo: n.prazo || null,
+        };
+      });
     if (ncRows.length > 0) {
       const { error: ncErr } = await supabase.from("nao_conformidades").insert(ncRows);
       if (ncErr) toast.error("Erro ao gerar ações corretivas: " + ncErr.message);
@@ -283,17 +291,76 @@ function NovaAuditoria() {
                     </span>
                   </label>
                   {ncs[c.key].marked && (
-                    <Textarea
-                      value={ncs[c.key].descricao}
-                      onChange={(e) =>
-                        setNcs((n) => ({
-                          ...n,
-                          [c.key]: { ...n[c.key], descricao: e.target.value },
-                        }))
-                      }
-                      placeholder={`Descreva a não conformidade em ${c.nome}...`}
-                      rows={2}
-                    />
+                    <div className="space-y-2">
+                      <Textarea
+                        value={ncs[c.key].descricao}
+                        onChange={(e) =>
+                          setNcs((n) => ({
+                            ...n,
+                            [c.key]: { ...n[c.key], descricao: e.target.value },
+                          }))
+                        }
+                        placeholder={`Descreva a não conformidade em ${c.nome}...`}
+                        rows={2}
+                      />
+                      <div className="grid gap-2 sm:grid-cols-3">
+                        <div>
+                          <Label className="text-xs">Responsável pela tratativa</Label>
+                          <Select
+                            value={ncs[c.key].responsavel || undefined}
+                            onValueChange={(v) => {
+                              const auditor = (auditoresQ.data ?? []).find((a: any) => a.nome === v);
+                              setNcs((n) => ({
+                                ...n,
+                                [c.key]: {
+                                  ...n[c.key],
+                                  responsavel: v,
+                                  responsavel_email: auditor?.email ?? n[c.key].responsavel_email,
+                                },
+                              }));
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {(auditoresQ.data ?? []).map((a: any) => (
+                                <SelectItem key={a.id} value={a.nome}>
+                                  {a.nome}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="text-xs">E-mail para envio</Label>
+                          <Input
+                            type="email"
+                            value={ncs[c.key].responsavel_email}
+                            onChange={(e) =>
+                              setNcs((n) => ({
+                                ...n,
+                                [c.key]: { ...n[c.key], responsavel_email: e.target.value },
+                              }))
+                            }
+                            placeholder="email@empresa.com"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Prazo</Label>
+                          <Input
+                            type="date"
+                            value={ncs[c.key].prazo}
+                            onChange={(e) =>
+                              setNcs((n) => ({
+                                ...n,
+                                [c.key]: { ...n[c.key], prazo: e.target.value },
+                              }))
+                            }
+                          />
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
