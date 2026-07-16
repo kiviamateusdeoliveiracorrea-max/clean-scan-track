@@ -313,6 +313,58 @@ function NovaAuditoria() {
         </CardContent>
       </Card>
 
+      {Object.values(ncs).some((n) => n.marked) && (
+        <Card className="border-amber-300">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+              Tratativa das não conformidades
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-3 sm:grid-cols-3">
+            <div>
+              <Label className="text-xs">Responsável</Label>
+              <Select
+                value={ncResponsavel || undefined}
+                onValueChange={(v) => {
+                  const auditor = (auditoresQ.data ?? []).find((a: any) => a.nome === v);
+                  setNcResponsavel(v);
+                  if (auditor?.email) setNcResponsavelEmail(auditor.email);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {(auditoresQ.data ?? []).map((a: any) => (
+                    <SelectItem key={a.id} value={a.nome}>
+                      {a.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">E-mail para envio</Label>
+              <Input
+                type="email"
+                value={ncResponsavelEmail}
+                onChange={(e) => setNcResponsavelEmail(e.target.value)}
+                placeholder="email@empresa.com"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Prazo</Label>
+              <Input
+                type="date"
+                value={ncPrazo}
+                onChange={(e) => setNcPrazo(e.target.value)}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Observações</CardTitle>
