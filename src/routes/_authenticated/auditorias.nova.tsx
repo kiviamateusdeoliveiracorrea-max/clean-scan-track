@@ -134,8 +134,28 @@ function NovaAuditoria() {
         .eq("id", inserted.id);
     }
 
+    // Gerar ações corretivas para critérios marcados como Não Conforme
+    const ncRows = CRITERIOS_5S
+      .filter((c) => ncs[c.key].marked)
+      .map((c) => ({
+        auditoria_id: inserted.id,
+        area_id: areaId,
+        criterio: c.nome,
+        descricao: ncs[c.key].descricao.trim() || `Não conformidade identificada em ${c.nome}`,
+        severidade: "media",
+        status: "aberta",
+      }));
+    if (ncRows.length > 0) {
+      const { error: ncErr } = await supabase.from("nao_conformidades").insert(ncRows);
+      if (ncErr) toast.error("Erro ao gerar ações corretivas: " + ncErr.message);
+    }
+
     setSaving(false);
-    toast.success("Auditoria salva com sucesso!");
+    toast.success(
+      ncRows.length > 0
+        ? `Auditoria salva! ${ncRows.length} ação(ões) corretiva(s) gerada(s).`
+        : "Auditoria salva com sucesso!",
+    );
     navigate({ to: "/auditorias/$id", params: { id: inserted.id } });
   };
 
