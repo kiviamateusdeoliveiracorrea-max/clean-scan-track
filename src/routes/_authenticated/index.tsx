@@ -48,11 +48,16 @@ function Dashboard() {
   const ncQuery = useQuery({
     queryKey: ["nc-dashboard"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("nao_conformidades").select("*");
+      const { data, error } = await supabase
+        .from("nao_conformidades")
+        .select(
+          "*, resp_acao:profiles!nao_conformidades_responsavel_acao_id_fkey(id,nome,cargo,areas(nome))",
+        );
       if (error) throw error;
       return data ?? [];
     },
   });
+
 
   const auditorias = auditoriasQuery.data ?? [];
   const ncs = ncQuery.data ?? [];
