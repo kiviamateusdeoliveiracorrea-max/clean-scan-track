@@ -128,6 +128,23 @@ function Dashboard() {
       media: Math.round(v.total / v.count),
     }));
 
+  // Ações abertas por responsável
+  const porResp = new Map<string, { nome: string; cargo: string; count: number }>();
+  ncAbertasList.forEach((n: any) => {
+    const key = n.resp_acao?.id ?? "__sem__";
+    const nome = n.resp_acao?.nome ?? "Sem responsável";
+    const cargo = [n.resp_acao?.cargo, n.resp_acao?.areas?.nome]
+      .filter(Boolean)
+      .join(" · ");
+    const cur = porResp.get(key) ?? { nome, cargo, count: 0 };
+    cur.count += 1;
+    porResp.set(key, cur);
+  });
+  const respChart = Array.from(porResp.values())
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 8);
+
+
   return (
     <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto">
       <div className="flex justify-center">
