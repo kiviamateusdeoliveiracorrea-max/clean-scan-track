@@ -1,0 +1,1 @@
+ALTER TABLE public.nao_conformidades ADD COLUMN IF NOT EXISTS responsavel_email TEXT;

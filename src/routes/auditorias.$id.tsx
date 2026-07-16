@@ -263,7 +263,7 @@ function NCItem({ nc, onChanged }: { nc: any; onChanged: () => void }) {
             </p>
           )}
           <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-            {nc.responsavel && <span>Resp.: {nc.responsavel}</span>}
+            {nc.responsavel && <span>Resp.: {nc.responsavel}{nc.responsavel_email ? ` (${nc.responsavel_email})` : ""}</span>}
             {nc.prazo && (
               <span>Prazo: {new Date(nc.prazo).toLocaleDateString("pt-BR")}</span>
             )}
@@ -305,6 +305,7 @@ function NovaNCDialog({
   const [severidade, setSeveridade] = useState("media");
   const [planoAcao, setPlanoAcao] = useState("");
   const [responsavel, setResponsavel] = useState("");
+  const [responsavelEmail, setResponsavelEmail] = useState("");
   const [prazo, setPrazo] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
@@ -315,6 +316,7 @@ function NovaNCDialog({
     setSeveridade("media");
     setPlanoAcao("");
     setResponsavel("");
+    setResponsavelEmail("");
     setPrazo("");
     setFile(null);
   };
@@ -322,6 +324,10 @@ function NovaNCDialog({
   const handleSave = async () => {
     if (!descricao.trim()) {
       toast.error("Descreva a não conformidade");
+      return;
+    }
+    if (responsavelEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(responsavelEmail)) {
+      toast.error("E-mail do responsável inválido");
       return;
     }
     setSaving(true);
@@ -347,6 +353,7 @@ function NovaNCDialog({
       severidade,
       plano_acao: planoAcao || null,
       responsavel: responsavel || null,
+      responsavel_email: responsavelEmail || null,
       prazo: prazo || null,
       foto_url,
       status: "aberta",
@@ -448,6 +455,18 @@ function NovaNCDialog({
                 <Label>Prazo</Label>
                 <Input type="date" value={prazo} onChange={(e) => setPrazo(e.target.value)} />
               </div>
+            </div>
+            <div>
+              <Label>E-mail do responsável</Label>
+              <Input
+                type="email"
+                placeholder="responsavel@empresa.com"
+                value={responsavelEmail}
+                onChange={(e) => setResponsavelEmail(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Usado para enviar notificações automáticas de prazo.
+              </p>
             </div>
           </div>
         </div>
