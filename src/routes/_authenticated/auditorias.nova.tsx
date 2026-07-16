@@ -265,6 +265,37 @@ function NovaAuditoria() {
                   step={1}
                   onValueChange={(v) => setScores((s) => ({ ...s, [c.key]: v[0] }))}
                 />
+                <div className="rounded-md border border-dashed p-3 space-y-2 bg-muted/30">
+                  <label className="flex items-center gap-2 text-sm cursor-pointer">
+                    <Checkbox
+                      checked={ncs[c.key].marked}
+                      onCheckedChange={(v) =>
+                        setNcs((n) => ({
+                          ...n,
+                          [c.key]: { ...n[c.key], marked: v === true },
+                        }))
+                      }
+                    />
+                    <AlertTriangle className="h-4 w-4 text-amber-600" />
+                    <span className="font-medium">Marcar como Não Conforme</span>
+                    <span className="text-xs text-muted-foreground">
+                      (gera ação corretiva automaticamente)
+                    </span>
+                  </label>
+                  {ncs[c.key].marked && (
+                    <Textarea
+                      value={ncs[c.key].descricao}
+                      onChange={(e) =>
+                        setNcs((n) => ({
+                          ...n,
+                          [c.key]: { ...n[c.key], descricao: e.target.value },
+                        }))
+                      }
+                      placeholder={`Descreva a não conformidade em ${c.nome}...`}
+                      rows={2}
+                    />
+                  )}
+                </div>
               </div>
             );
           })}
