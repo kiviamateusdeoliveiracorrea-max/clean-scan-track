@@ -100,11 +100,33 @@ function NovaAuditoria() {
       })
       .select()
       .single();
-    setSaving(false);
     if (error) {
+      setSaving(false);
       toast.error("Erro ao salvar: " + error.message);
       return;
     }
+
+    const uploadedPaths: string[] = [];
+    for (const file of fotos) {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${inserted.id}/auditoria-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("audit-photos")
+        .upload(path, file);
+      if (upErr) {
+        toast.error("Erro no upload de foto: " + upErr.message);
+      } else {
+        uploadedPaths.push(path);
+      }
+    }
+    if (uploadedPaths.length > 0) {
+      await supabase
+        .from("auditorias")
+        .update({ fotos: uploadedPaths })
+        .eq("id", inserted.id);
+    }
+
+    setSaving(false);
     toast.success("Auditoria salva com sucesso!");
     navigate({ to: "/auditorias/$id", params: { id: inserted.id } });
   };
