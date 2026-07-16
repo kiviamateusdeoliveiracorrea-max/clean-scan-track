@@ -874,6 +874,75 @@ function NCList() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog: aprovar / reprovar */}
+      <Dialog open={!!approving} onOpenChange={(o) => !o && setApproving(null)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {approvalMode === "aprovar" ? "Aprovar ação" : "Reprovar ação"}
+            </DialogTitle>
+          </DialogHeader>
+          {approving && (
+            <div className="space-y-3 text-sm">
+              <div className="rounded-md bg-muted/40 p-3">
+                <p className="font-medium">{approving.criterio}</p>
+                <p className="text-muted-foreground">{approving.descricao}</p>
+              </div>
+              {approving.plano_acao && (
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Comentário do responsável
+                  </p>
+                  <p className="whitespace-pre-wrap">{approving.plano_acao}</p>
+                </div>
+              )}
+              {approving.data_conclusao && (
+                <p className="text-xs text-muted-foreground">
+                  Conclusão em{" "}
+                  {new Date(approving.data_conclusao).toLocaleString("pt-BR")}
+                </p>
+              )}
+              <div>
+                <Label>
+                  Parecer do aprovador{" "}
+                  {approvalMode === "reprovar" && <span className="text-destructive">*</span>}
+                </Label>
+                <Textarea
+                  value={parecer}
+                  onChange={(e) => setParecer(e.target.value)}
+                  rows={4}
+                  placeholder={
+                    approvalMode === "aprovar"
+                      ? "Comentário (opcional)"
+                      : "Explique o motivo da reprovação"
+                  }
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setApproving(null)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={saveApproval}
+              disabled={approveSaving}
+              className={
+                approvalMode === "aprovar"
+                  ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                  : "bg-red-600 hover:bg-red-700 text-white"
+              }
+            >
+              {approveSaving
+                ? "Salvando..."
+                : approvalMode === "aprovar"
+                  ? "✅ Aprovar e encerrar"
+                  : "❌ Reprovar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
