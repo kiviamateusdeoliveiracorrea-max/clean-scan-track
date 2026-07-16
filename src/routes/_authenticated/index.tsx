@@ -335,6 +335,45 @@ function Dashboard() {
         </Card>
       </div>
 
+      {/* Ações abertas por responsável */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Ações abertas por responsável</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {respChart.length === 0 ? (
+            <EmptyChart />
+          ) : (
+            <ul className="space-y-2">
+              {respChart.map((r) => (
+                <li
+                  key={r.nome + r.cargo}
+                  className="flex items-center gap-3 rounded border bg-muted/20 px-3 py-2"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{r.nome}</p>
+                    {r.cargo && (
+                      <p className="text-[11px] text-muted-foreground truncate">{r.cargo}</p>
+                    )}
+                  </div>
+                  <Badge
+                    className={
+                      r.count > 5
+                        ? "bg-red-100 text-red-700 border-0"
+                        : "bg-primary/10 text-primary border-0"
+                    }
+                  >
+                    {r.count} aberta{r.count === 1 ? "" : "s"}
+                  </Badge>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+
+
       {/* Recentes */}
       <Card>
         <CardHeader className="flex-row items-center justify-between">
