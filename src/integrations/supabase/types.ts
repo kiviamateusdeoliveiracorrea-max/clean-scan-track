@@ -135,6 +135,7 @@ export type Database = {
         Row: {
           acao_corretiva: string | null
           acao_preventiva: string | null
+          aprovador_id: string | null
           area_id: string | null
           auditoria_id: string | null
           causa_raiz: string | null
@@ -148,7 +149,9 @@ export type Database = {
           plano_acao: string | null
           prazo: string | null
           responsavel: string | null
+          responsavel_acao_id: string | null
           responsavel_email: string | null
+          responsavel_nc_id: string | null
           severidade: string
           status: string
           updated_at: string
@@ -157,6 +160,7 @@ export type Database = {
         Insert: {
           acao_corretiva?: string | null
           acao_preventiva?: string | null
+          aprovador_id?: string | null
           area_id?: string | null
           auditoria_id?: string | null
           causa_raiz?: string | null
@@ -170,7 +174,9 @@ export type Database = {
           plano_acao?: string | null
           prazo?: string | null
           responsavel?: string | null
+          responsavel_acao_id?: string | null
           responsavel_email?: string | null
+          responsavel_nc_id?: string | null
           severidade?: string
           status?: string
           updated_at?: string
@@ -179,6 +185,7 @@ export type Database = {
         Update: {
           acao_corretiva?: string | null
           acao_preventiva?: string | null
+          aprovador_id?: string | null
           area_id?: string | null
           auditoria_id?: string | null
           causa_raiz?: string | null
@@ -192,13 +199,22 @@ export type Database = {
           plano_acao?: string | null
           prazo?: string | null
           responsavel?: string | null
+          responsavel_acao_id?: string | null
           responsavel_email?: string | null
+          responsavel_nc_id?: string | null
           severidade?: string
           status?: string
           updated_at?: string
           updated_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "nao_conformidades_aprovador_id_fkey"
+            columns: ["aprovador_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "nao_conformidades_area_id_fkey"
             columns: ["area_id"]
@@ -211,6 +227,20 @@ export type Database = {
             columns: ["auditoria_id"]
             isOneToOne: false
             referencedRelation: "auditorias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nao_conformidades_responsavel_acao_id_fkey"
+            columns: ["responsavel_acao_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nao_conformidades_responsavel_nc_id_fkey"
+            columns: ["responsavel_nc_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
