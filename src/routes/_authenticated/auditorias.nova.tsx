@@ -144,17 +144,19 @@ function NovaAuditoria() {
         .eq("id", inserted.id);
     }
 
-    // Gerar ações corretivas para critérios marcados como Não Conforme
+    // Ação corretiva automática para todo critério com nota < 6
     const ncRows = CRITERIOS_5S
-      .filter((c) => ncs[c.key].marked)
+      .filter((c) => scores[c.key] < 6)
       .map((c) => {
-        const n = ncs[c.key];
+        const nota = scores[c.key];
+        const comentario = comentarios[c.key].trim();
         return {
           auditoria_id: inserted.id,
           area_id: areaId,
           criterio: c.nome,
-          descricao: n.descricao.trim() || `Não conformidade identificada em ${c.nome}`,
-          severidade: "media",
+          descricao:
+            comentario || `Não conformidade identificada em ${c.nome} (nota ${nota}).`,
+          severidade: severidadePorNota(nota),
           status: "aberta",
           responsavel: ncResponsavel.trim() || null,
           responsavel_email: ncResponsavelEmail.trim() || null,
