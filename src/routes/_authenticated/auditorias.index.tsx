@@ -33,7 +33,7 @@ function AuditoriasList() {
   const [filtro, setFiltro] = useState<Filtro>("ativas");
   const [toDelete, setToDelete] = useState<any | null>(null);
   const [justificativa, setJustificativa] = useState("");
-  const { role, isAdmin, canManageUsers } = useCurrentRole();
+  const { role, isAdmin } = useCurrentRole();
   const canDelete = isAdmin || role === "gestor";
   const canRestore = isAdmin;
   const qc = useQueryClient();
