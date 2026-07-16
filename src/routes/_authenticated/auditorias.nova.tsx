@@ -168,6 +168,11 @@ function NovaAuditoria() {
         .eq("id", inserted.id);
     }
 
+    const users = usuariosQ.data ?? [];
+    const respUser = users.find((u: any) => u.id === ncResponsavelAcaoId) as any;
+    const { data: userData } = await supabase.auth.getUser();
+    const criadorId = userData.user?.id ?? null;
+
     // Ação corretiva automática para todo critério com nota < 6
     const ncRows = CRITERIOS_5S
       .filter((c) => scores[c.key] < 6)
@@ -182,8 +187,11 @@ function NovaAuditoria() {
             comentario || `Não conformidade identificada em ${c.nome} (nota ${nota}).`,
           severidade: severidadePorNota(nota),
           status: "aberta",
-          responsavel: ncResponsavel.trim() || null,
-          responsavel_email: ncResponsavelEmail.trim() || null,
+          responsavel: respUser?.nome ?? null,
+          responsavel_email: respUser?.email ?? null,
+          responsavel_nc_id: criadorId,
+          responsavel_acao_id: ncResponsavelAcaoId || null,
+          aprovador_id: ncAprovadorId || null,
           prazo: ncPrazo || null,
         };
       });
@@ -191,6 +199,7 @@ function NovaAuditoria() {
       const { error: ncErr } = await supabase.from("nao_conformidades").insert(ncRows);
       if (ncErr) toast.error("Erro ao gerar ações corretivas: " + ncErr.message);
     }
+
 
     setSaving(false);
     toast.success(
