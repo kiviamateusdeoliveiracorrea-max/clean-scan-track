@@ -511,7 +511,9 @@ function NCList() {
               ? (n.foto_urls as string[]).map((p) => fotoPublicUrl(p)).filter(Boolean) as string[]
               : [];
             const allFotos = Array.from(new Set([...(legacy ? [legacy] : []), ...extras]));
-            const isPend = n.status === "aberta" || n.status === "em_andamento";
+            const isPend = ["aberta", "em_andamento", "reprovada"].includes(n.status);
+            const isWaitingApproval = n.status === "aguardando_aprovacao";
+            const isClosed = n.status === "encerrada" || n.status === "aprovada" || n.status === "concluida";
             return (
               <Card
                 key={n.id}
