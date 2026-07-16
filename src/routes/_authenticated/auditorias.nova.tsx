@@ -30,6 +30,8 @@ function NovaAuditoria() {
   const [data, setData] = useState(() => new Date().toISOString().slice(0, 10));
   const [observacoes, setObservacoes] = useState("");
   const [saving, setSaving] = useState(false);
+  const [fotos, setFotos] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
   const [scores, setScores] = useState<Record<Criterio5SKey, number>>({
     seiri: 7,
     seiton: 7,
@@ -37,6 +39,21 @@ function NovaAuditoria() {
     seiketsu: 7,
     shitsuke: 7,
   });
+
+  const addFotos = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const arr = Array.from(files);
+    setFotos((f) => [...f, ...arr]);
+    setPreviews((p) => [...p, ...arr.map((f) => URL.createObjectURL(f))]);
+  };
+
+  const removeFoto = (idx: number) => {
+    setFotos((f) => f.filter((_, i) => i !== idx));
+    setPreviews((p) => {
+      URL.revokeObjectURL(p[idx]);
+      return p.filter((_, i) => i !== idx);
+    });
+  };
 
   const areasQ = useQuery({
     queryKey: ["areas"],
