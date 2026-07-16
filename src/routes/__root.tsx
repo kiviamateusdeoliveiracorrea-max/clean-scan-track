@@ -218,14 +218,12 @@ function AppShell({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen w-full bg-background">
       {/* Sidebar desktop */}
       <aside className="hidden lg:flex w-64 shrink-0 flex-col bg-sidebar text-sidebar-foreground">
-        <div className="flex items-center gap-2 px-6 py-5 border-b border-sidebar-border">
-          <div className="grid h-9 w-9 place-items-center rounded-md bg-accent text-accent-foreground">
-            <Boxes className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-sm font-bold leading-tight">AuditLog 5S</p>
-            <p className="text-[11px] text-sidebar-foreground/60">Logística</p>
-          </div>
+        <div className="flex items-center gap-3 px-6 py-5 border-b border-sidebar-border bg-white">
+          <img
+            src={logoAsset.url}
+            alt="Intralog JSL"
+            className="h-10 w-auto max-w-full object-contain"
+          />
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {visibleNav.map((item) => {
