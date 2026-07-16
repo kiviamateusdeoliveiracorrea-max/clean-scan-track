@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +22,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AlertTriangle, Calendar, User, MapPin, Pencil } from "lucide-react";
+import {
+  AlertTriangle,
+  Calendar,
+  User,
+  MapPin,
+  Pencil,
+  CheckCircle2,
+  Camera,
+  X,
+} from "lucide-react";
 import { STATUS_NC, SEVERIDADES } from "@/lib/audit-constants";
 import { useCurrentRole } from "@/hooks/use-current-role";
 import { toast } from "sonner";
@@ -31,17 +41,26 @@ export const Route = createFileRoute("/_authenticated/nao-conformidades")({
 });
 
 function NCList() {
-  const [status, setStatus] = useState("todos");
+  const [status, setStatus] = useState<"pendentes" | "todos" | string>("pendentes");
   const [sev, setSev] = useState("todos");
-  const { canManageNC } = useCurrentRole();
+  const { canManageNC, canResolveNC } = useCurrentRole();
   const qc = useQueryClient();
 
+  // Edição de responsabilidade (admin/gestor)
   const [editing, setEditing] = useState<any | null>(null);
   const [editResp, setEditResp] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [editPrazo, setEditPrazo] = useState("");
   const [editStatus, setEditStatus] = useState("aberta");
   const [saving, setSaving] = useState(false);
+
+  // Tratativa / conclusão
+  const [resolving, setResolving] = useState<any | null>(null);
+  const [planoAcao, setPlanoAcao] = useState("");
+  const [novoStatus, setNovoStatus] = useState<string>("concluida");
+  const [foto, setFoto] = useState<File | null>(null);
+  const [fotoPreview, setFotoPreview] = useState<string | null>(null);
+  const [resolveSaving, setResolveSaving] = useState(false);
 
   const { data = [] } = useQuery({
     queryKey: ["ncs-all"],
@@ -92,8 +111,83 @@ function NCList() {
     qc.invalidateQueries({ queryKey: ["ncs-all"] });
   };
 
+  const openResolve = (n: any) => {
+    setResolving(n);
+    setPlanoAcao(n.plano_acao ?? "");
+    setNovoStatus(n.status === "concluida" ? "concluida" : "concluida");
+    setFoto(null);
+    if (fotoPreview) URL.revokeObjectURL(fotoPreview);
+    setFotoPreview(null);
+  };
+
+  const closeResolve = () => {
+    setResolving(null);
+    setFoto(null);
+    if (fotoPreview) URL.revokeObjectURL(fotoPreview);
+    setFotoPreview(null);
+  };
+
+  const onPickFoto = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const f = files[0];
+    setFoto(f);
+    if (fotoPreview) URL.revokeObjectURL(fotoPreview);
+    setFotoPreview(URL.createObjectURL(f));
+  };
+
+  const saveResolve = async () => {
+    if (!resolving) return;
+    if (!planoAcao.trim()) {
+      toast.error("Descreva o que foi realizado (tratativa).");
+      return;
+    }
+    setResolveSaving(true);
+    let fotoPath: string | undefined;
+    if (foto) {
+      const ext = foto.name.split(".").pop() || "jpg";
+      const path = `${resolving.auditoria_id ?? "nc"}/tratativa-${resolving.id}-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("audit-photos")
+        .upload(path, foto);
+      if (upErr) {
+        setResolveSaving(false);
+        return toast.error("Erro no upload: " + upErr.message);
+      }
+      fotoPath = path;
+    }
+    const update: {
+      plano_acao: string;
+      status: string;
+      foto_url?: string;
+    } = {
+      plano_acao: planoAcao.trim(),
+      status: novoStatus,
+    };
+    if (fotoPath) update.foto_url = fotoPath;
+    const { error } = await supabase
+      .from("nao_conformidades")
+      .update(update)
+      .eq("id", resolving.id);
+    setResolveSaving(false);
+    if (error) return toast.error(error.message);
+    toast.success("Tratativa registrada");
+    closeResolve();
+    qc.invalidateQueries({ queryKey: ["ncs-all"] });
+  };
+
+  const fotoPublicUrl = (path?: string | null) => {
+    if (!path) return null;
+    if (path.startsWith("http")) return path;
+    return supabase.storage.from("audit-photos").getPublicUrl(path).data.publicUrl;
+  };
+
+  const pendentes = data.filter(
+    (n: any) => n.status === "aberta" || n.status === "em_andamento",
+  );
   const filtered = data.filter((n: any) => {
-    if (status !== "todos" && n.status !== status) return false;
+    if (status === "pendentes") {
+      if (n.status !== "aberta" && n.status !== "em_andamento") return false;
+    } else if (status !== "todos" && n.status !== status) return false;
     if (sev !== "todos" && n.severidade !== sev) return false;
     return true;
   });
@@ -119,17 +213,18 @@ function NCList() {
           Não Conformidades
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          {data.length} registro(s) no total
+          {pendentes.length} pendente(s) · {data.length} no total
           {canManageNC && " · Você pode editar responsáveis e prazos"}
         </p>
       </header>
 
       <div className="flex flex-col sm:flex-row gap-3">
         <Select value={status} onValueChange={setStatus}>
-          <SelectTrigger className="sm:w-48">
+          <SelectTrigger className="sm:w-56">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="pendentes">Pendentes ({pendentes.length})</SelectItem>
             <SelectItem value="todos">Todos os status</SelectItem>
             {STATUS_NC.map((s) => (
               <SelectItem key={s.value} value={s.value}>
@@ -161,66 +256,103 @@ function NCList() {
         </Card>
       ) : (
         <div className="space-y-3">
-          {filtered.map((n: any) => (
-            <Card key={n.id} className="hover:border-accent transition-colors">
-              <CardContent className="p-4 space-y-2">
-                <div className="flex items-start justify-between gap-2">
-                  <Link
-                    to="/auditorias/$id"
-                    params={{ id: n.auditoria_id }}
-                    className="flex-1 min-w-0 space-y-2"
-                  >
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge className={`${statusColor[n.status] ?? ""} border-0`}>
-                        {STATUS_NC.find((s) => s.value === n.status)?.label ?? n.status}
-                      </Badge>
-                      <Badge className={`${sevColor[n.severidade] ?? ""} border-0`}>
-                        {SEVERIDADES.find((s) => s.value === n.severidade)?.label ?? n.severidade}
-                      </Badge>
-                      <Badge variant="outline">{n.criterio}</Badge>
-                    </div>
-                    <p className="text-sm font-medium">{n.descricao}</p>
-                    <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                      {n.areas?.nome && (
-                        <span className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          {n.areas.nome}
-                        </span>
-                      )}
-                      {n.auditorias?.data_auditoria && (
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {new Date(n.auditorias.data_auditoria).toLocaleDateString("pt-BR")}
-                        </span>
-                      )}
-                      {n.responsavel && (
-                        <span className="flex items-center gap-1">
-                          <User className="h-3 w-3" />
-                          {n.responsavel}
-                        </span>
-                      )}
-                      {n.prazo && (
-                        <span>Prazo: {new Date(n.prazo).toLocaleDateString("pt-BR")}</span>
-                      )}
-                    </div>
-                  </Link>
-                  {canManageNC && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openEdit(n)}
-                      className="shrink-0"
+          {filtered.map((n: any) => {
+            const foto = fotoPublicUrl(n.foto_url);
+            const isPend = n.status === "aberta" || n.status === "em_andamento";
+            return (
+              <Card key={n.id} className="hover:border-accent transition-colors">
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <Link
+                      to="/auditorias/$id"
+                      params={{ id: n.auditoria_id }}
+                      className="flex-1 min-w-0 space-y-2"
                     >
-                      <Pencil className="h-3 w-3 mr-1" /> Editar
-                    </Button>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge className={`${statusColor[n.status] ?? ""} border-0`}>
+                          {STATUS_NC.find((s) => s.value === n.status)?.label ?? n.status}
+                        </Badge>
+                        <Badge className={`${sevColor[n.severidade] ?? ""} border-0`}>
+                          {SEVERIDADES.find((s) => s.value === n.severidade)?.label ??
+                            n.severidade}
+                        </Badge>
+                        <Badge variant="outline">{n.criterio}</Badge>
+                      </div>
+                      <p className="text-sm font-medium">{n.descricao}</p>
+                      <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                        {n.areas?.nome && (
+                          <span className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {n.areas.nome}
+                          </span>
+                        )}
+                        {n.auditorias?.data_auditoria && (
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {new Date(n.auditorias.data_auditoria).toLocaleDateString("pt-BR")}
+                          </span>
+                        )}
+                        {n.responsavel && (
+                          <span className="flex items-center gap-1">
+                            <User className="h-3 w-3" />
+                            {n.responsavel}
+                          </span>
+                        )}
+                        {n.prazo && (
+                          <span>Prazo: {new Date(n.prazo).toLocaleDateString("pt-BR")}</span>
+                        )}
+                      </div>
+                    </Link>
+                    <div className="flex flex-col gap-2 shrink-0">
+                      {canResolveNC && isPend && (
+                        <Button
+                          size="sm"
+                          onClick={() => openResolve(n)}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                        >
+                          <CheckCircle2 className="h-3 w-3 mr-1" /> Tratativa
+                        </Button>
+                      )}
+                      {canResolveNC && !isPend && (n.plano_acao || n.foto_url) && (
+                        <Button variant="outline" size="sm" onClick={() => openResolve(n)}>
+                          <Pencil className="h-3 w-3 mr-1" /> Tratativa
+                        </Button>
+                      )}
+                      {canManageNC && (
+                        <Button variant="outline" size="sm" onClick={() => openEdit(n)}>
+                          <Pencil className="h-3 w-3 mr-1" /> Editar
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  {(n.plano_acao || foto) && (
+                    <div className="rounded-md border bg-muted/30 p-3 space-y-2">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        Tratativa realizada
+                      </p>
+                      {n.plano_acao && (
+                        <p className="text-sm whitespace-pre-wrap">{n.plano_acao}</p>
+                      )}
+                      {foto && (
+                        <a href={foto} target="_blank" rel="noreferrer">
+                          <img
+                            src={foto}
+                            alt="Foto da tratativa"
+                            className="max-h-48 rounded-md border object-cover"
+                          />
+                        </a>
+                      )}
+                    </div>
                   )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 
+      {/* Dialog: editar responsabilidade */}
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <DialogContent>
           <DialogHeader>
@@ -288,6 +420,118 @@ function NCList() {
             </Button>
             <Button onClick={saveEdit} disabled={saving}>
               {saving ? "Salvando..." : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: registrar tratativa / concluir */}
+      <Dialog open={!!resolving} onOpenChange={(o) => !o && closeResolve()}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Registrar tratativa</DialogTitle>
+          </DialogHeader>
+          {resolving && (
+            <div className="space-y-3">
+              <div className="rounded-md bg-muted/40 p-3 text-sm">
+                <p className="font-medium">{resolving.criterio}</p>
+                <p className="text-muted-foreground">{resolving.descricao}</p>
+              </div>
+              <div>
+                <Label>O que foi realizado</Label>
+                <Textarea
+                  value={planoAcao}
+                  onChange={(e) => setPlanoAcao(e.target.value)}
+                  placeholder="Descreva a ação executada..."
+                  rows={4}
+                />
+              </div>
+              <div>
+                <Label>Foto da tratativa (opcional)</Label>
+                <div className="grid grid-cols-2 gap-2 mt-1">
+                  <label className="flex flex-col items-center justify-center gap-1 border-2 border-dashed rounded-md aspect-square cursor-pointer hover:bg-muted/50 text-xs text-muted-foreground">
+                    <Camera className="h-6 w-6" />
+                    <span>Tirar foto</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      onChange={(e) => {
+                        onPickFoto(e.target.files);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                  <label className="flex flex-col items-center justify-center gap-1 border-2 border-dashed rounded-md aspect-square cursor-pointer hover:bg-muted/50 text-xs text-muted-foreground">
+                    <Camera className="h-6 w-6" />
+                    <span>Galeria</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        onPickFoto(e.target.files);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                </div>
+                {fotoPreview && (
+                  <div className="relative mt-2 inline-block">
+                    <img
+                      src={fotoPreview}
+                      alt="Preview"
+                      className="max-h-40 rounded-md border object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (fotoPreview) URL.revokeObjectURL(fotoPreview);
+                        setFotoPreview(null);
+                        setFoto(null);
+                      }}
+                      className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 hover:bg-black/80"
+                      aria-label="Remover foto"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
+                {resolving.foto_url && !fotoPreview && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Já existe uma foto anexada. Adicionar uma nova irá substituir.
+                  </p>
+                )}
+              </div>
+              <div>
+                <Label>Status após a tratativa</Label>
+                <Select value={novoStatus} onValueChange={setNovoStatus}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_NC.map((s) => (
+                      <SelectItem key={s.value} value={s.value}>
+                        {s.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={closeResolve}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={saveResolve}
+              disabled={resolveSaving}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              <CheckCircle2 className="h-4 w-4 mr-1" />
+              {resolveSaving ? "Salvando..." : "Registrar tratativa"}
             </Button>
           </DialogFooter>
         </DialogContent>

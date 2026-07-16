@@ -27,6 +27,8 @@ export function useCurrentRole() {
     isAdmin: role === "administrador",
     isGestor: role === "gestor",
     canManageNC: role === "administrador" || role === "gestor",
+    canResolveNC:
+      role === "administrador" || role === "gestor" || role === "auditor",
     isLoading: q.isLoading,
   };
 }
