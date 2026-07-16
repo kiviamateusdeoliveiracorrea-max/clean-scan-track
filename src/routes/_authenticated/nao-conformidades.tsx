@@ -155,7 +155,11 @@ function NCList() {
       }
       fotoPath = path;
     }
-    const update: Record<string, any> = {
+    const update: {
+      plano_acao: string;
+      status: string;
+      foto_url?: string;
+    } = {
       plano_acao: planoAcao.trim(),
       status: novoStatus,
     };
