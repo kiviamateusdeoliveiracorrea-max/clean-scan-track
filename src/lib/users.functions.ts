@@ -94,16 +94,17 @@ export const getMyRoles = createServerFn({ method: "GET" })
 
 export const listUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    await assertManager(context.supabase, context.userId);
+  .handler(async ({ context: _context }) => {
+    // Todos os usuários autenticados podem visualizar a lista.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data: profiles, error: pErr } = await context.supabase
+    const { data: profiles, error: pErr } = await supabaseAdmin
       .from("profiles")
       .select("id, nome, email, cargo, area_id, ativo, created_at, areas(nome)")
       .order("created_at", { ascending: false });
     if (pErr) throw new Error(pErr.message);
 
-    const { data: roles, error: rErr } = await context.supabase
+    const { data: roles, error: rErr } = await supabaseAdmin
       .from("user_roles")
       .select("user_id, role");
     if (rErr) throw new Error(rErr.message);
