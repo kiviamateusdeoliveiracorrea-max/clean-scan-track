@@ -66,14 +66,17 @@ function AuthPage() {
   return (
     <div className="min-h-screen w-full grid place-items-center bg-gradient-to-br from-primary/5 via-background to-accent/5 px-4 py-10">
       <div className="w-full max-w-md">
-        <div className="flex items-center gap-3 justify-center mb-6">
-          <div className="grid h-12 w-12 place-items-center rounded-lg bg-primary text-primary-foreground">
-            <Boxes className="h-6 w-6" />
+        <div className="flex flex-col items-center gap-3 mb-6">
+          <div className="rounded-lg bg-white px-6 py-4 shadow-sm border border-border">
+            <img
+              src={logoAsset.url}
+              alt="Intralog JSL"
+              className="h-12 md:h-14 w-auto object-contain"
+            />
           </div>
-          <div>
-            <p className="text-lg font-bold leading-tight">AuditLog 5S</p>
-            <p className="text-xs text-muted-foreground">Auditoria de Housekeeping Logístico</p>
-          </div>
+          <p className="text-xs text-muted-foreground text-center">
+            Auditoria de Housekeeping Logístico
+          </p>
         </div>
 
         <Card>
