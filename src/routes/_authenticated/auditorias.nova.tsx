@@ -99,6 +99,15 @@ function NovaAuditoria() {
       toast.error("Selecione a área e o auditor");
       return;
     }
+    const semComentario = CRITERIOS_5S.filter(
+      (c) => scores[c.key] < 8 && !comentarios[c.key].trim(),
+    );
+    if (semComentario.length > 0) {
+      toast.error(
+        `Comentário obrigatório para: ${semComentario.map((c) => c.nome).join(", ")} (nota < 8)`,
+      );
+      return;
+    }
     setSaving(true);
     const { data: inserted, error } = await supabase
       .from("auditorias")
