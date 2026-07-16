@@ -237,6 +237,55 @@ function Dashboard() {
         </Card>
       </div>
 
+      {/* Evolução mensal + Ranking */}
+      <div className="grid lg:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Evolução mensal (média)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {mesChart.length === 0 ? (
+              <EmptyChart />
+            ) : (
+              <ResponsiveContainer width="100%" height={240}>
+                <LineChart data={mesChart}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
+                  <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
+                  <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="media" stroke="#1E40AF" strokeWidth={2.5} dot={{ r: 4, fill: "#F59E0B" }} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Ranking de áreas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {areaChart.length === 0 ? (
+              <EmptyChart />
+            ) : (
+              <ol className="space-y-2">
+                {areaChart.map((a, i) => (
+                  <li key={a.nome} className="flex items-center gap-3">
+                    <span className="grid h-7 w-7 place-items-center rounded-full bg-primary/10 text-primary text-xs font-bold shrink-0">
+                      {i + 1}
+                    </span>
+                    <span className="flex-1 truncate text-sm">{a.nome}</span>
+                    <Badge className={`${classificaPontuacao(a.media).color} border-0 font-semibold`}>
+                      {a.media}%
+                    </Badge>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Recentes */}
       <Card>
         <CardHeader className="flex-row items-center justify-between">
