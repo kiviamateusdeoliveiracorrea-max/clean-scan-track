@@ -24,8 +24,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Trash2, UserPlus, Loader2 } from "lucide-react";
+import { Trash2, UserPlus, Loader2, Lock } from "lucide-react";
 import { normalizeUserEmail } from "@/lib/email-normalization";
+import { useCurrentRole } from "@/hooks/use-current-role";
 
 export const Route = createFileRoute("/_authenticated/usuarios")({
   component: UsuariosPage,
