@@ -269,6 +269,12 @@ function NCList() {
     const { data: userData } = await supabase.auth.getUser();
     const uid = userData.user?.id ?? null;
 
+    const totalPhotos = mergedPhotos.length;
+    const totalDocs = mergedDocs.length;
+    const hasEvidencia = totalPhotos > 0 || totalDocs > 0;
+    // Ao concluir a ação e anexar evidências → aguardando aprovação
+    const novoStatus = hasEvidencia ? "aguardando_aprovacao" : "em_andamento";
+
     const update: any = {
       plano_acao: planoAcao.trim(),
       causa_raiz: causaRaiz.trim() || null,
@@ -276,6 +282,7 @@ function NCList() {
       acao_preventiva: acaoPreventiva.trim() || null,
       status: novoStatus,
       updated_by: uid,
+      data_conclusao: hasEvidencia ? new Date().toISOString() : resolving.data_conclusao ?? null,
     };
     if (uploadedPhotos.length > 0) {
       update.foto_urls = mergedPhotos;
@@ -299,7 +306,7 @@ function NCList() {
       nc_id: resolving.id,
       user_id: uid,
       user_nome: userNome,
-      acao: novoStatus === "concluida" ? "Tratativa concluída" : "Tratativa atualizada",
+      acao: hasEvidencia ? "Ação concluída — aguardando aprovação" : "Tratativa atualizada",
       comentario: planoAcao.trim(),
     });
 
