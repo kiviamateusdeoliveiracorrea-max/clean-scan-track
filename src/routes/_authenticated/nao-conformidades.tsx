@@ -389,7 +389,14 @@ function NCList() {
             const allFotos = Array.from(new Set([...(legacy ? [legacy] : []), ...extras]));
             const isPend = n.status === "aberta" || n.status === "em_andamento";
             return (
-              <Card key={n.id} className="hover:border-accent transition-colors">
+              <Card
+                key={n.id}
+                className={`hover:border-accent transition-colors ${
+                  n.severidade === "critica"
+                    ? "border-red-400 border-l-4 border-l-red-500 bg-red-50/40"
+                    : ""
+                }`}
+              >
                 <CardContent className="p-4 space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <Link
