@@ -110,21 +110,75 @@ function NCList() {
   const saveEdit = async () => {
     if (!editing) return;
     setSaving(true);
+    const users = usuariosQ.data ?? [];
+    const nomeOf = (id: string) =>
+      (users.find((u: any) => u.id === id) as any)?.nome ?? null;
+    const emailOf = (id: string) =>
+      (users.find((u: any) => u.id === id) as any)?.email ?? null;
+    const newRespAcaoId = editRespAcao || null;
+    const patch: any = {
+      responsavel_nc_id: editRespNc || null,
+      responsavel_acao_id: newRespAcaoId,
+      aprovador_id: editAprovador || null,
+      responsavel: newRespAcaoId ? nomeOf(newRespAcaoId) : null,
+      responsavel_email: newRespAcaoId ? emailOf(newRespAcaoId) : null,
+      prazo: editPrazo || null,
+      status: editStatus,
+    };
     const { error } = await supabase
       .from("nao_conformidades")
-      .update({
-        responsavel: editResp.trim() || null,
-        responsavel_email: editEmail.trim() || null,
-        prazo: editPrazo || null,
-        status: editStatus,
-      })
+      .update(patch)
       .eq("id", editing.id);
+    if (error) {
+      setSaving(false);
+      return toast.error(error.message);
+    }
+
+    // Registrar reatribuições no histórico
+    const { data: userData } = await supabase.auth.getUser();
+    const uid = userData.user?.id ?? null;
+    let quem: string | null = null;
+    if (uid) {
+      const { data: p } = await supabase.from("profiles").select("nome").eq("id", uid).maybeSingle();
+      quem = (p as any)?.nome ?? null;
+    }
+    const changes: { campo: string; antes: string | null; depois: string | null }[] = [];
+    const trackers: [string, string | null, string | null][] = [
+      ["Responsável pela NC", editing.responsavel_nc_id, editRespNc || null],
+      ["Responsável pela Ação", editing.responsavel_acao_id, newRespAcaoId],
+      ["Aprovador", editing.aprovador_id, editAprovador || null],
+    ];
+    for (const [campo, antes, depois] of trackers) {
+      if ((antes || null) !== (depois || null)) {
+        changes.push({
+          campo,
+          antes: antes ? nomeOf(antes) ?? "—" : null,
+          depois: depois ? nomeOf(depois) ?? "—" : null,
+        });
+      }
+    }
+    if (changes.length > 0) {
+      await supabase.from("nc_historico").insert(
+        changes.map((c) => ({
+          nc_id: editing.id,
+          user_id: uid,
+          user_nome: quem,
+          acao: `${c.campo} alterado`,
+          comentario: `${c.antes ?? "sem responsável"} → ${c.depois ?? "sem responsável"}`,
+        })),
+      );
+    }
+
     setSaving(false);
-    if (error) return toast.error(error.message);
     toast.success("Atualizado");
+    if (changes.some((c) => c.campo === "Responsável pela Ação") && newRespAcaoId) {
+      toast.info("Notificação por e-mail requer domínio configurado em Cloud → Emails.");
+    }
     setEditing(null);
     qc.invalidateQueries({ queryKey: ["ncs-all"] });
+    qc.invalidateQueries({ queryKey: ["nc-historico", editing.id] });
   };
+
 
   const openResolve = (n: any) => {
     setResolving(n);
