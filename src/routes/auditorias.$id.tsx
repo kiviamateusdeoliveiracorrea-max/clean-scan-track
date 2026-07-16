@@ -263,7 +263,7 @@ function NCItem({ nc, onChanged }: { nc: any; onChanged: () => void }) {
             </p>
           )}
           <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-            {nc.responsavel && <span>Resp.: {nc.responsavel}</span>}
+            {nc.responsavel && <span>Resp.: {nc.responsavel}{nc.responsavel_email ? ` (${nc.responsavel_email})` : ""}</span>}
             {nc.prazo && (
               <span>Prazo: {new Date(nc.prazo).toLocaleDateString("pt-BR")}</span>
             )}
