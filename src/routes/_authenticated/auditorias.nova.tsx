@@ -294,76 +294,17 @@ function NovaAuditoria() {
                     </span>
                   </label>
                   {ncs[c.key].marked && (
-                    <div className="space-y-2">
-                      <Textarea
-                        value={ncs[c.key].descricao}
-                        onChange={(e) =>
-                          setNcs((n) => ({
-                            ...n,
-                            [c.key]: { ...n[c.key], descricao: e.target.value },
-                          }))
-                        }
-                        placeholder={`Descreva a não conformidade em ${c.nome}...`}
-                        rows={2}
-                      />
-                      <div className="grid gap-2 sm:grid-cols-3">
-                        <div>
-                          <Label className="text-xs">Responsável pela tratativa</Label>
-                          <Select
-                            value={ncs[c.key].responsavel || undefined}
-                            onValueChange={(v) => {
-                              const auditor = (auditoresQ.data ?? []).find((a: any) => a.nome === v);
-                              setNcs((n) => ({
-                                ...n,
-                                [c.key]: {
-                                  ...n[c.key],
-                                  responsavel: v,
-                                  responsavel_email: auditor?.email ?? n[c.key].responsavel_email,
-                                },
-                              }));
-                            }}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {(auditoresQ.data ?? []).map((a: any) => (
-                                <SelectItem key={a.id} value={a.nome}>
-                                  {a.nome}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label className="text-xs">E-mail para envio</Label>
-                          <Input
-                            type="email"
-                            value={ncs[c.key].responsavel_email}
-                            onChange={(e) =>
-                              setNcs((n) => ({
-                                ...n,
-                                [c.key]: { ...n[c.key], responsavel_email: e.target.value },
-                              }))
-                            }
-                            placeholder="email@empresa.com"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Prazo</Label>
-                          <Input
-                            type="date"
-                            value={ncs[c.key].prazo}
-                            onChange={(e) =>
-                              setNcs((n) => ({
-                                ...n,
-                                [c.key]: { ...n[c.key], prazo: e.target.value },
-                              }))
-                            }
-                          />
-                        </div>
-                      </div>
-                    </div>
+                    <Textarea
+                      value={ncs[c.key].descricao}
+                      onChange={(e) =>
+                        setNcs((n) => ({
+                          ...n,
+                          [c.key]: { ...n[c.key], descricao: e.target.value },
+                        }))
+                      }
+                      placeholder={`Descreva a não conformidade em ${c.nome}...`}
+                      rows={2}
+                    />
                   )}
                 </div>
               </div>
