@@ -38,6 +38,7 @@ function Dashboard() {
       const { data, error } = await supabase
         .from("auditorias")
         .select("*, areas(nome), auditores(nome)")
+        .neq("status", "cancelada")
         .order("data_auditoria", { ascending: false })
         .limit(50);
       if (error) throw error;
