@@ -19,7 +19,6 @@ import {
   History,
   Menu,
   X,
-  Boxes,
   Users,
   LogOut,
 } from "lucide-react";
@@ -28,7 +27,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
-import logoAsset from "@/assets/logo-empresas.png.asset.json";
+import logoAsset from "@/assets/intralog-logo.png.asset.json";
 import { getMyRoles, type AppRole } from "@/lib/users.functions";
 
 function NotFoundComponent() {
@@ -218,14 +217,12 @@ function AppShell({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen w-full bg-background">
       {/* Sidebar desktop */}
       <aside className="hidden lg:flex w-64 shrink-0 flex-col bg-sidebar text-sidebar-foreground">
-        <div className="flex items-center gap-2 px-6 py-5 border-b border-sidebar-border">
-          <div className="grid h-9 w-9 place-items-center rounded-md bg-accent text-accent-foreground">
-            <Boxes className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-sm font-bold leading-tight">AuditLog 5S</p>
-            <p className="text-[11px] text-sidebar-foreground/60">Logística</p>
-          </div>
+        <div className="flex items-center gap-3 px-6 py-5 border-b border-sidebar-border bg-white">
+          <img
+            src={logoAsset.url}
+            alt="Intralog JSL"
+            className="h-10 w-auto max-w-full object-contain"
+          />
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {visibleNav.map((item) => {
@@ -273,16 +270,15 @@ function AppShell({ children }: { children: ReactNode }) {
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
           <aside className="absolute left-0 top-0 h-full w-72 bg-sidebar text-sidebar-foreground flex flex-col">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-sidebar-border">
-              <div className="flex items-center gap-2">
-                <div className="grid h-9 w-9 place-items-center rounded-md bg-accent text-accent-foreground">
-                  <Boxes className="h-5 w-5" />
-                </div>
-                <span className="font-bold">AuditLog 5S</span>
-              </div>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-sidebar-border bg-white">
+              <img
+                src={logoAsset.url}
+                alt="Intralog JSL"
+                className="h-8 w-auto max-w-[70%] object-contain"
+              />
               <button
                 onClick={() => setOpen(false)}
-                className="p-2 rounded hover:bg-sidebar-accent"
+                className="p-2 rounded hover:bg-sidebar-accent text-sidebar-foreground"
                 aria-label="Fechar"
               >
                 <X className="h-5 w-5" />
@@ -337,11 +333,12 @@ function AppShell({ children }: { children: ReactNode }) {
             >
               <Menu className="h-5 w-5" />
             </button>
-            <div className="flex items-center gap-2">
-              <div className="grid h-7 w-7 place-items-center rounded bg-accent text-accent-foreground">
-                <Boxes className="h-4 w-4" />
-              </div>
-              <span className="font-bold text-sm">AuditLog 5S</span>
+            <div className="flex items-center gap-2 bg-white rounded px-2 py-1">
+              <img
+                src={logoAsset.url}
+                alt="Intralog JSL"
+                className="h-6 w-auto object-contain"
+              />
             </div>
           </div>
           {userEmail && (
@@ -354,13 +351,6 @@ function AppShell({ children }: { children: ReactNode }) {
             </button>
           )}
         </header>
-        <div className="w-full bg-white border-b border-border">
-          <img
-            src={logoAsset.url}
-            alt="Grupo JSL — Intralog, JSL Digital, Fadel, Trans Moreno, TPC Rodomeu, Marvel, Truckpad, IC Transportes, FSJ"
-            className="mx-auto h-8 md:h-10 w-auto max-w-full object-contain py-2 px-4"
-          />
-        </div>
         <main className="flex-1 min-w-0">{children}</main>
       </div>
     </div>
