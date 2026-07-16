@@ -43,6 +43,7 @@ const ROLE_OPTIONS: AppRole[] = ["administrador", "auditor", "gestor", "consulta
 
 function UsuariosPage() {
   const qc = useQueryClient();
+  const { canManageUsers, isLoading: roleLoading } = useCurrentRole();
   const { data: users, isLoading, error } = useQuery({
     queryKey: ["users"],
     queryFn: () => listUsers(),
