@@ -3,6 +3,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { z } from "zod";
+import { normalizeUserEmail } from "@/lib/email-normalization";
 
 const ROLES = ["administrador", "auditor", "gestor", "consulta"] as const;
 export type AppRole = (typeof ROLES)[number];
@@ -68,7 +69,7 @@ export const bootstrapFirstAdmin = createServerFn({ method: "POST" })
 
     const anon = createAnonClient();
     const { data: created, error } = await anon.auth.signUp({
-      email: data.email,
+      email: normalizeUserEmail(data.email),
       password: data.password,
       options: { data: { nome: data.nome, role: "administrador" } },
     });
@@ -146,7 +147,7 @@ export const createUser = createServerFn({ method: "POST" })
     await assertAdmin(context.supabase, context.userId);
     const anon = createAnonClient();
     const { data: created, error } = await anon.auth.signUp({
-      email: data.email,
+      email: normalizeUserEmail(data.email),
       password: data.password,
       options: { data: { nome: data.nome, role: data.role } },
     });

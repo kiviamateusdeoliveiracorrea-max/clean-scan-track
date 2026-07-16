@@ -161,12 +161,17 @@ const navItems: NavItem[] = [
 function AppShell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const router = useRouter();
   const navigate = useNavigate();
 
   // Página de login: renderiza sem shell
   const isAuthRoute = pathname === "/auth" || pathname.startsWith("/auth/");
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   useEffect(() => {
     setOpen(false);
@@ -199,6 +204,10 @@ function AppShell({ children }: { children: ReactNode }) {
 
   const isActive = (to: string, exact?: boolean) =>
     exact ? pathname === to : pathname === to || pathname.startsWith(to + "/");
+
+  if (!hydrated) {
+    return <div className="min-h-screen bg-background">{children}</div>;
+  }
 
   if (isAuthRoute) {
     return <div className="min-h-screen bg-background">{children}</div>;
