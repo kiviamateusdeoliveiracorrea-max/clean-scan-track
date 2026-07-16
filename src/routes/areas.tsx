@@ -98,7 +98,7 @@ function AreasPage() {
       </header>
 
       {data.length === 0 ? (
-        <Card><CardContent className="py-12 text-center text-sm text-muted-foreground">Nenhuma área cadastrada.</CardContent></Card>
+        <Card><CardContent className="py-12 text-center text-sm text-muted-foreground">Almoxarifado</CardContent></Card>
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
           {data.map((a: any) => (
