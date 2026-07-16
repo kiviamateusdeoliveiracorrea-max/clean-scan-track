@@ -199,11 +199,17 @@ function NCList() {
   const pendentes = data.filter(
     (n: any) => n.status === "aberta" || n.status === "em_andamento",
   );
+  const responsaveis = Array.from(
+    new Set(data.map((n: any) => n.responsavel).filter((r: any) => r && String(r).trim())),
+  ).sort() as string[];
   const filtered = data.filter((n: any) => {
     if (status === "pendentes") {
       if (n.status !== "aberta" && n.status !== "em_andamento") return false;
     } else if (status !== "todos" && n.status !== status) return false;
     if (sev !== "todos" && n.severidade !== sev) return false;
+    if (resp === "sem") {
+      if (n.responsavel && String(n.responsavel).trim()) return false;
+    } else if (resp !== "todos" && n.responsavel !== resp) return false;
     return true;
   });
 
