@@ -263,16 +263,53 @@ function NovaAuditoria() {
         <CardContent className="space-y-6">
           {CRITERIOS_5S.map((c) => {
             const val = scores[c.key];
+            const needsComment = val < 8;
+            const autoNC = val < 6;
+            const critica = val < 4;
+            const sev = severidadePorNota(val);
+            const scoreBoxClass = critica
+              ? "bg-red-600 text-white"
+              : autoNC
+                ? "bg-amber-500 text-white"
+                : needsComment
+                  ? "bg-amber-300 text-amber-950"
+                  : "bg-primary text-primary-foreground";
             return (
               <div key={c.key} className="space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="font-semibold text-primary">
-                      {c.nome} <span className="font-normal text-muted-foreground">· {c.titulo}</span>
+                    <p className="font-semibold text-primary flex items-center gap-1.5">
+                      {c.nome}{" "}
+                      <span className="font-normal text-muted-foreground">· {c.titulo}</span>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button
+                            type="button"
+                            className="text-muted-foreground hover:text-primary"
+                            aria-label="Ver critérios de pontuação"
+                          >
+                            <Info className="h-4 w-4" />
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80 text-xs space-y-2">
+                          <p className="font-semibold text-sm">Critérios de pontuação</p>
+                          {ESCALA_PONTUACAO.map((e) => (
+                            <div key={e.faixa} className="flex gap-2">
+                              <span className="font-bold w-14 shrink-0">{e.faixa}</span>
+                              <span>
+                                <span className="font-medium">{e.titulo}.</span>{" "}
+                                <span className="text-muted-foreground">{e.descricao}</span>
+                              </span>
+                            </div>
+                          ))}
+                        </PopoverContent>
+                      </Popover>
                     </p>
                     <p className="text-xs text-muted-foreground">{c.descricao}</p>
                   </div>
-                  <div className="grid place-items-center h-10 w-14 rounded-md bg-primary text-primary-foreground font-bold text-lg shrink-0">
+                  <div
+                    className={`grid place-items-center h-10 w-14 rounded-md font-bold text-lg shrink-0 ${scoreBoxClass}`}
+                  >
                     {val}
                   </div>
                 </div>
@@ -283,44 +320,60 @@ function NovaAuditoria() {
                   step={1}
                   onValueChange={(v) => setScores((s) => ({ ...s, [c.key]: v[0] }))}
                 />
-                <div className="rounded-md border border-dashed p-3 space-y-2 bg-muted/30">
-                  <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <Checkbox
-                      checked={ncs[c.key].marked}
-                      onCheckedChange={(v) =>
-                        setNcs((n) => ({
-                          ...n,
-                          [c.key]: { ...n[c.key], marked: v === true },
-                        }))
-                      }
-                    />
-                    <AlertTriangle className="h-4 w-4 text-amber-600" />
-                    <span className="font-medium">Marcar como Não Conforme</span>
-                    <span className="text-xs text-muted-foreground">
-                      (gera ação corretiva automaticamente)
-                    </span>
-                  </label>
-                  {ncs[c.key].marked && (
+                {needsComment && (
+                  <div
+                    className={`rounded-md border p-3 space-y-2 ${
+                      critica
+                        ? "border-red-400 bg-red-50"
+                        : autoNC
+                          ? "border-amber-400 bg-amber-50"
+                          : "border-dashed bg-muted/30"
+                    }`}
+                  >
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <AlertTriangle
+                        className={`h-4 w-4 ${critica ? "text-red-600" : "text-amber-600"}`}
+                      />
+                      {autoNC ? (
+                        <span className="font-medium">
+                          Ação corretiva será aberta automaticamente
+                        </span>
+                      ) : (
+                        <span className="font-medium">Comentário obrigatório (nota &lt; 8)</span>
+                      )}
+                      {autoNC && (
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase ${
+                            critica
+                              ? "bg-red-600 text-white"
+                              : "bg-amber-600 text-white"
+                          }`}
+                        >
+                          Severidade: {sev}
+                        </span>
+                      )}
+                    </div>
                     <Textarea
-                      value={ncs[c.key].descricao}
+                      value={comentarios[c.key]}
                       onChange={(e) =>
-                        setNcs((n) => ({
-                          ...n,
-                          [c.key]: { ...n[c.key], descricao: e.target.value },
-                        }))
+                        setComentarios((n) => ({ ...n, [c.key]: e.target.value }))
                       }
-                      placeholder={`Descreva a não conformidade em ${c.nome}...`}
+                      placeholder={
+                        autoNC
+                          ? `Descreva a não conformidade em ${c.nome}...`
+                          : `Descreva o desvio observado em ${c.nome}...`
+                      }
                       rows={2}
                     />
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             );
           })}
         </CardContent>
       </Card>
 
-      {Object.values(ncs).some((n) => n.marked) && (
+      {CRITERIOS_5S.some((c) => scores[c.key] < 6) && (
         <Card className="border-amber-300">
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
