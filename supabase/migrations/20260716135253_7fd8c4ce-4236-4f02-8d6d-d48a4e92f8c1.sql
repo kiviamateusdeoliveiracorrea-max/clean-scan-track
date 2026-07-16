@@ -1,0 +1,2 @@
+DROP POLICY IF EXISTS "profiles read all authenticated" ON public.profiles;
+CREATE POLICY "profiles read own" ON public.profiles FOR SELECT TO authenticated USING (auth.uid() = id OR public.has_role(auth.uid(), 'administrador'));
