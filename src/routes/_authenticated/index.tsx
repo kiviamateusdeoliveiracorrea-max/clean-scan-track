@@ -188,6 +188,26 @@ function Dashboard() {
         />
       </div>
 
+      {/* NCs abertas por criticidade */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-accent" />
+            Não Conformidades abertas por criticidade
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <SeverityCard label="Crítica" value={bySev.critica} tone="critical" />
+            <SeverityCard label="Alta" value={bySev.alta} tone="high" />
+            <SeverityCard label="Média" value={bySev.media} tone="medium" />
+            <SeverityCard label="Baixa" value={bySev.baixa} tone="low" />
+          </div>
+        </CardContent>
+      </Card>
+
+
+
       {/* Charts */}
       <div className="grid lg:grid-cols-2 gap-4">
         <Card>
