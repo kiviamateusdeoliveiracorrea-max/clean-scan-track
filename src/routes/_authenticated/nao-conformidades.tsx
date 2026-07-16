@@ -608,6 +608,52 @@ function NCList() {
                   </p>
                 )}
               </div>
+
+              <div>
+                <Label>Documentos (PDF, opcional)</Label>
+                <label className="mt-1 flex items-center gap-2 border-2 border-dashed rounded-md p-3 cursor-pointer hover:bg-muted/50 text-sm text-muted-foreground">
+                  <FileText className="h-5 w-5" />
+                  <span>Anexar PDF ou imagens</span>
+                  <input
+                    type="file"
+                    accept="application/pdf,image/png,image/jpeg"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      onPickDoc(e.target.files);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+                {docs.length > 0 && (
+                  <ul className="mt-2 space-y-1 text-sm">
+                    {docs.map((d, i) => (
+                      <li key={i} className="flex items-center justify-between bg-muted/40 rounded px-2 py-1">
+                        <span className="truncate flex-1 flex items-center gap-2">
+                          <FileText className="h-3 w-3" /> {d.name}
+                        </span>
+                        <button type="button" onClick={() => removeDoc(i)} className="text-muted-foreground hover:text-destructive">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div>
+                <Label>Causa raiz</Label>
+                <Textarea value={causaRaiz} onChange={(e) => setCausaRaiz(e.target.value)} rows={2} placeholder="Por que ocorreu?" />
+              </div>
+              <div>
+                <Label>Ação corretiva</Label>
+                <Textarea value={acaoCorretiva} onChange={(e) => setAcaoCorretiva(e.target.value)} rows={2} placeholder="O que foi feito para corrigir." />
+              </div>
+              <div>
+                <Label>Ação preventiva</Label>
+                <Textarea value={acaoPreventiva} onChange={(e) => setAcaoPreventiva(e.target.value)} rows={2} placeholder="O que impede a reincidência." />
+              </div>
+
               <div>
                 <Label>Status após a tratativa</Label>
                 <Select value={novoStatus} onValueChange={setNovoStatus}>
@@ -623,6 +669,8 @@ function NCList() {
                   </SelectContent>
                 </Select>
               </div>
+
+              <HistoricoNC ncId={resolving.id} />
             </div>
           )}
           <DialogFooter>
