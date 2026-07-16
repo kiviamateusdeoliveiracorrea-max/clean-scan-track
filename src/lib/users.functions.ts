@@ -95,7 +95,7 @@ export const getMyRoles = createServerFn({ method: "GET" })
 export const listUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertAdmin(context.supabase, context.userId);
+    await assertManager(context.supabase, context.userId);
 
     const { data: profiles, error: pErr } = await context.supabase
       .from("profiles")
@@ -136,7 +136,7 @@ export const createUser = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context.supabase, context.userId);
+    await assertManager(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const email = normalizeUserEmail(data.email);
 
@@ -185,7 +185,7 @@ export const setUserRole = createServerFn({ method: "POST" })
     z.object({ userId: z.string().uuid(), role: z.enum(ROLES) }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context.supabase, context.userId);
+    await assertManager(context.supabase, context.userId);
 
     if (data.userId === context.userId) {
       if (data.role !== "administrador") {
@@ -221,7 +221,7 @@ export const updateUserProfile = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context.supabase, context.userId);
+    await assertManager(context.supabase, context.userId);
 
     const patch: {
       nome?: string;
@@ -246,7 +246,7 @@ export const deleteUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ userId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    await assertAdmin(context.supabase, context.userId);
+    await assertManager(context.supabase, context.userId);
     if (data.userId === context.userId) {
       throw new Error("Você não pode excluir a si mesmo.");
     }
