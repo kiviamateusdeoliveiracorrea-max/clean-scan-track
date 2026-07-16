@@ -51,8 +51,9 @@ function NCList() {
 
   // Edição de responsabilidade (admin/gestor)
   const [editing, setEditing] = useState<any | null>(null);
-  const [editResp, setEditResp] = useState("");
-  const [editEmail, setEditEmail] = useState("");
+  const [editRespNc, setEditRespNc] = useState<string>("");
+  const [editRespAcao, setEditRespAcao] = useState<string>("");
+  const [editAprovador, setEditAprovador] = useState<string>("");
   const [editPrazo, setEditPrazo] = useState("");
   const [editStatus, setEditStatus] = useState("aberta");
   const [saving, setSaving] = useState(false);
@@ -74,18 +75,23 @@ function NCList() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("nao_conformidades")
-        .select("*, areas(nome), auditorias(data_auditoria, auditores(nome))")
+        .select(
+          "*, areas(nome), auditorias(data_auditoria, auditores(nome)), resp_nc:profiles!nao_conformidades_responsavel_nc_id_fkey(id,nome,cargo,area_id,areas(nome)), resp_acao:profiles!nao_conformidades_responsavel_acao_id_fkey(id,nome,cargo,area_id,areas(nome)), aprovador:profiles!nao_conformidades_aprovador_id_fkey(id,nome,cargo,area_id,areas(nome))",
+        )
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
     },
   });
 
-  const auditoresQ = useQuery({
-    queryKey: ["auditores"],
-    enabled: canManageNC,
+  const usuariosQ = useQuery({
+    queryKey: ["profiles-ativos"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("auditores").select("*").order("nome");
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, nome, email, cargo, ativo, areas(nome)")
+        .eq("ativo", true)
+        .order("nome");
       if (error) throw error;
       return data ?? [];
     },
@@ -93,30 +99,86 @@ function NCList() {
 
   const openEdit = (n: any) => {
     setEditing(n);
-    setEditResp(n.responsavel ?? "");
-    setEditEmail(n.responsavel_email ?? "");
+    setEditRespNc(n.responsavel_nc_id ?? "");
+    setEditRespAcao(n.responsavel_acao_id ?? "");
+    setEditAprovador(n.aprovador_id ?? "");
     setEditPrazo(n.prazo ?? "");
     setEditStatus(n.status ?? "aberta");
   };
 
+
   const saveEdit = async () => {
     if (!editing) return;
     setSaving(true);
+    const users = usuariosQ.data ?? [];
+    const nomeOf = (id: string) =>
+      (users.find((u: any) => u.id === id) as any)?.nome ?? null;
+    const emailOf = (id: string) =>
+      (users.find((u: any) => u.id === id) as any)?.email ?? null;
+    const newRespAcaoId = editRespAcao || null;
+    const patch: any = {
+      responsavel_nc_id: editRespNc || null,
+      responsavel_acao_id: newRespAcaoId,
+      aprovador_id: editAprovador || null,
+      responsavel: newRespAcaoId ? nomeOf(newRespAcaoId) : null,
+      responsavel_email: newRespAcaoId ? emailOf(newRespAcaoId) : null,
+      prazo: editPrazo || null,
+      status: editStatus,
+    };
     const { error } = await supabase
       .from("nao_conformidades")
-      .update({
-        responsavel: editResp.trim() || null,
-        responsavel_email: editEmail.trim() || null,
-        prazo: editPrazo || null,
-        status: editStatus,
-      })
+      .update(patch)
       .eq("id", editing.id);
+    if (error) {
+      setSaving(false);
+      return toast.error(error.message);
+    }
+
+    // Registrar reatribuições no histórico
+    const { data: userData } = await supabase.auth.getUser();
+    const uid = userData.user?.id ?? null;
+    let quem: string | null = null;
+    if (uid) {
+      const { data: p } = await supabase.from("profiles").select("nome").eq("id", uid).maybeSingle();
+      quem = (p as any)?.nome ?? null;
+    }
+    const changes: { campo: string; antes: string | null; depois: string | null }[] = [];
+    const trackers: [string, string | null, string | null][] = [
+      ["Responsável pela NC", editing.responsavel_nc_id, editRespNc || null],
+      ["Responsável pela Ação", editing.responsavel_acao_id, newRespAcaoId],
+      ["Aprovador", editing.aprovador_id, editAprovador || null],
+    ];
+    for (const [campo, antes, depois] of trackers) {
+      if ((antes || null) !== (depois || null)) {
+        changes.push({
+          campo,
+          antes: antes ? nomeOf(antes) ?? "—" : null,
+          depois: depois ? nomeOf(depois) ?? "—" : null,
+        });
+      }
+    }
+    if (changes.length > 0) {
+      await supabase.from("nc_historico").insert(
+        changes.map((c) => ({
+          nc_id: editing.id,
+          user_id: uid,
+          user_nome: quem,
+          acao: `${c.campo} alterado`,
+          comentario: `${c.antes ?? "sem responsável"} → ${c.depois ?? "sem responsável"}`,
+        })),
+      );
+    }
+
     setSaving(false);
-    if (error) return toast.error(error.message);
     toast.success("Atualizado");
+    if (changes.some((c) => c.campo === "Responsável pela Ação") && newRespAcaoId) {
+      toast.info("Notificação por e-mail requer domínio configurado em Cloud → Emails.");
+    }
     setEditing(null);
     qc.invalidateQueries({ queryKey: ["ncs-all"] });
+    qc.invalidateQueries({ queryKey: ["nc-historico", editing.id] });
   };
+
 
   const openResolve = (n: any) => {
     setResolving(n);
@@ -413,19 +475,15 @@ function NCList() {
                             n.severidade}
                         </Badge>
                         <Badge variant="outline">{n.criterio}</Badge>
-                        <Badge
-                          variant="outline"
-                          className={
-                            n.responsavel
-                              ? "border-primary/40 text-primary bg-primary/5"
-                              : "border-dashed text-muted-foreground"
-                          }
-                        >
-                          <User className="h-3 w-3 mr-1" />
-                          {n.responsavel || "Sem responsável"}
-                        </Badge>
                       </div>
                       <p className="text-sm font-medium">{n.descricao}</p>
+                      <div className="grid gap-1 text-xs sm:grid-cols-3">
+                        <RespInfo label="Resp. NC" user={n.resp_nc} />
+                        <RespInfo label="Resp. Ação" user={n.resp_acao} />
+                        <RespInfo label="Aprovador" user={n.aprovador} />
+                      </div>
+
+
                       <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
                         {n.areas?.nome && (
                           <span className="flex items-center gap-1">
@@ -504,37 +562,27 @@ function NCList() {
             <DialogTitle>Editar responsabilidade</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <div>
-              <Label>Responsável</Label>
-              <Select
-                value={editResp || undefined}
-                onValueChange={(v) => {
-                  setEditResp(v);
-                  const a = (auditoresQ.data ?? []).find((x: any) => x.nome === v);
-                  if (a?.email) setEditEmail(a.email);
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {(auditoresQ.data ?? []).map((a: any) => (
-                    <SelectItem key={a.id} value={a.nome}>
-                      {a.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>E-mail</Label>
-              <Input
-                type="email"
-                value={editEmail}
-                onChange={(e) => setEditEmail(e.target.value)}
-                placeholder="email@empresa.com"
-              />
-            </div>
+            <UserSelect
+              label="Responsável pela Não Conformidade"
+              value={editRespNc}
+              onChange={setEditRespNc}
+              users={usuariosQ.data ?? []}
+            />
+            <UserSelect
+              label="Responsável pela Ação"
+              value={editRespAcao}
+              onChange={setEditRespAcao}
+              users={usuariosQ.data ?? []}
+              helper="Qualquer usuário ativo pode ser designado."
+            />
+            <UserSelect
+              label="Aprovador da Ação (Gestor/Administrador)"
+              value={editAprovador}
+              onChange={setEditAprovador}
+              users={usuariosQ.data ?? []}
+              helper="Validador da eficácia antes do encerramento."
+            />
+
             <div>
               <Label>Prazo</Label>
               <Input
@@ -768,3 +816,77 @@ function HistoricoNC({ ncId }: { ncId: string }) {
     </div>
   );
 }
+
+type UserRow = {
+  id: string;
+  nome: string | null;
+  cargo?: string | null;
+  areas?: { nome: string | null } | null;
+};
+
+function UserSelect({
+  label,
+  value,
+  onChange,
+  users,
+  helper,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  users: UserRow[];
+  helper?: string;
+}) {
+  return (
+    <div>
+      <Label>{label}</Label>
+      <Select
+        value={value || "__none__"}
+        onValueChange={(v) => onChange(v === "__none__" ? "" : v)}
+      >
+        <SelectTrigger>
+          <SelectValue placeholder="Selecione um usuário..." />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="__none__">— Sem responsável —</SelectItem>
+          {users.map((u) => (
+            <SelectItem key={u.id} value={u.id}>
+              <div className="flex flex-col text-left">
+                <span className="font-medium">{u.nome ?? "Sem nome"}</span>
+                <span className="text-[11px] text-muted-foreground">
+                  {[u.cargo, u.areas?.nome].filter(Boolean).join(" · ") || "—"}
+                </span>
+              </div>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {helper && <p className="text-xs text-muted-foreground mt-1">{helper}</p>}
+    </div>
+  );
+}
+
+function RespInfo({ label, user }: { label: string; user: UserRow | null | undefined }) {
+  return (
+    <div className="rounded border bg-muted/30 px-2 py-1">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </p>
+      {user?.nome ? (
+        <>
+          <p className="font-medium text-foreground flex items-center gap-1 leading-tight">
+            <User className="h-3 w-3" />
+            {user.nome}
+          </p>
+          <p className="text-[10px] text-muted-foreground truncate">
+            {[user.cargo, user.areas?.nome].filter(Boolean).join(" · ") || "—"}
+          </p>
+        </>
+      ) : (
+        <p className="text-muted-foreground italic">Sem responsável</p>
+      )}
+    </div>
+  );
+}
+
+

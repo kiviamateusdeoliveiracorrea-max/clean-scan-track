@@ -54,8 +54,8 @@ function NovaAuditoria() {
     seiketsu: "",
     shitsuke: "",
   });
-  const [ncResponsavel, setNcResponsavel] = useState("");
-  const [ncResponsavelEmail, setNcResponsavelEmail] = useState("");
+  const [ncResponsavelAcaoId, setNcResponsavelAcaoId] = useState<string>("");
+  const [ncAprovadorId, setNcAprovadorId] = useState<string>("");
   const [ncPrazo, setNcPrazo] = useState("");
 
   const addFotos = (files: FileList | null) => {
@@ -89,6 +89,21 @@ function NovaAuditoria() {
       return data ?? [];
     },
   });
+  const usuariosQ = useQuery({
+
+    queryKey: ["profiles-ativos"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, nome, email, cargo, areas(nome)")
+        .eq("ativo", true)
+        .order("nome");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+
 
   const total = Object.values(scores).reduce((a, b) => a + b, 0);
   const percentual = (total / 50) * 100;
@@ -153,6 +168,11 @@ function NovaAuditoria() {
         .eq("id", inserted.id);
     }
 
+    const users = usuariosQ.data ?? [];
+    const respUser = users.find((u: any) => u.id === ncResponsavelAcaoId) as any;
+    const { data: userData } = await supabase.auth.getUser();
+    const criadorId = userData.user?.id ?? null;
+
     // Ação corretiva automática para todo critério com nota < 6
     const ncRows = CRITERIOS_5S
       .filter((c) => scores[c.key] < 6)
@@ -167,8 +187,11 @@ function NovaAuditoria() {
             comentario || `Não conformidade identificada em ${c.nome} (nota ${nota}).`,
           severidade: severidadePorNota(nota),
           status: "aberta",
-          responsavel: ncResponsavel.trim() || null,
-          responsavel_email: ncResponsavelEmail.trim() || null,
+          responsavel: respUser?.nome ?? null,
+          responsavel_email: respUser?.email ?? null,
+          responsavel_nc_id: criadorId,
+          responsavel_acao_id: ncResponsavelAcaoId || null,
+          aprovador_id: ncAprovadorId || null,
           prazo: ncPrazo || null,
         };
       });
@@ -176,6 +199,7 @@ function NovaAuditoria() {
       const { error: ncErr } = await supabase.from("nao_conformidades").insert(ncRows);
       if (ncErr) toast.error("Erro ao gerar ações corretivas: " + ncErr.message);
     }
+
 
     setSaving(false);
     toast.success(
@@ -391,37 +415,18 @@ function NovaAuditoria() {
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-3">
-            <div>
-              <Label className="text-xs">Responsável</Label>
-              <Select
-                value={ncResponsavel || undefined}
-                onValueChange={(v) => {
-                  const auditor = (auditoresQ.data ?? []).find((a: any) => a.nome === v);
-                  setNcResponsavel(v);
-                  if (auditor?.email) setNcResponsavelEmail(auditor.email);
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {(auditoresQ.data ?? []).map((a: any) => (
-                    <SelectItem key={a.id} value={a.nome}>
-                      {a.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-xs">E-mail para envio</Label>
-              <Input
-                type="email"
-                value={ncResponsavelEmail}
-                onChange={(e) => setNcResponsavelEmail(e.target.value)}
-                placeholder="email@empresa.com"
-              />
-            </div>
+            <UserPickerField
+              label="Responsável pela Ação"
+              value={ncResponsavelAcaoId}
+              onChange={setNcResponsavelAcaoId}
+              users={usuariosQ.data ?? []}
+            />
+            <UserPickerField
+              label="Aprovador (Gestor/Admin)"
+              value={ncAprovadorId}
+              onChange={setNcAprovadorId}
+              users={usuariosQ.data ?? []}
+            />
             <div>
               <Label className="text-xs">Prazo</Label>
               <Input
@@ -430,7 +435,11 @@ function NovaAuditoria() {
                 onChange={(e) => setNcPrazo(e.target.value)}
               />
             </div>
+            <p className="sm:col-span-3 text-xs text-muted-foreground">
+              Qualquer usuário ativo pode ser designado — Administrador, Gestor, Auditor ou Consulta.
+            </p>
           </CardContent>
+
         </Card>
       )}
 
@@ -533,3 +542,43 @@ function NovaAuditoria() {
     </div>
   );
 }
+
+function UserPickerField({
+  label,
+  value,
+  onChange,
+  users,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  users: Array<{ id: string; nome: string | null; cargo?: string | null; areas?: { nome: string | null } | null }>;
+}) {
+  return (
+    <div>
+      <Label className="text-xs">{label}</Label>
+      <Select
+        value={value || "__none__"}
+        onValueChange={(v) => onChange(v === "__none__" ? "" : v)}
+      >
+        <SelectTrigger>
+          <SelectValue placeholder="Selecione..." />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="__none__">— Sem responsável —</SelectItem>
+          {users.map((u) => (
+            <SelectItem key={u.id} value={u.id}>
+              <div className="flex flex-col text-left">
+                <span className="font-medium">{u.nome ?? "Sem nome"}</span>
+                <span className="text-[11px] text-muted-foreground">
+                  {[u.cargo, u.areas?.nome].filter(Boolean).join(" · ") || "—"}
+                </span>
+              </div>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+

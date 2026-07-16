@@ -48,11 +48,16 @@ function Dashboard() {
   const ncQuery = useQuery({
     queryKey: ["nc-dashboard"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("nao_conformidades").select("*");
+      const { data, error } = await supabase
+        .from("nao_conformidades")
+        .select(
+          "*, resp_acao:profiles!nao_conformidades_responsavel_acao_id_fkey(id,nome,cargo,areas(nome))",
+        );
       if (error) throw error;
       return data ?? [];
     },
   });
+
 
   const auditorias = auditoriasQuery.data ?? [];
   const ncs = ncQuery.data ?? [];
@@ -122,6 +127,23 @@ function Dashboard() {
       mes: key.slice(5) + "/" + key.slice(2, 4),
       media: Math.round(v.total / v.count),
     }));
+
+  // Ações abertas por responsável
+  const porResp = new Map<string, { nome: string; cargo: string; count: number }>();
+  ncAbertasList.forEach((n: any) => {
+    const key = n.resp_acao?.id ?? "__sem__";
+    const nome = n.resp_acao?.nome ?? "Sem responsável";
+    const cargo = [n.resp_acao?.cargo, n.resp_acao?.areas?.nome]
+      .filter(Boolean)
+      .join(" · ");
+    const cur = porResp.get(key) ?? { nome, cargo, count: 0 };
+    cur.count += 1;
+    porResp.set(key, cur);
+  });
+  const respChart = Array.from(porResp.values())
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 8);
+
 
   return (
     <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto">
@@ -312,6 +334,45 @@ function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Ações abertas por responsável */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Ações abertas por responsável</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {respChart.length === 0 ? (
+            <EmptyChart />
+          ) : (
+            <ul className="space-y-2">
+              {respChart.map((r) => (
+                <li
+                  key={r.nome + r.cargo}
+                  className="flex items-center gap-3 rounded border bg-muted/20 px-3 py-2"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{r.nome}</p>
+                    {r.cargo && (
+                      <p className="text-[11px] text-muted-foreground truncate">{r.cargo}</p>
+                    )}
+                  </div>
+                  <Badge
+                    className={
+                      r.count > 5
+                        ? "bg-red-100 text-red-700 border-0"
+                        : "bg-primary/10 text-primary border-0"
+                    }
+                  >
+                    {r.count} aberta{r.count === 1 ? "" : "s"}
+                  </Badge>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+
 
       {/* Recentes */}
       <Card>
