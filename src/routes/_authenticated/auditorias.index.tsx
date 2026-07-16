@@ -339,8 +339,6 @@ function AuditoriasList() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {/* Silence unused warning */}
-      <span className="hidden">{canManageUsers ? "" : ""}</span>
     </div>
   );
 }
