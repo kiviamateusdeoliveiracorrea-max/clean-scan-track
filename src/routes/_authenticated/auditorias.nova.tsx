@@ -88,7 +88,9 @@ function NovaAuditoria() {
       if (error) throw error;
       return data ?? [];
     },
+  });
   const usuariosQ = useQuery({
+
     queryKey: ["profiles-ativos"],
     queryFn: async () => {
       const { data, error } = await supabase
