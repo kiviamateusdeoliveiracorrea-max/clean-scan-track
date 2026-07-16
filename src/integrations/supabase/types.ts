@@ -133,11 +133,15 @@ export type Database = {
       }
       nao_conformidades: {
         Row: {
+          acao_corretiva: string | null
+          acao_preventiva: string | null
           area_id: string | null
           auditoria_id: string | null
+          causa_raiz: string | null
           created_at: string
           criterio: string
           descricao: string
+          documento_urls: string[]
           foto_url: string | null
           foto_urls: string[]
           id: string
@@ -148,13 +152,18 @@ export type Database = {
           severidade: string
           status: string
           updated_at: string
+          updated_by: string | null
         }
         Insert: {
+          acao_corretiva?: string | null
+          acao_preventiva?: string | null
           area_id?: string | null
           auditoria_id?: string | null
+          causa_raiz?: string | null
           created_at?: string
           criterio: string
           descricao: string
+          documento_urls?: string[]
           foto_url?: string | null
           foto_urls?: string[]
           id?: string
@@ -165,13 +174,18 @@ export type Database = {
           severidade?: string
           status?: string
           updated_at?: string
+          updated_by?: string | null
         }
         Update: {
+          acao_corretiva?: string | null
+          acao_preventiva?: string | null
           area_id?: string | null
           auditoria_id?: string | null
+          causa_raiz?: string | null
           created_at?: string
           criterio?: string
           descricao?: string
+          documento_urls?: string[]
           foto_url?: string | null
           foto_urls?: string[]
           id?: string
@@ -182,6 +196,7 @@ export type Database = {
           severidade?: string
           status?: string
           updated_at?: string
+          updated_by?: string | null
         }
         Relationships: [
           {
@@ -200,8 +215,49 @@ export type Database = {
           },
         ]
       }
+      nc_historico: {
+        Row: {
+          acao: string
+          comentario: string | null
+          created_at: string
+          id: string
+          nc_id: string
+          user_id: string | null
+          user_nome: string | null
+        }
+        Insert: {
+          acao: string
+          comentario?: string | null
+          created_at?: string
+          id?: string
+          nc_id: string
+          user_id?: string | null
+          user_nome?: string | null
+        }
+        Update: {
+          acao?: string
+          comentario?: string | null
+          created_at?: string
+          id?: string
+          nc_id?: string
+          user_id?: string | null
+          user_nome?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nc_historico_nc_id_fkey"
+            columns: ["nc_id"]
+            isOneToOne: false
+            referencedRelation: "nao_conformidades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
+          area_id: string | null
+          ativo: boolean
+          cargo: string | null
           created_at: string
           email: string | null
           id: string
@@ -209,6 +265,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          area_id?: string | null
+          ativo?: boolean
+          cargo?: string | null
           created_at?: string
           email?: string | null
           id: string
@@ -216,13 +275,24 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          area_id?: string | null
+          ativo?: boolean
+          cargo?: string | null
           created_at?: string
           email?: string | null
           id?: string
           nome?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
