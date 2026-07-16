@@ -43,6 +43,7 @@ export const Route = createFileRoute("/_authenticated/nao-conformidades")({
 function NCList() {
   const [status, setStatus] = useState<"pendentes" | "todos" | string>("pendentes");
   const [sev, setSev] = useState("todos");
+  const [resp, setResp] = useState("todos");
   const { canManageNC, canResolveNC } = useCurrentRole();
   const qc = useQueryClient();
 
