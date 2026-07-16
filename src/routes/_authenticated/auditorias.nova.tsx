@@ -415,37 +415,18 @@ function NovaAuditoria() {
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-3">
-            <div>
-              <Label className="text-xs">Responsável</Label>
-              <Select
-                value={ncResponsavel || undefined}
-                onValueChange={(v) => {
-                  const auditor = (auditoresQ.data ?? []).find((a: any) => a.nome === v);
-                  setNcResponsavel(v);
-                  if (auditor?.email) setNcResponsavelEmail(auditor.email);
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {(auditoresQ.data ?? []).map((a: any) => (
-                    <SelectItem key={a.id} value={a.nome}>
-                      {a.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-xs">E-mail para envio</Label>
-              <Input
-                type="email"
-                value={ncResponsavelEmail}
-                onChange={(e) => setNcResponsavelEmail(e.target.value)}
-                placeholder="email@empresa.com"
-              />
-            </div>
+            <UserPickerField
+              label="Responsável pela Ação"
+              value={ncResponsavelAcaoId}
+              onChange={setNcResponsavelAcaoId}
+              users={usuariosQ.data ?? []}
+            />
+            <UserPickerField
+              label="Aprovador (Gestor/Admin)"
+              value={ncAprovadorId}
+              onChange={setNcAprovadorId}
+              users={usuariosQ.data ?? []}
+            />
             <div>
               <Label className="text-xs">Prazo</Label>
               <Input
@@ -454,7 +435,11 @@ function NovaAuditoria() {
                 onChange={(e) => setNcPrazo(e.target.value)}
               />
             </div>
+            <p className="sm:col-span-3 text-xs text-muted-foreground">
+              Qualquer usuário ativo pode ser designado — Administrador, Gestor, Auditor ou Consulta.
+            </p>
           </CardContent>
+
         </Card>
       )}
 
