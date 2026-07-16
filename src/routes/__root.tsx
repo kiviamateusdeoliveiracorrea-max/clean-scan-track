@@ -28,7 +28,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
-import logoAsset from "@/assets/logo-empresas.png.asset.json";
+import logoAsset from "@/assets/intralog-logo.png.asset.json";
 import { getMyRoles, type AppRole } from "@/lib/users.functions";
 
 function NotFoundComponent() {
