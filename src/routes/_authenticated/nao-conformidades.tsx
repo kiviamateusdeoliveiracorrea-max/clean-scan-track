@@ -64,11 +64,16 @@ function NCList() {
   const [causaRaiz, setCausaRaiz] = useState("");
   const [acaoCorretiva, setAcaoCorretiva] = useState("");
   const [acaoPreventiva, setAcaoPreventiva] = useState("");
-  const [novoStatus, setNovoStatus] = useState<string>("concluida");
   const [fotos, setFotos] = useState<File[]>([]);
   const [fotosPreview, setFotosPreview] = useState<string[]>([]);
   const [docs, setDocs] = useState<File[]>([]);
   const [resolveSaving, setResolveSaving] = useState(false);
+
+  // Aprovação
+  const [approving, setApproving] = useState<any | null>(null);
+  const [approvalMode, setApprovalMode] = useState<"aprovar" | "reprovar">("aprovar");
+  const [parecer, setParecer] = useState("");
+  const [approveSaving, setApproveSaving] = useState(false);
 
   const { data = [] } = useQuery({
     queryKey: ["ncs-all"],
