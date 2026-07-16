@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, Camera, X } from "lucide-react";
 import { CRITERIOS_5S, classificaPontuacao, type Criterio5SKey } from "@/lib/audit-constants";
 import { toast } from "sonner";
 
