@@ -139,14 +139,20 @@ function NovaAuditoria() {
     // Gerar ações corretivas para critérios marcados como Não Conforme
     const ncRows = CRITERIOS_5S
       .filter((c) => ncs[c.key].marked)
-      .map((c) => ({
-        auditoria_id: inserted.id,
-        area_id: areaId,
-        criterio: c.nome,
-        descricao: ncs[c.key].descricao.trim() || `Não conformidade identificada em ${c.nome}`,
-        severidade: "media",
-        status: "aberta",
-      }));
+      .map((c) => {
+        const n = ncs[c.key];
+        return {
+          auditoria_id: inserted.id,
+          area_id: areaId,
+          criterio: c.nome,
+          descricao: n.descricao.trim() || `Não conformidade identificada em ${c.nome}`,
+          severidade: "media",
+          status: "aberta",
+          responsavel: n.responsavel.trim() || null,
+          responsavel_email: n.responsavel_email.trim() || null,
+          prazo: n.prazo || null,
+        };
+      });
     if (ncRows.length > 0) {
       const { error: ncErr } = await supabase.from("nao_conformidades").insert(ncRows);
       if (ncErr) toast.error("Erro ao gerar ações corretivas: " + ncErr.message);
