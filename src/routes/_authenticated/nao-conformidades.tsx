@@ -31,6 +31,8 @@ import {
   CheckCircle2,
   Camera,
   X,
+  FileText,
+  History,
 } from "lucide-react";
 import { STATUS_NC, SEVERIDADES } from "@/lib/audit-constants";
 import { useCurrentRole } from "@/hooks/use-current-role";
