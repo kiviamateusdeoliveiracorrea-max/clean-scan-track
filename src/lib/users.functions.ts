@@ -17,10 +17,6 @@ async function assertAdmin(supabase: any, userId: string) {
   if (!data) throw new Error("Forbidden: apenas administradores");
 }
 
-/**
- * Bootstrap: cria o primeiro administrador se ainda não existir nenhum.
- * Endpoint público (só funciona uma vez, enquanto não há admin no sistema).
- */
 export const bootstrapFirstAdmin = createServerFn({ method: "POST" })
   .inputValidator((input) =>
     z
@@ -53,24 +49,21 @@ export const bootstrapFirstAdmin = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
 
     if (created.user?.id) {
-      const { error: profileError } = await supabaseAdmin.from("profiles").upsert({
+      await supabaseAdmin.from("profiles").upsert({
         id: created.user.id,
         nome: data.nome,
         email,
+        ativo: true,
       });
-      if (profileError) throw new Error(profileError.message);
-
-      const { error: roleError } = await supabaseAdmin.from("user_roles").upsert(
+      await supabaseAdmin.from("user_roles").upsert(
         { user_id: created.user.id, role: "administrador" },
         { onConflict: "user_id,role" },
       );
-      if (roleError) throw new Error(roleError.message);
     }
 
     return { ok: true, userId: created.user?.id };
   });
 
-/** Verifica se o sistema ainda não tem administrador (para exibir tela de bootstrap). */
 export const needsBootstrap = createServerFn({ method: "GET" }).handler(async () => {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { count, error } = await supabaseAdmin
@@ -81,7 +74,6 @@ export const needsBootstrap = createServerFn({ method: "GET" }).handler(async ()
   return { needs: (count ?? 0) === 0 };
 });
 
-/** Retorna papel(is) do usuário logado. */
 export const getMyRoles = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -93,7 +85,6 @@ export const getMyRoles = createServerFn({ method: "GET" })
     return { roles: (data ?? []).map((r: any) => r.role as AppRole) };
   });
 
-/** Lista todos os usuários (admin). */
 export const listUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -102,7 +93,7 @@ export const listUsers = createServerFn({ method: "GET" })
 
     const { data: profiles, error: pErr } = await supabaseAdmin
       .from("profiles")
-      .select("id, nome, email, created_at")
+      .select("id, nome, email, cargo, area_id, ativo, created_at, areas(nome)")
       .order("created_at", { ascending: false });
     if (pErr) throw new Error(pErr.message);
 
@@ -119,11 +110,11 @@ export const listUsers = createServerFn({ method: "GET" })
     }
     return (profiles ?? []).map((p: any) => ({
       ...p,
+      area_nome: p.areas?.nome ?? null,
       roles: byUser.get(p.id) ?? [],
     }));
   });
 
-/** Cria um usuário e define seu papel (admin). */
 export const createUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
@@ -133,6 +124,8 @@ export const createUser = createServerFn({ method: "POST" })
         password: z.string().min(8).max(72),
         nome: z.string().trim().min(1).max(100),
         role: z.enum(ROLES),
+        cargo: z.string().trim().max(100).optional().nullable(),
+        area_id: z.string().uuid().optional().nullable(),
       })
       .parse(input),
   )
@@ -145,29 +138,33 @@ export const createUser = createServerFn({ method: "POST" })
       email,
       password: data.password,
       email_confirm: true,
-      user_metadata: { nome: data.nome, role: data.role },
+      user_metadata: {
+        nome: data.nome,
+        role: data.role,
+        cargo: data.cargo ?? "",
+        area_id: data.area_id ?? "",
+      },
     });
     if (error) throw new Error(error.message);
 
     if (created.user?.id) {
-      const { error: profileError } = await supabaseAdmin.from("profiles").upsert({
+      await supabaseAdmin.from("profiles").upsert({
         id: created.user.id,
         nome: data.nome,
         email,
+        cargo: data.cargo ?? null,
+        area_id: data.area_id ?? null,
+        ativo: true,
       });
-      if (profileError) throw new Error(profileError.message);
-
-      const { error: roleError } = await supabaseAdmin.from("user_roles").upsert(
+      await supabaseAdmin.from("user_roles").upsert(
         { user_id: created.user.id, role: data.role },
         { onConflict: "user_id,role" },
       );
-      if (roleError) throw new Error(roleError.message);
     }
 
     return { ok: true, userId: created.user?.id };
   });
 
-/** Altera o papel de um usuário (admin). */
 export const setUserRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
@@ -185,7 +182,41 @@ export const setUserRole = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-/** Exclui um usuário (admin). */
+export const updateUserProfile = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        userId: z.string().uuid(),
+        nome: z.string().trim().min(1).max(100).optional(),
+        cargo: z.string().trim().max(100).nullable().optional(),
+        area_id: z.string().uuid().nullable().optional(),
+        ativo: z.boolean().optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const patch: {
+      nome?: string;
+      cargo?: string | null;
+      area_id?: string | null;
+      ativo?: boolean;
+    } = {};
+    if (data.nome !== undefined) patch.nome = data.nome;
+    if (data.cargo !== undefined) patch.cargo = data.cargo;
+    if (data.area_id !== undefined) patch.area_id = data.area_id;
+    if (data.ativo !== undefined) patch.ativo = data.ativo;
+
+    const { error } = await (supabaseAdmin.from("profiles") as any)
+      .update(patch)
+      .eq("id", data.userId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 export const deleteUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ userId: z.string().uuid() }).parse(input))
@@ -195,8 +226,8 @@ export const deleteUser = createServerFn({ method: "POST" })
       throw new Error("Você não pode excluir a si mesmo.");
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    // Remove todos os papéis do usuário, desabilitando o acesso.
     const { error } = await supabaseAdmin.from("user_roles").delete().eq("user_id", data.userId);
     if (error) throw new Error(error.message);
+    await supabaseAdmin.from("profiles").update({ ativo: false }).eq("id", data.userId);
     return { ok: true };
   });

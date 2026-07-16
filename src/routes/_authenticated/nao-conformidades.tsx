@@ -31,6 +31,8 @@ import {
   CheckCircle2,
   Camera,
   X,
+  FileText,
+  History,
 } from "lucide-react";
 import { STATUS_NC, SEVERIDADES } from "@/lib/audit-constants";
 import { useCurrentRole } from "@/hooks/use-current-role";
@@ -58,9 +60,13 @@ function NCList() {
   // Tratativa / conclusão
   const [resolving, setResolving] = useState<any | null>(null);
   const [planoAcao, setPlanoAcao] = useState("");
+  const [causaRaiz, setCausaRaiz] = useState("");
+  const [acaoCorretiva, setAcaoCorretiva] = useState("");
+  const [acaoPreventiva, setAcaoPreventiva] = useState("");
   const [novoStatus, setNovoStatus] = useState<string>("concluida");
   const [fotos, setFotos] = useState<File[]>([]);
   const [fotosPreview, setFotosPreview] = useState<string[]>([]);
+  const [docs, setDocs] = useState<File[]>([]);
   const [resolveSaving, setResolveSaving] = useState(false);
 
   const { data = [] } = useQuery({
@@ -115,8 +121,12 @@ function NCList() {
   const openResolve = (n: any) => {
     setResolving(n);
     setPlanoAcao(n.plano_acao ?? "");
+    setCausaRaiz(n.causa_raiz ?? "");
+    setAcaoCorretiva(n.acao_corretiva ?? "");
+    setAcaoPreventiva(n.acao_preventiva ?? "");
     setNovoStatus(n.status === "concluida" ? "concluida" : "concluida");
     setFotos([]);
+    setDocs([]);
     fotosPreview.forEach((u) => URL.revokeObjectURL(u));
     setFotosPreview([]);
   };
@@ -124,6 +134,7 @@ function NCList() {
   const closeResolve = () => {
     setResolving(null);
     setFotos([]);
+    setDocs([]);
     fotosPreview.forEach((u) => URL.revokeObjectURL(u));
     setFotosPreview([]);
   };
@@ -135,6 +146,11 @@ function NCList() {
     setFotosPreview((prev) => [...prev, ...arr.map((f) => URL.createObjectURL(f))]);
   };
 
+  const onPickDoc = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setDocs((prev) => [...prev, ...Array.from(files)]);
+  };
+
   const removeFoto = (idx: number) => {
     setFotos((prev) => prev.filter((_, i) => i !== idx));
     setFotosPreview((prev) => {
@@ -144,6 +160,10 @@ function NCList() {
     });
   };
 
+  const removeDoc = (idx: number) => {
+    setDocs((prev) => prev.filter((_, i) => i !== idx));
+  };
+
   const saveResolve = async () => {
     if (!resolving) return;
     if (!planoAcao.trim()) {
@@ -151,44 +171,79 @@ function NCList() {
       return;
     }
     setResolveSaving(true);
-    const uploadedPaths: string[] = [];
+    const uploadedPhotos: string[] = [];
     for (const f of fotos) {
       const ext = f.name.split(".").pop() || "jpg";
       const path = `${resolving.auditoria_id ?? "nc"}/tratativa-${resolving.id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
-      const { error: upErr } = await supabase.storage
-        .from("audit-photos")
-        .upload(path, f);
+      const { error: upErr } = await supabase.storage.from("audit-photos").upload(path, f);
       if (upErr) {
         setResolveSaving(false);
         return toast.error("Erro no upload: " + upErr.message);
       }
-      uploadedPaths.push(path);
+      uploadedPhotos.push(path);
     }
-    const existing: string[] = Array.isArray(resolving.foto_urls) ? resolving.foto_urls : [];
-    const merged = [...existing, ...uploadedPaths];
-    const update: {
-      plano_acao: string;
-      status: string;
-      foto_urls?: string[];
-      foto_url?: string;
-    } = {
+    const uploadedDocs: string[] = [];
+    for (const f of docs) {
+      const ext = f.name.split(".").pop() || "pdf";
+      const path = `${resolving.auditoria_id ?? "nc"}/doc-${resolving.id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("audit-photos")
+        .upload(path, f, { contentType: f.type || undefined });
+      if (upErr) {
+        setResolveSaving(false);
+        return toast.error("Erro no upload do documento: " + upErr.message);
+      }
+      uploadedDocs.push(path);
+    }
+    const existingPhotos: string[] = Array.isArray(resolving.foto_urls) ? resolving.foto_urls : [];
+    const existingDocs: string[] = Array.isArray(resolving.documento_urls) ? resolving.documento_urls : [];
+    const mergedPhotos = [...existingPhotos, ...uploadedPhotos];
+    const mergedDocs = [...existingDocs, ...uploadedDocs];
+
+    const { data: userData } = await supabase.auth.getUser();
+    const uid = userData.user?.id ?? null;
+
+    const update: any = {
       plano_acao: planoAcao.trim(),
+      causa_raiz: causaRaiz.trim() || null,
+      acao_corretiva: acaoCorretiva.trim() || null,
+      acao_preventiva: acaoPreventiva.trim() || null,
       status: novoStatus,
+      updated_by: uid,
     };
-    if (uploadedPaths.length > 0) {
-      update.foto_urls = merged;
-      if (!resolving.foto_url) update.foto_url = uploadedPaths[0];
+    if (uploadedPhotos.length > 0) {
+      update.foto_urls = mergedPhotos;
+      if (!resolving.foto_url) update.foto_url = uploadedPhotos[0];
     }
-    const { error } = await supabase
-      .from("nao_conformidades")
-      .update(update)
-      .eq("id", resolving.id);
+    if (uploadedDocs.length > 0) update.documento_urls = mergedDocs;
+
+    const { error } = await supabase.from("nao_conformidades").update(update).eq("id", resolving.id);
+    if (error) {
+      setResolveSaving(false);
+      return toast.error(error.message);
+    }
+
+    // Histórico
+    let userNome: string | null = null;
+    if (uid) {
+      const { data: prof } = await supabase.from("profiles").select("nome").eq("id", uid).maybeSingle();
+      userNome = (prof as any)?.nome ?? null;
+    }
+    await supabase.from("nc_historico").insert({
+      nc_id: resolving.id,
+      user_id: uid,
+      user_nome: userNome,
+      acao: novoStatus === "concluida" ? "Tratativa concluída" : "Tratativa atualizada",
+      comentario: planoAcao.trim(),
+    });
+
     setResolveSaving(false);
-    if (error) return toast.error(error.message);
     toast.success("Tratativa registrada");
     closeResolve();
     qc.invalidateQueries({ queryKey: ["ncs-all"] });
+    qc.invalidateQueries({ queryKey: ["nc-historico", resolving.id] });
   };
+
 
   const fotoPublicUrl = (path?: string | null) => {
     if (!path) return null;
@@ -553,6 +608,52 @@ function NCList() {
                   </p>
                 )}
               </div>
+
+              <div>
+                <Label>Documentos (PDF, opcional)</Label>
+                <label className="mt-1 flex items-center gap-2 border-2 border-dashed rounded-md p-3 cursor-pointer hover:bg-muted/50 text-sm text-muted-foreground">
+                  <FileText className="h-5 w-5" />
+                  <span>Anexar PDF ou imagens</span>
+                  <input
+                    type="file"
+                    accept="application/pdf,image/png,image/jpeg"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      onPickDoc(e.target.files);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+                {docs.length > 0 && (
+                  <ul className="mt-2 space-y-1 text-sm">
+                    {docs.map((d, i) => (
+                      <li key={i} className="flex items-center justify-between bg-muted/40 rounded px-2 py-1">
+                        <span className="truncate flex-1 flex items-center gap-2">
+                          <FileText className="h-3 w-3" /> {d.name}
+                        </span>
+                        <button type="button" onClick={() => removeDoc(i)} className="text-muted-foreground hover:text-destructive">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div>
+                <Label>Causa raiz</Label>
+                <Textarea value={causaRaiz} onChange={(e) => setCausaRaiz(e.target.value)} rows={2} placeholder="Por que ocorreu?" />
+              </div>
+              <div>
+                <Label>Ação corretiva</Label>
+                <Textarea value={acaoCorretiva} onChange={(e) => setAcaoCorretiva(e.target.value)} rows={2} placeholder="O que foi feito para corrigir." />
+              </div>
+              <div>
+                <Label>Ação preventiva</Label>
+                <Textarea value={acaoPreventiva} onChange={(e) => setAcaoPreventiva(e.target.value)} rows={2} placeholder="O que impede a reincidência." />
+              </div>
+
               <div>
                 <Label>Status após a tratativa</Label>
                 <Select value={novoStatus} onValueChange={setNovoStatus}>
@@ -568,6 +669,8 @@ function NCList() {
                   </SelectContent>
                 </Select>
               </div>
+
+              <HistoricoNC ncId={resolving.id} />
             </div>
           )}
           <DialogFooter>
@@ -585,6 +688,41 @@ function NCList() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function HistoricoNC({ ncId }: { ncId: string }) {
+  const { data = [] } = useQuery({
+    queryKey: ["nc-historico", ncId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("nc_historico")
+        .select("*")
+        .eq("nc_id", ncId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  if (data.length === 0) return null;
+  return (
+    <div className="border-t pt-3 mt-2">
+      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1 mb-2">
+        <History className="h-3 w-3" /> Histórico
+      </p>
+      <ul className="space-y-2 max-h-40 overflow-y-auto">
+        {data.map((h: any) => (
+          <li key={h.id} className="text-xs bg-muted/30 rounded p-2">
+            <div className="flex justify-between gap-2 text-muted-foreground">
+              <span className="font-medium">{h.acao}</span>
+              <span>{new Date(h.created_at).toLocaleString("pt-BR")}</span>
+            </div>
+            {h.user_nome && <div className="text-muted-foreground">por {h.user_nome}</div>}
+            {h.comentario && <div className="mt-1 whitespace-pre-wrap">{h.comentario}</div>}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

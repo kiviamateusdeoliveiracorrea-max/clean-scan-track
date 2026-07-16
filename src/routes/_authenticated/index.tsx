@@ -62,8 +62,17 @@ function Dashboard() {
     total > 0
       ? auditorias.reduce((s, a: any) => s + Number(a.percentual || 0), 0) / total
       : 0;
-  const ncAbertas = ncs.filter((n: any) => n.status === "aberta" || n.status === "em_andamento").length;
+  const hoje = new Date().toISOString().slice(0, 10);
+  const ncAbertas = ncs.filter(
+    (n: any) => n.status === "aberta" || n.status === "em_andamento",
+  ).length;
   const ncConcluidas = ncs.filter((n: any) => n.status === "concluida").length;
+  const ncVencidas = ncs.filter(
+    (n: any) =>
+      (n.status === "aberta" || n.status === "em_andamento") &&
+      n.prazo &&
+      n.prazo < hoje,
+  ).length;
 
   // Últimas 8 auditorias (chart)
   const chartData = [...auditorias]
@@ -89,21 +98,39 @@ function Dashboard() {
     .sort((a, b) => b.media - a.media)
     .slice(0, 6);
 
+  // Evolução mensal (últimos 6 meses)
+  const porMes = new Map<string, { total: number; count: number }>();
+  auditorias.forEach((a: any) => {
+    const d = new Date(a.data_auditoria);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const cur = porMes.get(key) ?? { total: 0, count: 0 };
+    cur.total += Number(a.percentual);
+    cur.count += 1;
+    porMes.set(key, cur);
+  });
+  const mesChart = Array.from(porMes.entries())
+    .sort()
+    .slice(-6)
+    .map(([key, v]) => ({
+      mes: key.slice(5) + "/" + key.slice(2, 4),
+      media: Math.round(v.total / v.count),
+    }));
+
   return (
     <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto">
       <div className="flex justify-center">
         <img
           src={logoAsset.url}
-          alt="Grupo JSL — Intralog, JSL Digital, Fadel, Trans Moreno, TPC Rodomeu, Marvel, Truckpad, IC Transportes, FSJ"
+          alt="Grupo JSL"
           className="h-12 md:h-16 w-auto max-w-full object-contain"
         />
       </div>
       <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <p className="text-xs font-semibold text-accent uppercase tracking-wider">
-            Housekeeping · Logística
+            Housekeeping · Processos
           </p>
-          <h1 className="text-2xl md:text-3xl font-bold text-primary">Dashboard 5S</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-primary">Dashboard Executivo</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Visão geral das auditorias, indicadores e planos de ação.
           </p>
@@ -117,7 +144,7 @@ function Dashboard() {
       </header>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
         <KpiCard
           icon={<ClipboardCheck className="h-5 w-5" />}
           label="Auditorias"
@@ -126,7 +153,7 @@ function Dashboard() {
         />
         <KpiCard
           icon={<TrendingUp className="h-5 w-5" />}
-          label="Média 5S"
+          label="Score médio"
           value={`${mediaPct.toFixed(0)}%`}
           hint={classificaPontuacao(mediaPct).label}
           accent
@@ -136,6 +163,13 @@ function Dashboard() {
           label="NCs Abertas"
           value={ncAbertas.toString()}
           hint="Pendentes"
+          variant="warning"
+        />
+        <KpiCard
+          icon={<AlertTriangle className="h-5 w-5" />}
+          label="NCs Vencidas"
+          value={ncVencidas.toString()}
+          hint="Prazo excedido"
           variant="warning"
         />
         <KpiCard
@@ -198,6 +232,55 @@ function Dashboard() {
                   <Bar dataKey="media" fill="#F59E0B" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Evolução mensal + Ranking */}
+      <div className="grid lg:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Evolução mensal (média)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {mesChart.length === 0 ? (
+              <EmptyChart />
+            ) : (
+              <ResponsiveContainer width="100%" height={240}>
+                <LineChart data={mesChart}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
+                  <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
+                  <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="media" stroke="#1E40AF" strokeWidth={2.5} dot={{ r: 4, fill: "#F59E0B" }} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Ranking de áreas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {areaChart.length === 0 ? (
+              <EmptyChart />
+            ) : (
+              <ol className="space-y-2">
+                {areaChart.map((a, i) => (
+                  <li key={a.nome} className="flex items-center gap-3">
+                    <span className="grid h-7 w-7 place-items-center rounded-full bg-primary/10 text-primary text-xs font-bold shrink-0">
+                      {i + 1}
+                    </span>
+                    <span className="flex-1 truncate text-sm">{a.nome}</span>
+                    <Badge className={`${classificaPontuacao(a.media).color} border-0 font-semibold`}>
+                      {a.media}%
+                    </Badge>
+                  </li>
+                ))}
+              </ol>
             )}
           </CardContent>
         </Card>

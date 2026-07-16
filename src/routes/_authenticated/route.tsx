@@ -8,6 +8,15 @@ export const Route = createFileRoute("/_authenticated")({
     if (error || !data.user) {
       throw redirect({ to: "/auth" });
     }
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("ativo")
+      .eq("id", data.user.id)
+      .maybeSingle();
+    if (profile && (profile as any).ativo === false) {
+      await supabase.auth.signOut();
+      throw redirect({ to: "/auth", search: { inactive: "1" } as any });
+    }
     return { user: data.user };
   },
   component: () => <Outlet />,
