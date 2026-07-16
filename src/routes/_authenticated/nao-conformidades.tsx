@@ -51,8 +51,9 @@ function NCList() {
 
   // Edição de responsabilidade (admin/gestor)
   const [editing, setEditing] = useState<any | null>(null);
-  const [editResp, setEditResp] = useState("");
-  const [editEmail, setEditEmail] = useState("");
+  const [editRespNc, setEditRespNc] = useState<string>("");
+  const [editRespAcao, setEditRespAcao] = useState<string>("");
+  const [editAprovador, setEditAprovador] = useState<string>("");
   const [editPrazo, setEditPrazo] = useState("");
   const [editStatus, setEditStatus] = useState("aberta");
   const [saving, setSaving] = useState(false);
@@ -74,18 +75,23 @@ function NCList() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("nao_conformidades")
-        .select("*, areas(nome), auditorias(data_auditoria, auditores(nome))")
+        .select(
+          "*, areas(nome), auditorias(data_auditoria, auditores(nome)), resp_nc:profiles!nao_conformidades_responsavel_nc_id_fkey(id,nome,cargo,area_id,areas(nome)), resp_acao:profiles!nao_conformidades_responsavel_acao_id_fkey(id,nome,cargo,area_id,areas(nome)), aprovador:profiles!nao_conformidades_aprovador_id_fkey(id,nome,cargo,area_id,areas(nome))",
+        )
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
     },
   });
 
-  const auditoresQ = useQuery({
-    queryKey: ["auditores"],
-    enabled: canManageNC,
+  const usuariosQ = useQuery({
+    queryKey: ["profiles-ativos"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("auditores").select("*").order("nome");
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, nome, email, cargo, ativo, areas(nome)")
+        .eq("ativo", true)
+        .order("nome");
       if (error) throw error;
       return data ?? [];
     },
@@ -93,11 +99,13 @@ function NCList() {
 
   const openEdit = (n: any) => {
     setEditing(n);
-    setEditResp(n.responsavel ?? "");
-    setEditEmail(n.responsavel_email ?? "");
+    setEditRespNc(n.responsavel_nc_id ?? "");
+    setEditRespAcao(n.responsavel_acao_id ?? "");
+    setEditAprovador(n.aprovador_id ?? "");
     setEditPrazo(n.prazo ?? "");
     setEditStatus(n.status ?? "aberta");
   };
+
 
   const saveEdit = async () => {
     if (!editing) return;
