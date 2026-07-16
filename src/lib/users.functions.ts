@@ -186,6 +186,13 @@ export const setUserRole = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
 
+    if (data.userId === context.userId) {
+      if (data.role !== "administrador") {
+        throw new Error("Você não pode remover o próprio perfil de administrador.");
+      }
+      return { ok: true };
+    }
+
     const { error: deleteError } = await context.supabase
       .from("user_roles")
       .delete()
