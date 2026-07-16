@@ -1,9 +1,33 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 import { z } from "zod";
 
 const ROLES = ["administrador", "auditor", "gestor", "consulta"] as const;
 export type AppRole = (typeof ROLES)[number];
+
+/**
+ * Cria um cliente Supabase server-side com a chave publishable (anon).
+ * Usa fetch shim para chaves opacas sb_publishable_ (não são JWT).
+ */
+function createAnonClient() {
+  const url = process.env.SUPABASE_URL!;
+  const key = process.env.SUPABASE_PUBLISHABLE_KEY!;
+  return createClient<Database>(url, key, {
+    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+    global: {
+      fetch: (input, init) => {
+        const h = new Headers(init?.headers);
+        if (key.startsWith("sb_") && h.get("Authorization") === `Bearer ${key}`) {
+          h.delete("Authorization");
+        }
+        h.set("apikey", key);
+        return fetch(input, { ...init, headers: h });
+      },
+    },
+  });
+}
 
 async function assertAdmin(supabase: any, userId: string) {
   const { data, error } = await supabase
@@ -42,11 +66,11 @@ export const bootstrapFirstAdmin = createServerFn({ method: "POST" })
       throw new Error("Já existe um administrador. Solicite acesso a um administrador.");
     }
 
-    const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
+    const anon = createAnonClient();
+    const { data: created, error } = await anon.auth.signUp({
       email: data.email,
       password: data.password,
-      email_confirm: true,
-      user_metadata: { nome: data.nome, role: "administrador" },
+      options: { data: { nome: data.nome, role: "administrador" } },
     });
     if (error) throw new Error(error.message);
     return { ok: true, userId: created.user?.id };
@@ -120,12 +144,11 @@ export const createUser = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
+    const anon = createAnonClient();
+    const { data: created, error } = await anon.auth.signUp({
       email: data.email,
       password: data.password,
-      email_confirm: true,
-      user_metadata: { nome: data.nome, role: data.role },
+      options: { data: { nome: data.nome, role: data.role } },
     });
     if (error) throw new Error(error.message);
     return { ok: true, userId: created.user?.id };
@@ -159,7 +182,8 @@ export const deleteUser = createServerFn({ method: "POST" })
       throw new Error("Você não pode excluir a si mesmo.");
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
+    // Remove todos os papéis do usuário, desabilitando o acesso.
+    const { error } = await supabaseAdmin.from("user_roles").delete().eq("user_id", data.userId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
