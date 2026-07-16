@@ -40,8 +40,8 @@ function NovaAuditoria() {
     seiketsu: 7,
     shitsuke: 7,
   });
-  type NcEntry = { marked: boolean; descricao: string; responsavel: string; responsavel_email: string; prazo: string };
-  const emptyNc: NcEntry = { marked: false, descricao: "", responsavel: "", responsavel_email: "", prazo: "" };
+  type NcEntry = { marked: boolean; descricao: string };
+  const emptyNc: NcEntry = { marked: false, descricao: "" };
   const [ncs, setNcs] = useState<Record<Criterio5SKey, NcEntry>>({
     seiri: { ...emptyNc },
     seiton: { ...emptyNc },
@@ -49,6 +49,9 @@ function NovaAuditoria() {
     seiketsu: { ...emptyNc },
     shitsuke: { ...emptyNc },
   });
+  const [ncResponsavel, setNcResponsavel] = useState("");
+  const [ncResponsavelEmail, setNcResponsavelEmail] = useState("");
+  const [ncPrazo, setNcPrazo] = useState("");
 
   const addFotos = (files: FileList | null) => {
     if (!files || files.length === 0) return;
