@@ -475,19 +475,13 @@ function NCList() {
                             n.severidade}
                         </Badge>
                         <Badge variant="outline">{n.criterio}</Badge>
-                        <Badge
-                          variant="outline"
-                          className={
-                            n.responsavel
-                              ? "border-primary/40 text-primary bg-primary/5"
-                              : "border-dashed text-muted-foreground"
-                          }
-                        >
-                          <User className="h-3 w-3 mr-1" />
-                          {n.responsavel || "Sem responsável"}
-                        </Badge>
                       </div>
                       <p className="text-sm font-medium">{n.descricao}</p>
+                      <div className="grid gap-1 text-xs sm:grid-cols-3">
+                        <RespInfo label="Resp. NC" user={n.resp_nc} />
+                        <RespInfo label="Resp. Ação" user={n.resp_acao} />
+                        <RespInfo label="Aprovador" user={n.aprovador} />
+
                       <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
                         {n.areas?.nome && (
                           <span className="flex items-center gap-1">
