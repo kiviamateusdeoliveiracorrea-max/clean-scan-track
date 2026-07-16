@@ -15,7 +15,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { ArrowLeft, Save, Camera, X } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ArrowLeft, Save, Camera, X, AlertTriangle } from "lucide-react";
 import { CRITERIOS_5S, classificaPontuacao, type Criterio5SKey } from "@/lib/audit-constants";
 import { toast } from "sonner";
 
@@ -38,6 +39,13 @@ function NovaAuditoria() {
     seiso: 7,
     seiketsu: 7,
     shitsuke: 7,
+  });
+  const [ncs, setNcs] = useState<Record<Criterio5SKey, { marked: boolean; descricao: string }>>({
+    seiri: { marked: false, descricao: "" },
+    seiton: { marked: false, descricao: "" },
+    seiso: { marked: false, descricao: "" },
+    seiketsu: { marked: false, descricao: "" },
+    shitsuke: { marked: false, descricao: "" },
   });
 
   const addFotos = (files: FileList | null) => {
@@ -126,8 +134,28 @@ function NovaAuditoria() {
         .eq("id", inserted.id);
     }
 
+    // Gerar ações corretivas para critérios marcados como Não Conforme
+    const ncRows = CRITERIOS_5S
+      .filter((c) => ncs[c.key].marked)
+      .map((c) => ({
+        auditoria_id: inserted.id,
+        area_id: areaId,
+        criterio: c.nome,
+        descricao: ncs[c.key].descricao.trim() || `Não conformidade identificada em ${c.nome}`,
+        severidade: "media",
+        status: "aberta",
+      }));
+    if (ncRows.length > 0) {
+      const { error: ncErr } = await supabase.from("nao_conformidades").insert(ncRows);
+      if (ncErr) toast.error("Erro ao gerar ações corretivas: " + ncErr.message);
+    }
+
     setSaving(false);
-    toast.success("Auditoria salva com sucesso!");
+    toast.success(
+      ncRows.length > 0
+        ? `Auditoria salva! ${ncRows.length} ação(ões) corretiva(s) gerada(s).`
+        : "Auditoria salva com sucesso!",
+    );
     navigate({ to: "/auditorias/$id", params: { id: inserted.id } });
   };
 
@@ -237,6 +265,37 @@ function NovaAuditoria() {
                   step={1}
                   onValueChange={(v) => setScores((s) => ({ ...s, [c.key]: v[0] }))}
                 />
+                <div className="rounded-md border border-dashed p-3 space-y-2 bg-muted/30">
+                  <label className="flex items-center gap-2 text-sm cursor-pointer">
+                    <Checkbox
+                      checked={ncs[c.key].marked}
+                      onCheckedChange={(v) =>
+                        setNcs((n) => ({
+                          ...n,
+                          [c.key]: { ...n[c.key], marked: v === true },
+                        }))
+                      }
+                    />
+                    <AlertTriangle className="h-4 w-4 text-amber-600" />
+                    <span className="font-medium">Marcar como Não Conforme</span>
+                    <span className="text-xs text-muted-foreground">
+                      (gera ação corretiva automaticamente)
+                    </span>
+                  </label>
+                  {ncs[c.key].marked && (
+                    <Textarea
+                      value={ncs[c.key].descricao}
+                      onChange={(e) =>
+                        setNcs((n) => ({
+                          ...n,
+                          [c.key]: { ...n[c.key], descricao: e.target.value },
+                        }))
+                      }
+                      placeholder={`Descreva a não conformidade em ${c.nome}...`}
+                      rows={2}
+                    />
+                  )}
+                </div>
               </div>
             );
           })}
