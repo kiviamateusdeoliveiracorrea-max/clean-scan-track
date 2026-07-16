@@ -17,6 +17,7 @@ function Historico() {
       const { data, error } = await supabase
         .from("auditorias")
         .select("*, areas(nome), auditores(nome)")
+        .neq("status", "cancelada")
         .order("data_auditoria", { ascending: false });
       if (error) throw error;
       return data ?? [];
