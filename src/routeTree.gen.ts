@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedNaoConformidadesRouteImport } from './routes/_authenticated/nao-conformidades'
 import { Route as AuthenticatedHistoricoRouteImport } from './routes/_authenticated/historico'
@@ -18,57 +19,61 @@ import { Route as AuthenticatedAuditoriasIndexRouteImport } from './routes/_auth
 import { Route as AuthenticatedAuditoriasNovaRouteImport } from './routes/_authenticated/auditorias.nova'
 import { Route as AuthenticatedAuditoriasIdRouteImport } from './routes/_authenticated/auditorias.$id'
 
-const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
-  id: '/_authenticated/',
-  path: '/',
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedNaoConformidadesRoute =
   AuthenticatedNaoConformidadesRouteImport.update({
-    id: '/_authenticated/nao-conformidades',
+    id: '/nao-conformidades',
     path: '/nao-conformidades',
-    getParentRoute: () => rootRouteImport,
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedHistoricoRoute = AuthenticatedHistoricoRouteImport.update({
-  id: '/_authenticated/historico',
+  id: '/historico',
   path: '/historico',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAuditoresRoute = AuthenticatedAuditoresRouteImport.update({
-  id: '/_authenticated/auditores',
+  id: '/auditores',
   path: '/auditores',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAreasRoute = AuthenticatedAreasRouteImport.update({
-  id: '/_authenticated/areas',
+  id: '/areas',
   path: '/areas',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAuditoriasIndexRoute =
   AuthenticatedAuditoriasIndexRouteImport.update({
-    id: '/_authenticated/auditorias/',
+    id: '/auditorias/',
     path: '/auditorias/',
-    getParentRoute: () => rootRouteImport,
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedAuditoriasNovaRoute =
   AuthenticatedAuditoriasNovaRouteImport.update({
-    id: '/_authenticated/auditorias/nova',
+    id: '/auditorias/nova',
     path: '/auditorias/nova',
-    getParentRoute: () => rootRouteImport,
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedAuditoriasIdRoute =
   AuthenticatedAuditoriasIdRouteImport.update({
-    id: '/_authenticated/auditorias/$id',
+    id: '/auditorias/$id',
     path: '/auditorias/$id',
-    getParentRoute: () => rootRouteImport,
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
+  '/': typeof AuthenticatedIndexRoute
   '/areas': typeof AuthenticatedAreasRoute
   '/auditores': typeof AuthenticatedAuditoresRoute
   '/historico': typeof AuthenticatedHistoricoRoute
   '/nao-conformidades': typeof AuthenticatedNaoConformidadesRoute
-  '/': typeof AuthenticatedIndexRoute
   '/auditorias/$id': typeof AuthenticatedAuditoriasIdRoute
   '/auditorias/nova': typeof AuthenticatedAuditoriasNovaRoute
   '/auditorias/': typeof AuthenticatedAuditoriasIndexRoute
@@ -85,6 +90,7 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/_authenticated/areas': typeof AuthenticatedAreasRoute
   '/_authenticated/auditores': typeof AuthenticatedAuditoresRoute
   '/_authenticated/historico': typeof AuthenticatedHistoricoRoute
@@ -97,11 +103,11 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/'
     | '/areas'
     | '/auditores'
     | '/historico'
     | '/nao-conformidades'
-    | '/'
     | '/auditorias/$id'
     | '/auditorias/nova'
     | '/auditorias/'
@@ -117,6 +123,7 @@ export interface FileRouteTypes {
     | '/auditorias'
   id:
     | '__root__'
+    | '/_authenticated'
     | '/_authenticated/areas'
     | '/_authenticated/auditores'
     | '/_authenticated/historico'
@@ -128,6 +135,78 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/': {
+      id: '/_authenticated/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/nao-conformidades': {
+      id: '/_authenticated/nao-conformidades'
+      path: '/nao-conformidades'
+      fullPath: '/nao-conformidades'
+      preLoaderRoute: typeof AuthenticatedNaoConformidadesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/historico': {
+      id: '/_authenticated/historico'
+      path: '/historico'
+      fullPath: '/historico'
+      preLoaderRoute: typeof AuthenticatedHistoricoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/auditores': {
+      id: '/_authenticated/auditores'
+      path: '/auditores'
+      fullPath: '/auditores'
+      preLoaderRoute: typeof AuthenticatedAuditoresRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/areas': {
+      id: '/_authenticated/areas'
+      path: '/areas'
+      fullPath: '/areas'
+      preLoaderRoute: typeof AuthenticatedAreasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/auditorias/': {
+      id: '/_authenticated/auditorias/'
+      path: '/auditorias'
+      fullPath: '/auditorias/'
+      preLoaderRoute: typeof AuthenticatedAuditoriasIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/auditorias/nova': {
+      id: '/_authenticated/auditorias/nova'
+      path: '/auditorias/nova'
+      fullPath: '/auditorias/nova'
+      preLoaderRoute: typeof AuthenticatedAuditoriasNovaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/auditorias/$id': {
+      id: '/_authenticated/auditorias/$id'
+      path: '/auditorias/$id'
+      fullPath: '/auditorias/$id'
+      preLoaderRoute: typeof AuthenticatedAuditoriasIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+  }
+}
+
+interface AuthenticatedRouteRouteChildren {
   AuthenticatedAreasRoute: typeof AuthenticatedAreasRoute
   AuthenticatedAuditoresRoute: typeof AuthenticatedAuditoresRoute
   AuthenticatedHistoricoRoute: typeof AuthenticatedHistoricoRoute
@@ -138,68 +217,7 @@ export interface RootRouteChildren {
   AuthenticatedAuditoriasIndexRoute: typeof AuthenticatedAuditoriasIndexRoute
 }
 
-declare module '@tanstack/react-router' {
-  interface FileRoutesByPath {
-    '/_authenticated/': {
-      id: '/_authenticated/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/nao-conformidades': {
-      id: '/_authenticated/nao-conformidades'
-      path: '/nao-conformidades'
-      fullPath: '/nao-conformidades'
-      preLoaderRoute: typeof AuthenticatedNaoConformidadesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/historico': {
-      id: '/_authenticated/historico'
-      path: '/historico'
-      fullPath: '/historico'
-      preLoaderRoute: typeof AuthenticatedHistoricoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/auditores': {
-      id: '/_authenticated/auditores'
-      path: '/auditores'
-      fullPath: '/auditores'
-      preLoaderRoute: typeof AuthenticatedAuditoresRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/areas': {
-      id: '/_authenticated/areas'
-      path: '/areas'
-      fullPath: '/areas'
-      preLoaderRoute: typeof AuthenticatedAreasRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/auditorias/': {
-      id: '/_authenticated/auditorias/'
-      path: '/auditorias'
-      fullPath: '/auditorias/'
-      preLoaderRoute: typeof AuthenticatedAuditoriasIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/auditorias/nova': {
-      id: '/_authenticated/auditorias/nova'
-      path: '/auditorias/nova'
-      fullPath: '/auditorias/nova'
-      preLoaderRoute: typeof AuthenticatedAuditoriasNovaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/auditorias/$id': {
-      id: '/_authenticated/auditorias/$id'
-      path: '/auditorias/$id'
-      fullPath: '/auditorias/$id'
-      preLoaderRoute: typeof AuthenticatedAuditoriasIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-  }
-}
-
-const rootRouteChildren: RootRouteChildren = {
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAreasRoute: AuthenticatedAreasRoute,
   AuthenticatedAuditoresRoute: AuthenticatedAuditoresRoute,
   AuthenticatedHistoricoRoute: AuthenticatedHistoricoRoute,
@@ -208,6 +226,13 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedAuditoriasIdRoute: AuthenticatedAuditoriasIdRoute,
   AuthenticatedAuditoriasNovaRoute: AuthenticatedAuditoriasNovaRoute,
   AuthenticatedAuditoriasIndexRoute: AuthenticatedAuditoriasIndexRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
