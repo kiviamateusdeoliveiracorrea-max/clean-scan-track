@@ -140,6 +140,7 @@ export type Database = {
           plano_acao: string | null
           prazo: string | null
           responsavel: string | null
+          responsavel_email: string | null
           severidade: string
           status: string
           updated_at: string
@@ -155,6 +156,7 @@ export type Database = {
           plano_acao?: string | null
           prazo?: string | null
           responsavel?: string | null
+          responsavel_email?: string | null
           severidade?: string
           status?: string
           updated_at?: string
@@ -170,6 +172,7 @@ export type Database = {
           plano_acao?: string | null
           prazo?: string | null
           responsavel?: string | null
+          responsavel_email?: string | null
           severidade?: string
           status?: string
           updated_at?: string
