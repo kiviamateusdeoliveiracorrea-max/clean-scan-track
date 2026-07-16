@@ -5,6 +5,34 @@ import { z } from "zod";
 const ROLES = ["administrador", "auditor", "gestor", "consulta"] as const;
 export type AppRole = (typeof ROLES)[number];
 
+/**
+ * Chama o endpoint GoTrue Admin diretamente.
+ * O cliente supabase-js auto-gerado remove o Authorization para chaves sb_secret_,
+ * mas os endpoints /auth/v1/admin/* exigem Bearer com service_role.
+ */
+async function adminAuthFetch(path: string, init: RequestInit = {}) {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) {
+    throw new Error("Configuração do backend ausente (SUPABASE_URL/SERVICE_ROLE_KEY).");
+  }
+  const res = await fetch(`${url}/auth/v1${path}`, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+      ...(init.headers ?? {}),
+    },
+  });
+  const text = await res.text();
+  const body = text ? JSON.parse(text) : null;
+  if (!res.ok) {
+    throw new Error(body?.msg || body?.error_description || body?.error || `Erro ${res.status}`);
+  }
+  return body;
+}
+
 async function assertAdmin(supabase: any, userId: string) {
   const { data, error } = await supabase
     .from("user_roles")
