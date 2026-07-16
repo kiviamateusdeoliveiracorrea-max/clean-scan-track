@@ -294,6 +294,41 @@ function NCList() {
         </p>
       </header>
 
+      {/* Indicadores por criticidade */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {(["critica", "alta", "media", "baixa"] as const).map((s) => {
+          const count = pendentes.filter((n: any) => n.severidade === s).length;
+          const isCrit = s === "critica";
+          const label = SEVERIDADES.find((x) => x.value === s)?.label ?? s;
+          const cls = isCrit
+            ? "border-red-300 bg-red-50 text-red-700 ring-2 ring-red-400/40"
+            : s === "alta"
+              ? "border-amber-200 bg-amber-50 text-amber-700"
+              : s === "media"
+                ? "border-blue-200 bg-blue-50 text-blue-700"
+                : "border-slate-200 bg-slate-50 text-slate-700";
+          return (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setSev(sev === s ? "todos" : s)}
+              className={`text-left rounded-lg border p-3 transition hover:brightness-95 ${cls} ${
+                sev === s ? "outline outline-2 outline-offset-1 outline-current" : ""
+              }`}
+            >
+              <p className="text-[11px] font-semibold uppercase tracking-wider opacity-80">
+                {label}
+              </p>
+              <p className="text-2xl md:text-3xl font-extrabold mt-1">{count}</p>
+              <p className="text-[10px] opacity-70 mt-0.5">
+                {isCrit ? "Ação imediata" : "Pendentes"}
+              </p>
+            </button>
+          );
+        })}
+      </div>
+
+
       <div className="flex flex-col sm:flex-row gap-3">
         <Select value={status} onValueChange={setStatus}>
           <SelectTrigger className="sm:w-56">
@@ -354,7 +389,14 @@ function NCList() {
             const allFotos = Array.from(new Set([...(legacy ? [legacy] : []), ...extras]));
             const isPend = n.status === "aberta" || n.status === "em_andamento";
             return (
-              <Card key={n.id} className="hover:border-accent transition-colors">
+              <Card
+                key={n.id}
+                className={`hover:border-accent transition-colors ${
+                  n.severidade === "critica"
+                    ? "border-red-400 border-l-4 border-l-red-500 bg-red-50/40"
+                    : ""
+                }`}
+              >
                 <CardContent className="p-4 space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <Link

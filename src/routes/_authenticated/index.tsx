@@ -63,9 +63,10 @@ function Dashboard() {
       ? auditorias.reduce((s, a: any) => s + Number(a.percentual || 0), 0) / total
       : 0;
   const hoje = new Date().toISOString().slice(0, 10);
-  const ncAbertas = ncs.filter(
+  const ncAbertasList = ncs.filter(
     (n: any) => n.status === "aberta" || n.status === "em_andamento",
-  ).length;
+  );
+  const ncAbertas = ncAbertasList.length;
   const ncConcluidas = ncs.filter((n: any) => n.status === "concluida").length;
   const ncVencidas = ncs.filter(
     (n: any) =>
@@ -73,6 +74,12 @@ function Dashboard() {
       n.prazo &&
       n.prazo < hoje,
   ).length;
+  const bySev = {
+    critica: ncAbertasList.filter((n: any) => n.severidade === "critica").length,
+    alta: ncAbertasList.filter((n: any) => n.severidade === "alta").length,
+    media: ncAbertasList.filter((n: any) => n.severidade === "media").length,
+    baixa: ncAbertasList.filter((n: any) => n.severidade === "baixa").length,
+  };
 
   // Últimas 8 auditorias (chart)
   const chartData = [...auditorias]
@@ -180,6 +187,26 @@ function Dashboard() {
           variant="success"
         />
       </div>
+
+      {/* NCs abertas por criticidade */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-accent" />
+            Não Conformidades abertas por criticidade
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <SeverityCard label="Crítica" value={bySev.critica} tone="critical" />
+            <SeverityCard label="Alta" value={bySev.alta} tone="high" />
+            <SeverityCard label="Média" value={bySev.media} tone="medium" />
+            <SeverityCard label="Baixa" value={bySev.baixa} tone="low" />
+          </div>
+        </CardContent>
+      </Card>
+
+
 
       {/* Charts */}
       <div className="grid lg:grid-cols-2 gap-4">
@@ -375,6 +402,32 @@ function KpiCard({
         {hint && <p className="text-[11px] text-muted-foreground mt-2">{hint}</p>}
       </CardContent>
     </Card>
+  );
+}
+
+function SeverityCard({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: number;
+  tone: "critical" | "high" | "medium" | "low";
+}) {
+  const styles: Record<string, string> = {
+    critical: "border-red-300 bg-red-50 text-red-700 ring-2 ring-red-400/40",
+    high: "border-amber-200 bg-amber-50 text-amber-700",
+    medium: "border-blue-200 bg-blue-50 text-blue-700",
+    low: "border-slate-200 bg-slate-50 text-slate-700",
+  };
+  return (
+    <div className={`rounded-lg border p-3 ${styles[tone]}`}>
+      <p className="text-[11px] font-semibold uppercase tracking-wider opacity-80">{label}</p>
+      <p className="text-2xl md:text-3xl font-extrabold mt-1">{value}</p>
+      <p className="text-[10px] opacity-70 mt-0.5">
+        {tone === "critical" ? "Ação imediata" : "Abertas"}
+      </p>
+    </div>
   );
 }
 

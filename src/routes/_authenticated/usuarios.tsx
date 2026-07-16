@@ -24,8 +24,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Trash2, UserPlus, Loader2 } from "lucide-react";
+import { Trash2, UserPlus, Loader2, Lock } from "lucide-react";
 import { normalizeUserEmail } from "@/lib/email-normalization";
+import { useCurrentRole } from "@/hooks/use-current-role";
 
 export const Route = createFileRoute("/_authenticated/usuarios")({
   component: UsuariosPage,
@@ -42,6 +43,7 @@ const ROLE_OPTIONS: AppRole[] = ["administrador", "auditor", "gestor", "consulta
 
 function UsuariosPage() {
   const qc = useQueryClient();
+  const { canManageUsers, isLoading: roleLoading } = useCurrentRole();
   const { data: users, isLoading, error } = useQuery({
     queryKey: ["users"],
     queryFn: () => listUsers(),
@@ -130,10 +132,22 @@ function UsuariosPage() {
       <div>
         <h1 className="text-2xl font-bold">Usuários</h1>
         <p className="text-sm text-muted-foreground">
-          Gerencie contas, cargos, áreas e permissões. Apenas administradores têm acesso.
+          {canManageUsers
+            ? "Gerencie contas, cargos, áreas e permissões. Apenas administradores e gestores podem alterar cadastros."
+            : "Consulta de usuários cadastrados. Apenas administradores e gestores podem realizar alterações."}
         </p>
+        {!canManageUsers && !roleLoading && (
+          <div className="mt-3 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+            <Lock className="h-4 w-4 mt-0.5 shrink-0" />
+            <span>
+              Acesso somente leitura. Solicite a um administrador ou gestor para criar, editar,
+              alterar perfis ou excluir usuários.
+            </span>
+          </div>
+        )}
       </div>
 
+      {canManageUsers && (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
@@ -212,6 +226,7 @@ function UsuariosPage() {
           </form>
         </CardContent>
       </Card>
+      )}
 
       <Card>
         <CardHeader>
@@ -249,33 +264,45 @@ function UsuariosPage() {
                       </p>
                     </div>
                     <Badge variant="secondary">{ROLE_LABEL[currentRole]}</Badge>
-                    <Select
-                      value={currentRole}
-                      onValueChange={(v) => roleMut.mutate({ userId: u.id, role: v as AppRole })}
-                    >
-                      <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {ROLE_OPTIONS.map((r) => (
-                          <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <div className="flex items-center gap-2">
-                      <Label className="text-xs">Ativo</Label>
-                      <Switch
-                        checked={ativo}
-                        onCheckedChange={(v) => updateMut.mutate({ userId: u.id, ativo: v })}
-                      />
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => {
-                        if (confirm(`Excluir ${u.email}?`)) delMut.mutate(u.id);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    {canManageUsers ? (
+                      <>
+                        <Select
+                          value={currentRole}
+                          onValueChange={(v) => roleMut.mutate({ userId: u.id, role: v as AppRole })}
+                        >
+                          <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {ROLE_OPTIONS.map((r) => (
+                              <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <div className="flex items-center gap-2">
+                          <Label className="text-xs">Ativo</Label>
+                          <Switch
+                            checked={ativo}
+                            onCheckedChange={(v) => updateMut.mutate({ userId: u.id, ativo: v })}
+                          />
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            if (confirm(`Excluir ${u.email}?`)) delMut.mutate(u.id);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <span />
+                        <span className="text-xs text-muted-foreground">
+                          {ativo ? "Ativo" : "Inativo"}
+                        </span>
+                        <span />
+                      </>
+                    )}
                   </div>
                 );
               })}

@@ -6,15 +6,16 @@ import { normalizeUserEmail } from "@/lib/email-normalization";
 const ROLES = ["administrador", "auditor", "gestor", "consulta"] as const;
 export type AppRole = (typeof ROLES)[number];
 
-async function assertAdmin(supabase: any, userId: string) {
+async function assertManager(supabase: any, userId: string) {
   const { data, error } = await supabase
     .from("user_roles")
     .select("role")
     .eq("user_id", userId)
-    .eq("role", "administrador")
-    .maybeSingle();
+    .in("role", ["administrador", "gestor"]);
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("Forbidden: apenas administradores");
+  if (!data || data.length === 0) {
+    throw new Error("Acesso negado: apenas administradores ou gestores podem realizar esta ação.");
+  }
 }
 
 export const bootstrapFirstAdmin = createServerFn({ method: "POST" })
@@ -93,16 +94,17 @@ export const getMyRoles = createServerFn({ method: "GET" })
 
 export const listUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    await assertAdmin(context.supabase, context.userId);
+  .handler(async ({ context: _context }) => {
+    // Todos os usuários autenticados podem visualizar a lista.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data: profiles, error: pErr } = await context.supabase
+    const { data: profiles, error: pErr } = await supabaseAdmin
       .from("profiles")
       .select("id, nome, email, cargo, area_id, ativo, created_at, areas(nome)")
       .order("created_at", { ascending: false });
     if (pErr) throw new Error(pErr.message);
 
-    const { data: roles, error: rErr } = await context.supabase
+    const { data: roles, error: rErr } = await supabaseAdmin
       .from("user_roles")
       .select("user_id, role");
     if (rErr) throw new Error(rErr.message);
@@ -135,7 +137,7 @@ export const createUser = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context.supabase, context.userId);
+    await assertManager(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const email = normalizeUserEmail(data.email);
 
@@ -184,7 +186,8 @@ export const setUserRole = createServerFn({ method: "POST" })
     z.object({ userId: z.string().uuid(), role: z.enum(ROLES) }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context.supabase, context.userId);
+    await assertManager(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     if (data.userId === context.userId) {
       if (data.role !== "administrador") {
@@ -193,13 +196,13 @@ export const setUserRole = createServerFn({ method: "POST" })
       return { ok: true };
     }
 
-    const { error: deleteError } = await context.supabase
+    const { error: deleteError } = await supabaseAdmin
       .from("user_roles")
       .delete()
       .eq("user_id", data.userId);
     if (deleteError) throw new Error(deleteError.message);
 
-    const { error } = await context.supabase
+    const { error } = await supabaseAdmin
       .from("user_roles")
       .insert({ user_id: data.userId, role: data.role });
     if (error) throw new Error(error.message);
@@ -220,7 +223,8 @@ export const updateUserProfile = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context.supabase, context.userId);
+    await assertManager(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const patch: {
       nome?: string;
@@ -233,7 +237,7 @@ export const updateUserProfile = createServerFn({ method: "POST" })
     if (data.area_id !== undefined) patch.area_id = data.area_id;
     if (data.ativo !== undefined) patch.ativo = data.ativo;
 
-    const { error } = await context.supabase
+    const { error } = await supabaseAdmin
       .from("profiles")
       .update(patch)
       .eq("id", data.userId);
@@ -245,13 +249,14 @@ export const deleteUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ userId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    await assertAdmin(context.supabase, context.userId);
+    await assertManager(context.supabase, context.userId);
     if (data.userId === context.userId) {
       throw new Error("Você não pode excluir a si mesmo.");
     }
-    const { error } = await context.supabase.from("user_roles").delete().eq("user_id", data.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("user_roles").delete().eq("user_id", data.userId);
     if (error) throw new Error(error.message);
-    const { error: profileError } = await context.supabase
+    const { error: profileError } = await supabaseAdmin
       .from("profiles")
       .update({ ativo: false })
       .eq("id", data.userId);
