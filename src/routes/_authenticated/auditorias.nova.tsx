@@ -16,8 +16,15 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Save, Camera, X, AlertTriangle } from "lucide-react";
-import { CRITERIOS_5S, classificaPontuacao, type Criterio5SKey } from "@/lib/audit-constants";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ArrowLeft, Save, Camera, X, AlertTriangle, Info } from "lucide-react";
+import {
+  CRITERIOS_5S,
+  classificaPontuacao,
+  ESCALA_PONTUACAO,
+  severidadePorNota,
+  type Criterio5SKey,
+} from "@/lib/audit-constants";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/auditorias/nova")({
