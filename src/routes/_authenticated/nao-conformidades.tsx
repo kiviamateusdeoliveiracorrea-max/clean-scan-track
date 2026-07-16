@@ -59,8 +59,8 @@ function NCList() {
   const [resolving, setResolving] = useState<any | null>(null);
   const [planoAcao, setPlanoAcao] = useState("");
   const [novoStatus, setNovoStatus] = useState<string>("concluida");
-  const [foto, setFoto] = useState<File | null>(null);
-  const [fotoPreview, setFotoPreview] = useState<string | null>(null);
+  const [fotos, setFotos] = useState<File[]>([]);
+  const [fotosPreview, setFotosPreview] = useState<string[]>([]);
   const [resolveSaving, setResolveSaving] = useState(false);
 
   const { data = [] } = useQuery({
