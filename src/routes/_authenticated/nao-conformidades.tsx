@@ -35,6 +35,10 @@ import {
   History,
 } from "lucide-react";
 import { STATUS_NC, SEVERIDADES } from "@/lib/audit-constants";
+import { EvidenceThumbs } from "@/components/EvidenceThumbs";
+
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
+const MAX_UPLOAD_MB = 10;
 import { useCurrentRole } from "@/hooks/use-current-role";
 import { toast } from "sonner";
 
@@ -239,17 +243,44 @@ function NCList() {
     setResolveSaving(true);
     const uploadedPhotos: string[] = [];
     for (const f of fotos) {
-      const ext = f.name.split(".").pop() || "jpg";
+      const typeOk = ALLOWED_IMAGE_TYPES.includes(f.type) ||
+        /\.(jpe?g|png|webp|gif)$/i.test(f.name);
+      if (!typeOk) {
+        setResolveSaving(false);
+        console.error("[Evidence] tipo inválido", { name: f.name, type: f.type });
+        return toast.error(`Formato não suportado: ${f.name}. Use JPG, PNG, WEBP ou GIF.`);
+      }
+      if (f.size > MAX_UPLOAD_MB * 1024 * 1024) {
+        setResolveSaving(false);
+        return toast.error(`Arquivo ${f.name} excede ${MAX_UPLOAD_MB}MB.`);
+      }
+      const ext = (f.name.split(".").pop() || "jpg").toLowerCase();
       const path = `${resolving.auditoria_id ?? "nc"}/tratativa-${resolving.id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
-      const { error: upErr } = await supabase.storage.from("audit-photos").upload(path, f);
+      const { error: upErr } = await supabase.storage
+        .from("audit-photos")
+        .upload(path, f, { contentType: f.type || `image/${ext === "jpg" ? "jpeg" : ext}`, upsert: false });
       if (upErr) {
         setResolveSaving(false);
+        console.error("[Evidence] upload foto falhou", { path, error: upErr });
         return toast.error("Erro no upload: " + upErr.message);
+      }
+      // Confirma que o arquivo existe no bucket antes de gravar no banco.
+      const { data: check, error: checkErr } = await supabase.storage
+        .from("audit-photos")
+        .createSignedUrl(path, 60);
+      if (checkErr || !check?.signedUrl) {
+        setResolveSaving(false);
+        console.error("[Evidence] verificação pós-upload falhou", { path, error: checkErr });
+        return toast.error("Upload não pôde ser confirmado. Tente novamente.");
       }
       uploadedPhotos.push(path);
     }
     const uploadedDocs: string[] = [];
     for (const f of docs) {
+      if (f.size > MAX_UPLOAD_MB * 1024 * 1024) {
+        setResolveSaving(false);
+        return toast.error(`Documento ${f.name} excede ${MAX_UPLOAD_MB}MB.`);
+      }
       const ext = f.name.split(".").pop() || "pdf";
       const path = `${resolving.auditoria_id ?? "nc"}/doc-${resolving.id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
       const { error: upErr } = await supabase.storage
@@ -257,6 +288,7 @@ function NCList() {
         .upload(path, f, { contentType: f.type || undefined });
       if (upErr) {
         setResolveSaving(false);
+        console.error("[Evidence] upload documento falhou", { path, error: upErr });
         return toast.error("Erro no upload do documento: " + upErr.message);
       }
       uploadedDocs.push(path);
@@ -366,11 +398,8 @@ function NCList() {
     qc.invalidateQueries({ queryKey: ["nc-historico", approving.id] });
   };
 
-  const fotoPublicUrl = (path?: string | null) => {
-    if (!path) return null;
-    if (path.startsWith("http")) return path;
-    return supabase.storage.from("audit-photos").getPublicUrl(path).data.publicUrl;
-  };
+  // Fotos são carregadas via URLs assinadas no componente <EvidenceThumbs />
+  // porque o bucket audit-photos é privado (getPublicUrl retornaria 400/403).
 
   const PENDING_STATUS = ["aberta", "em_andamento", "aguardando_aprovacao", "reprovada"];
   const pendentes = data.filter((n: any) => PENDING_STATUS.includes(n.status));
@@ -506,11 +535,11 @@ function NCList() {
       ) : (
         <div className="space-y-3">
           {filtered.map((n: any) => {
-            const legacy = fotoPublicUrl(n.foto_url);
-            const extras = Array.isArray(n.foto_urls)
-              ? (n.foto_urls as string[]).map((p) => fotoPublicUrl(p)).filter(Boolean) as string[]
-              : [];
-            const allFotos = Array.from(new Set([...(legacy ? [legacy] : []), ...extras]));
+            const legacyPath: string | null = n.foto_url ?? null;
+            const extraPaths: string[] = Array.isArray(n.foto_urls) ? (n.foto_urls as string[]) : [];
+            const docPaths: string[] = Array.isArray(n.documento_urls) ? (n.documento_urls as string[]) : [];
+            const allFotos = Array.from(new Set([...(legacyPath ? [legacyPath] : []), ...extraPaths]));
+            const allEvidencias = [...allFotos, ...docPaths];
             const isPend = ["aberta", "em_andamento", "reprovada"].includes(n.status);
             const isWaitingApproval = n.status === "aguardando_aprovacao";
             const isClosed = n.status === "encerrada" || n.status === "aprovada" || n.status === "concluida";
@@ -632,7 +661,7 @@ function NCList() {
                     </div>
                   )}
 
-                  {(n.plano_acao || allFotos.length > 0) && (
+                  {(n.plano_acao || allEvidencias.length > 0) && (
                     <div className="rounded-md border bg-muted/30 p-3 space-y-2">
                       <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         Tratativa realizada
@@ -640,18 +669,8 @@ function NCList() {
                       {n.plano_acao && (
                         <p className="text-sm whitespace-pre-wrap">{n.plano_acao}</p>
                       )}
-                      {allFotos.length > 0 && (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                          {allFotos.map((url, i) => (
-                            <a key={url} href={url} target="_blank" rel="noreferrer">
-                              <img
-                                src={url}
-                                alt={`Foto da tratativa ${i + 1}`}
-                                className="w-full aspect-square rounded-md border object-cover"
-                              />
-                            </a>
-                          ))}
-                        </div>
+                      {allEvidencias.length > 0 && (
+                        <EvidenceThumbs paths={allEvidencias} />
                       )}
                     </div>
                   )}
