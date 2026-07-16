@@ -691,3 +691,38 @@ function NCList() {
     </div>
   );
 }
+
+function HistoricoNC({ ncId }: { ncId: string }) {
+  const { data = [] } = useQuery({
+    queryKey: ["nc-historico", ncId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("nc_historico")
+        .select("*")
+        .eq("nc_id", ncId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  if (data.length === 0) return null;
+  return (
+    <div className="border-t pt-3 mt-2">
+      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1 mb-2">
+        <History className="h-3 w-3" /> Histórico
+      </p>
+      <ul className="space-y-2 max-h-40 overflow-y-auto">
+        {data.map((h: any) => (
+          <li key={h.id} className="text-xs bg-muted/30 rounded p-2">
+            <div className="flex justify-between gap-2 text-muted-foreground">
+              <span className="font-medium">{h.acao}</span>
+              <span>{new Date(h.created_at).toLocaleString("pt-BR")}</span>
+            </div>
+            {h.user_nome && <div className="text-muted-foreground">por {h.user_nome}</div>}
+            {h.comentario && <div className="mt-1 whitespace-pre-wrap">{h.comentario}</div>}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
