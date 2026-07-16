@@ -462,7 +462,7 @@ function NCList() {
                 />
               </div>
               <div>
-                <Label>Foto da tratativa (opcional)</Label>
+                <Label>Fotos da tratativa (opcional — várias)</Label>
                 <div className="grid grid-cols-2 gap-2 mt-1">
                   <label className="flex flex-col items-center justify-center gap-1 border-2 border-dashed rounded-md aspect-square cursor-pointer hover:bg-muted/50 text-xs text-muted-foreground">
                     <Camera className="h-6 w-6" />
@@ -480,10 +480,11 @@ function NCList() {
                   </label>
                   <label className="flex flex-col items-center justify-center gap-1 border-2 border-dashed rounded-md aspect-square cursor-pointer hover:bg-muted/50 text-xs text-muted-foreground">
                     <Camera className="h-6 w-6" />
-                    <span>Galeria</span>
+                    <span>Galeria (múltiplas)</span>
                     <input
                       type="file"
                       accept="image/*"
+                      multiple
                       className="hidden"
                       onChange={(e) => {
                         onPickFoto(e.target.files);
@@ -492,30 +493,30 @@ function NCList() {
                     />
                   </label>
                 </div>
-                {fotoPreview && (
-                  <div className="relative mt-2 inline-block">
-                    <img
-                      src={fotoPreview}
-                      alt="Preview"
-                      className="max-h-40 rounded-md border object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (fotoPreview) URL.revokeObjectURL(fotoPreview);
-                        setFotoPreview(null);
-                        setFoto(null);
-                      }}
-                      className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 hover:bg-black/80"
-                      aria-label="Remover foto"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
+                {fotosPreview.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2 mt-2">
+                    {fotosPreview.map((url, idx) => (
+                      <div key={url} className="relative">
+                        <img
+                          src={url}
+                          alt={`Preview ${idx + 1}`}
+                          className="w-full aspect-square rounded-md border object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeFoto(idx)}
+                          className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 hover:bg-black/80"
+                          aria-label="Remover foto"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 )}
-                {resolving.foto_url && !fotoPreview && (
+                {((Array.isArray(resolving.foto_urls) && resolving.foto_urls.length > 0) || resolving.foto_url) && (
                   <p className="text-xs text-muted-foreground mt-2">
-                    Já existe uma foto anexada. Adicionar uma nova irá substituir.
+                    Novas fotos serão adicionadas às já existentes.
                   </p>
                 )}
               </div>
