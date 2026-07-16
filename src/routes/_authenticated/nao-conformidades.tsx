@@ -866,3 +866,27 @@ function UserSelect({
   );
 }
 
+function RespInfo({ label, user }: { label: string; user: UserRow | null | undefined }) {
+  return (
+    <div className="rounded border bg-muted/30 px-2 py-1">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </p>
+      {user?.nome ? (
+        <>
+          <p className="font-medium text-foreground flex items-center gap-1 leading-tight">
+            <User className="h-3 w-3" />
+            {user.nome}
+          </p>
+          <p className="text-[10px] text-muted-foreground truncate">
+            {[user.cargo, user.areas?.nome].filter(Boolean).join(" · ") || "—"}
+          </p>
+        </>
+      ) : (
+        <p className="text-muted-foreground italic">Sem responsável</p>
+      )}
+    </div>
+  );
+}
+
+
