@@ -353,6 +353,7 @@ function NovaNCDialog({
       severidade,
       plano_acao: planoAcao || null,
       responsavel: responsavel || null,
+      responsavel_email: responsavelEmail || null,
       prazo: prazo || null,
       foto_url,
       status: "aberta",
