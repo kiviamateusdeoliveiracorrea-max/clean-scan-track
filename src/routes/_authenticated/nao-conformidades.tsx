@@ -820,3 +820,53 @@ function HistoricoNC({ ncId }: { ncId: string }) {
     </div>
   );
 }
+
+type UserRow = {
+  id: string;
+  nome: string | null;
+  cargo?: string | null;
+  areas?: { nome: string | null } | null;
+};
+
+function UserSelect({
+  label,
+  value,
+  onChange,
+  users,
+  helper,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  users: UserRow[];
+  helper?: string;
+}) {
+  return (
+    <div>
+      <Label>{label}</Label>
+      <Select
+        value={value || "__none__"}
+        onValueChange={(v) => onChange(v === "__none__" ? "" : v)}
+      >
+        <SelectTrigger>
+          <SelectValue placeholder="Selecione um usuário..." />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="__none__">— Sem responsável —</SelectItem>
+          {users.map((u) => (
+            <SelectItem key={u.id} value={u.id}>
+              <div className="flex flex-col text-left">
+                <span className="font-medium">{u.nome ?? "Sem nome"}</span>
+                <span className="text-[11px] text-muted-foreground">
+                  {[u.cargo, u.areas?.nome].filter(Boolean).join(" · ") || "—"}
+                </span>
+              </div>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {helper && <p className="text-xs text-muted-foreground mt-1">{helper}</p>}
+    </div>
+  );
+}
+
