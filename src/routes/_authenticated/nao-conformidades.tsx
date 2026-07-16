@@ -398,11 +398,8 @@ function NCList() {
     qc.invalidateQueries({ queryKey: ["nc-historico", approving.id] });
   };
 
-  const fotoPublicUrl = (path?: string | null) => {
-    if (!path) return null;
-    if (path.startsWith("http")) return path;
-    return supabase.storage.from("audit-photos").getPublicUrl(path).data.publicUrl;
-  };
+  // Fotos são carregadas via URLs assinadas no componente <EvidenceThumbs />
+  // porque o bucket audit-photos é privado (getPublicUrl retornaria 400/403).
 
   const PENDING_STATUS = ["aberta", "em_andamento", "aguardando_aprovacao", "reprovada"];
   const pendentes = data.filter((n: any) => PENDING_STATUS.includes(n.status));
