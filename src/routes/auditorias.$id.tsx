@@ -326,6 +326,10 @@ function NovaNCDialog({
       toast.error("Descreva a não conformidade");
       return;
     }
+    if (responsavelEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(responsavelEmail)) {
+      toast.error("E-mail do responsável inválido");
+      return;
+    }
     setSaving(true);
     let foto_url: string | null = null;
     if (file) {
