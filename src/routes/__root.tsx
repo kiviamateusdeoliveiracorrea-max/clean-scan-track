@@ -271,16 +271,15 @@ function AppShell({ children }: { children: ReactNode }) {
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
           <aside className="absolute left-0 top-0 h-full w-72 bg-sidebar text-sidebar-foreground flex flex-col">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-sidebar-border">
-              <div className="flex items-center gap-2">
-                <div className="grid h-9 w-9 place-items-center rounded-md bg-accent text-accent-foreground">
-                  <Boxes className="h-5 w-5" />
-                </div>
-                <span className="font-bold">AuditLog 5S</span>
-              </div>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-sidebar-border bg-white">
+              <img
+                src={logoAsset.url}
+                alt="Intralog JSL"
+                className="h-8 w-auto max-w-[70%] object-contain"
+              />
               <button
                 onClick={() => setOpen(false)}
-                className="p-2 rounded hover:bg-sidebar-accent"
+                className="p-2 rounded hover:bg-sidebar-accent text-sidebar-foreground"
                 aria-label="Fechar"
               >
                 <X className="h-5 w-5" />
