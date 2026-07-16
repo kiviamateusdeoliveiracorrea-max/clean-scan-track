@@ -40,6 +40,13 @@ function NovaAuditoria() {
     seiketsu: 7,
     shitsuke: 7,
   });
+  const [ncs, setNcs] = useState<Record<Criterio5SKey, { marked: boolean; descricao: string }>>({
+    seiri: { marked: false, descricao: "" },
+    seiton: { marked: false, descricao: "" },
+    seiso: { marked: false, descricao: "" },
+    seiketsu: { marked: false, descricao: "" },
+    shitsuke: { marked: false, descricao: "" },
+  });
 
   const addFotos = (files: FileList | null) => {
     if (!files || files.length === 0) return;
