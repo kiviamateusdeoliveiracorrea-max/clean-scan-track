@@ -354,6 +354,13 @@ function AppShell({ children }: { children: ReactNode }) {
             </button>
           )}
         </header>
+        <div className="w-full bg-white border-b border-border">
+          <img
+            src={logoAsset.url}
+            alt="Grupo JSL — Intralog, JSL Digital, Fadel, Trans Moreno, TPC Rodomeu, Marvel, Truckpad, IC Transportes, FSJ"
+            className="mx-auto h-8 md:h-10 w-auto max-w-full object-contain py-2 px-4"
+          />
+        </div>
         <main className="flex-1 min-w-0">{children}</main>
       </div>
     </div>
