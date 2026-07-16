@@ -576,10 +576,28 @@ function NCList() {
                           <CheckCircle2 className="h-3 w-3 mr-1" /> Tratativa
                         </Button>
                       )}
-                      {canResolveNC && !isPend && (n.plano_acao || allFotos.length > 0) && (
+                      {canResolveNC && (isWaitingApproval || isClosed) && (n.plano_acao || allFotos.length > 0) && (
                         <Button variant="outline" size="sm" onClick={() => openResolve(n)}>
                           <Pencil className="h-3 w-3 mr-1" /> Tratativa
                         </Button>
+                      )}
+                      {canManageNC && isWaitingApproval && (
+                        <>
+                          <Button
+                            size="sm"
+                            onClick={() => openApprove(n, "aprovar")}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                          >
+                            ✅ Aprovar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => openApprove(n, "reprovar")}
+                          >
+                            ❌ Reprovar
+                          </Button>
+                        </>
                       )}
                       {canManageNC && (
                         <Button variant="outline" size="sm" onClick={() => openEdit(n)}>
@@ -588,6 +606,31 @@ function NCList() {
                       )}
                     </div>
                   </div>
+
+                  {(n.data_conclusao || n.parecer_aprovador || n.data_aprovacao) && (
+                    <div className="rounded-md border bg-muted/30 p-3 space-y-1 text-xs">
+                      {n.data_conclusao && (
+                        <p>
+                          <span className="font-semibold">Conclusão da ação:</span>{" "}
+                          {new Date(n.data_conclusao).toLocaleString("pt-BR")}
+                        </p>
+                      )}
+                      {n.data_aprovacao && (
+                        <p>
+                          <span className="font-semibold">
+                            {n.status === "encerrada" ? "Aprovado em:" : "Parecer em:"}
+                          </span>{" "}
+                          {new Date(n.data_aprovacao).toLocaleString("pt-BR")}
+                        </p>
+                      )}
+                      {n.parecer_aprovador && (
+                        <p className="whitespace-pre-wrap">
+                          <span className="font-semibold">Parecer do aprovador:</span>{" "}
+                          {n.parecer_aprovador}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {(n.plano_acao || allFotos.length > 0) && (
                     <div className="rounded-md border bg-muted/30 p-3 space-y-2">
