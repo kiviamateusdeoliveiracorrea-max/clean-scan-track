@@ -305,6 +305,7 @@ function NovaNCDialog({
   const [severidade, setSeveridade] = useState("media");
   const [planoAcao, setPlanoAcao] = useState("");
   const [responsavel, setResponsavel] = useState("");
+  const [responsavelEmail, setResponsavelEmail] = useState("");
   const [prazo, setPrazo] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
@@ -315,6 +316,7 @@ function NovaNCDialog({
     setSeveridade("media");
     setPlanoAcao("");
     setResponsavel("");
+    setResponsavelEmail("");
     setPrazo("");
     setFile(null);
   };
