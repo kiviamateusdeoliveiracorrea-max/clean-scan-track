@@ -191,7 +191,6 @@ function NCList() {
     setCausaRaiz(n.causa_raiz ?? "");
     setAcaoCorretiva(n.acao_corretiva ?? "");
     setAcaoPreventiva(n.acao_preventiva ?? "");
-    setNovoStatus(n.status === "concluida" ? "concluida" : "concluida");
     setFotos([]);
     setDocs([]);
     fotosPreview.forEach((u) => URL.revokeObjectURL(u));
