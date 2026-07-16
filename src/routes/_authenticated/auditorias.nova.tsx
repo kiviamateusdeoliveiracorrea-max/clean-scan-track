@@ -151,9 +151,9 @@ function NovaAuditoria() {
           descricao: n.descricao.trim() || `Não conformidade identificada em ${c.nome}`,
           severidade: "media",
           status: "aberta",
-          responsavel: n.responsavel.trim() || null,
-          responsavel_email: n.responsavel_email.trim() || null,
-          prazo: n.prazo || null,
+          responsavel: ncResponsavel.trim() || null,
+          responsavel_email: ncResponsavelEmail.trim() || null,
+          prazo: ncPrazo || null,
         };
       });
     if (ncRows.length > 0) {
