@@ -566,37 +566,27 @@ function NCList() {
             <DialogTitle>Editar responsabilidade</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <div>
-              <Label>Responsável</Label>
-              <Select
-                value={editResp || undefined}
-                onValueChange={(v) => {
-                  setEditResp(v);
-                  const a = (auditoresQ.data ?? []).find((x: any) => x.nome === v);
-                  if (a?.email) setEditEmail(a.email);
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {(auditoresQ.data ?? []).map((a: any) => (
-                    <SelectItem key={a.id} value={a.nome}>
-                      {a.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>E-mail</Label>
-              <Input
-                type="email"
-                value={editEmail}
-                onChange={(e) => setEditEmail(e.target.value)}
-                placeholder="email@empresa.com"
-              />
-            </div>
+            <UserSelect
+              label="Responsável pela Não Conformidade"
+              value={editRespNc}
+              onChange={setEditRespNc}
+              users={usuariosQ.data ?? []}
+            />
+            <UserSelect
+              label="Responsável pela Ação"
+              value={editRespAcao}
+              onChange={setEditRespAcao}
+              users={usuariosQ.data ?? []}
+              helper="Qualquer usuário ativo pode ser designado."
+            />
+            <UserSelect
+              label="Aprovador da Ação (Gestor/Administrador)"
+              value={editAprovador}
+              onChange={setEditAprovador}
+              users={usuariosQ.data ?? []}
+              helper="Validador da eficácia antes do encerramento."
+            />
+
             <div>
               <Label>Prazo</Label>
               <Input
