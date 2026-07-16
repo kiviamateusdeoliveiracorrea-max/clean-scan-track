@@ -318,21 +318,68 @@ function NCList() {
   };
 
 
+  const openApprove = (n: any, mode: "aprovar" | "reprovar") => {
+    setApproving(n);
+    setApprovalMode(mode);
+    setParecer("");
+  };
+
+  const saveApproval = async () => {
+    if (!approving) return;
+    if (approvalMode === "reprovar" && !parecer.trim()) {
+      return toast.error("Comentário é obrigatório ao reprovar.");
+    }
+    setApproveSaving(true);
+    const { data: userData } = await supabase.auth.getUser();
+    const uid = userData.user?.id ?? null;
+    let userNome: string | null = null;
+    if (uid) {
+      const { data: prof } = await supabase.from("profiles").select("nome").eq("id", uid).maybeSingle();
+      userNome = (prof as any)?.nome ?? null;
+    }
+    const isAprovar = approvalMode === "aprovar";
+    const patch: any = {
+      status: isAprovar ? "encerrada" : "em_andamento",
+      parecer_aprovador: parecer.trim() || null,
+      data_aprovacao: new Date().toISOString(),
+      aprovado_por: uid,
+    };
+    const { error } = await supabase.from("nao_conformidades").update(patch).eq("id", approving.id);
+    if (error) {
+      setApproveSaving(false);
+      return toast.error(error.message);
+    }
+    await supabase.from("nc_historico").insert({
+      nc_id: approving.id,
+      user_id: uid,
+      user_nome: userNome,
+      acao: isAprovar ? "Ação aprovada — NC encerrada" : "Ação reprovada — retornou para Em Andamento",
+      comentario: parecer.trim() || null,
+    });
+    setApproveSaving(false);
+    toast.success(isAprovar ? "Ação aprovada e encerrada." : "Ação reprovada.");
+    if (!isAprovar) {
+      toast.info("Notificação por e-mail requer domínio configurado em Cloud → Emails.");
+    }
+    setApproving(null);
+    qc.invalidateQueries({ queryKey: ["ncs-all"] });
+    qc.invalidateQueries({ queryKey: ["nc-historico", approving.id] });
+  };
+
   const fotoPublicUrl = (path?: string | null) => {
     if (!path) return null;
     if (path.startsWith("http")) return path;
     return supabase.storage.from("audit-photos").getPublicUrl(path).data.publicUrl;
   };
 
-  const pendentes = data.filter(
-    (n: any) => n.status === "aberta" || n.status === "em_andamento",
-  );
+  const PENDING_STATUS = ["aberta", "em_andamento", "aguardando_aprovacao", "reprovada"];
+  const pendentes = data.filter((n: any) => PENDING_STATUS.includes(n.status));
   const responsaveis = Array.from(
     new Set(data.map((n: any) => n.responsavel).filter((r: any) => r && String(r).trim())),
   ).sort() as string[];
   const filtered = data.filter((n: any) => {
     if (status === "pendentes") {
-      if (n.status !== "aberta" && n.status !== "em_andamento") return false;
+      if (!PENDING_STATUS.includes(n.status)) return false;
     } else if (status !== "todos" && n.status !== status) return false;
     if (sev !== "todos" && n.severidade !== sev) return false;
     if (resp === "sem") {
@@ -350,6 +397,10 @@ function NCList() {
   const statusColor: Record<string, string> = {
     aberta: "bg-red-100 text-red-700",
     em_andamento: "bg-amber-100 text-amber-700",
+    aguardando_aprovacao: "bg-indigo-100 text-indigo-700",
+    aprovada: "bg-emerald-100 text-emerald-700",
+    reprovada: "bg-red-100 text-red-700",
+    encerrada: "bg-emerald-100 text-emerald-700",
     concluida: "bg-emerald-100 text-emerald-700",
     cancelada: "bg-slate-100 text-slate-700",
   };
