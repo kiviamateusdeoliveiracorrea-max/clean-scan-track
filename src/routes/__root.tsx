@@ -19,7 +19,6 @@ import {
   History,
   Menu,
   X,
-  Boxes,
   Users,
   LogOut,
 } from "lucide-react";
