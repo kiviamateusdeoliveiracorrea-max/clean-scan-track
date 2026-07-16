@@ -68,6 +68,7 @@ export type Database = {
           auditor_id: string | null
           created_at: string
           data_auditoria: string
+          fotos: string[]
           id: string
           observacoes: string | null
           percentual: number
@@ -84,6 +85,7 @@ export type Database = {
           auditor_id?: string | null
           created_at?: string
           data_auditoria?: string
+          fotos?: string[]
           id?: string
           observacoes?: string | null
           percentual?: number
@@ -100,6 +102,7 @@ export type Database = {
           auditor_id?: string | null
           created_at?: string
           data_auditoria?: string
+          fotos?: string[]
           id?: string
           observacoes?: string | null
           percentual?: number

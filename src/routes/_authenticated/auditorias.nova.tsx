@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, Camera, X } from "lucide-react";
 import { CRITERIOS_5S, classificaPontuacao, type Criterio5SKey } from "@/lib/audit-constants";
 import { toast } from "sonner";
 
@@ -30,6 +30,8 @@ function NovaAuditoria() {
   const [data, setData] = useState(() => new Date().toISOString().slice(0, 10));
   const [observacoes, setObservacoes] = useState("");
   const [saving, setSaving] = useState(false);
+  const [fotos, setFotos] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
   const [scores, setScores] = useState<Record<Criterio5SKey, number>>({
     seiri: 7,
     seiton: 7,
@@ -37,6 +39,21 @@ function NovaAuditoria() {
     seiketsu: 7,
     shitsuke: 7,
   });
+
+  const addFotos = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const arr = Array.from(files);
+    setFotos((f) => [...f, ...arr]);
+    setPreviews((p) => [...p, ...arr.map((f) => URL.createObjectURL(f))]);
+  };
+
+  const removeFoto = (idx: number) => {
+    setFotos((f) => f.filter((_, i) => i !== idx));
+    setPreviews((p) => {
+      URL.revokeObjectURL(p[idx]);
+      return p.filter((_, i) => i !== idx);
+    });
+  };
 
   const areasQ = useQuery({
     queryKey: ["areas"],
@@ -83,11 +100,33 @@ function NovaAuditoria() {
       })
       .select()
       .single();
-    setSaving(false);
     if (error) {
+      setSaving(false);
       toast.error("Erro ao salvar: " + error.message);
       return;
     }
+
+    const uploadedPaths: string[] = [];
+    for (const file of fotos) {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${inserted.id}/auditoria-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("audit-photos")
+        .upload(path, file);
+      if (upErr) {
+        toast.error("Erro no upload de foto: " + upErr.message);
+      } else {
+        uploadedPaths.push(path);
+      }
+    }
+    if (uploadedPaths.length > 0) {
+      await supabase
+        .from("auditorias")
+        .update({ fotos: uploadedPaths })
+        .eq("id", inserted.id);
+    }
+
+    setSaving(false);
     toast.success("Auditoria salva com sucesso!");
     navigate({ to: "/auditorias/$id", params: { id: inserted.id } });
   };
@@ -217,6 +256,66 @@ function NovaAuditoria() {
           />
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Camera className="h-4 w-4" /> Fotos da auditoria
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <label className="flex flex-col items-center justify-center gap-1 border-2 border-dashed rounded-md aspect-square cursor-pointer hover:bg-muted/50 text-xs text-muted-foreground">
+              <Camera className="h-6 w-6" />
+              <span>Tirar foto</span>
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={(e) => {
+                  addFotos(e.target.files);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+            <label className="flex flex-col items-center justify-center gap-1 border-2 border-dashed rounded-md aspect-square cursor-pointer hover:bg-muted/50 text-xs text-muted-foreground">
+              <Camera className="h-6 w-6" />
+              <span>Galeria</span>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  addFotos(e.target.files);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+            {previews.map((url, idx) => (
+              <div key={idx} className="relative aspect-square rounded-md overflow-hidden border">
+                <img src={url} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => removeFoto(idx)}
+                  className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 hover:bg-black/80"
+                  aria-label="Remover foto"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+          {fotos.length > 0 && (
+            <p className="text-xs text-muted-foreground">
+              {fotos.length} foto(s) anexada(s). Serão enviadas ao salvar a auditoria.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+
 
       <Card className="bg-primary text-primary-foreground">
         <CardContent className="p-5 flex flex-col sm:flex-row sm:items-center gap-4 justify-between">

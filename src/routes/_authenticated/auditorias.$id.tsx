@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,6 +33,56 @@ import {
   Camera,
   FileImage,
 } from "lucide-react";
+
+function AuditPhotos({ paths }: { paths: string[] }) {
+  const [urls, setUrls] = useState<Record<string, string>>({});
+  const [open, setOpen] = useState<string | null>(null);
+
+  const loadUrl = async (path: string) => {
+    if (urls[path]) return urls[path];
+    const { data } = await supabase.storage
+      .from("audit-photos")
+      .createSignedUrl(path, 3600);
+    if (data?.signedUrl) {
+      setUrls((u) => ({ ...u, [path]: data.signedUrl }));
+      return data.signedUrl;
+    }
+    return null;
+  };
+
+  useEffect(() => {
+    paths.forEach((p) => void loadUrl(p));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paths.join("|")]);
+
+  return (
+    <>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+        {paths.map((p) => (
+          <button
+            key={p}
+            type="button"
+            onClick={() => urls[p] && setOpen(urls[p])}
+            className="relative aspect-square rounded-md overflow-hidden border bg-muted"
+          >
+            {urls[p] ? (
+              <img src={urls[p]} alt="Foto da auditoria" className="w-full h-full object-cover" />
+            ) : (
+              <div className="flex items-center justify-center h-full text-muted-foreground">
+                <FileImage className="h-6 w-6" />
+              </div>
+            )}
+          </button>
+        ))}
+      </div>
+      <Dialog open={!!open} onOpenChange={(o) => !o && setOpen(null)}>
+        <DialogContent className="max-w-3xl">
+          {open && <img src={open} alt="Foto" className="w-full h-auto rounded-md" />}
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
 import {
   CRITERIOS_5S,
   SEVERIDADES,
@@ -141,6 +191,20 @@ function AuditoriaDetail() {
           </CardContent>
         </Card>
       )}
+
+      {Array.isArray((audit as any).fotos) && (audit as any).fotos.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Camera className="h-4 w-4" /> Fotos da auditoria ({(audit as any).fotos.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AuditPhotos paths={(audit as any).fotos as string[]} />
+          </CardContent>
+        </Card>
+      )}
+
 
       <Card>
         <CardHeader className="flex-row items-center justify-between">
