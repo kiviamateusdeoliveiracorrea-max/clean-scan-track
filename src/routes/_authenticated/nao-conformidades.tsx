@@ -755,20 +755,9 @@ function NCList() {
                 <Textarea value={acaoPreventiva} onChange={(e) => setAcaoPreventiva(e.target.value)} rows={2} placeholder="O que impede a reincidência." />
               </div>
 
-              <div>
-                <Label>Status após a tratativa</Label>
-                <Select value={novoStatus} onValueChange={setNovoStatus}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATUS_NC.map((s) => (
-                      <SelectItem key={s.value} value={s.value}>
-                        {s.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="rounded-md border border-blue-200 bg-blue-50 p-3 text-xs text-blue-800">
+                Ao anexar evidências (fotos ou documentos) e salvar, a NC muda automaticamente
+                para <strong>Aguardando Aprovação</strong> e aguarda o parecer do aprovador.
               </div>
 
               <HistoricoNC ncId={resolving.id} />
