@@ -535,11 +535,11 @@ function NCList() {
       ) : (
         <div className="space-y-3">
           {filtered.map((n: any) => {
-            const legacy = fotoPublicUrl(n.foto_url);
-            const extras = Array.isArray(n.foto_urls)
-              ? (n.foto_urls as string[]).map((p) => fotoPublicUrl(p)).filter(Boolean) as string[]
-              : [];
-            const allFotos = Array.from(new Set([...(legacy ? [legacy] : []), ...extras]));
+            const legacyPath: string | null = n.foto_url ?? null;
+            const extraPaths: string[] = Array.isArray(n.foto_urls) ? (n.foto_urls as string[]) : [];
+            const docPaths: string[] = Array.isArray(n.documento_urls) ? (n.documento_urls as string[]) : [];
+            const allFotos = Array.from(new Set([...(legacyPath ? [legacyPath] : []), ...extraPaths]));
+            const allEvidencias = [...allFotos, ...docPaths];
             const isPend = ["aberta", "em_andamento", "reprovada"].includes(n.status);
             const isWaitingApproval = n.status === "aguardando_aprovacao";
             const isClosed = n.status === "encerrada" || n.status === "aprovada" || n.status === "concluida";
