@@ -64,11 +64,16 @@ function NCList() {
   const [causaRaiz, setCausaRaiz] = useState("");
   const [acaoCorretiva, setAcaoCorretiva] = useState("");
   const [acaoPreventiva, setAcaoPreventiva] = useState("");
-  const [novoStatus, setNovoStatus] = useState<string>("concluida");
   const [fotos, setFotos] = useState<File[]>([]);
   const [fotosPreview, setFotosPreview] = useState<string[]>([]);
   const [docs, setDocs] = useState<File[]>([]);
   const [resolveSaving, setResolveSaving] = useState(false);
+
+  // Aprovação
+  const [approving, setApproving] = useState<any | null>(null);
+  const [approvalMode, setApprovalMode] = useState<"aprovar" | "reprovar">("aprovar");
+  const [parecer, setParecer] = useState("");
+  const [approveSaving, setApproveSaving] = useState(false);
 
   const { data = [] } = useQuery({
     queryKey: ["ncs-all"],
@@ -186,7 +191,6 @@ function NCList() {
     setCausaRaiz(n.causa_raiz ?? "");
     setAcaoCorretiva(n.acao_corretiva ?? "");
     setAcaoPreventiva(n.acao_preventiva ?? "");
-    setNovoStatus(n.status === "concluida" ? "concluida" : "concluida");
     setFotos([]);
     setDocs([]);
     fotosPreview.forEach((u) => URL.revokeObjectURL(u));
@@ -265,6 +269,12 @@ function NCList() {
     const { data: userData } = await supabase.auth.getUser();
     const uid = userData.user?.id ?? null;
 
+    const totalPhotos = mergedPhotos.length;
+    const totalDocs = mergedDocs.length;
+    const hasEvidencia = totalPhotos > 0 || totalDocs > 0;
+    // Ao concluir a ação e anexar evidências → aguardando aprovação
+    const novoStatus = hasEvidencia ? "aguardando_aprovacao" : "em_andamento";
+
     const update: any = {
       plano_acao: planoAcao.trim(),
       causa_raiz: causaRaiz.trim() || null,
@@ -272,6 +282,7 @@ function NCList() {
       acao_preventiva: acaoPreventiva.trim() || null,
       status: novoStatus,
       updated_by: uid,
+      data_conclusao: hasEvidencia ? new Date().toISOString() : resolving.data_conclusao ?? null,
     };
     if (uploadedPhotos.length > 0) {
       update.foto_urls = mergedPhotos;
@@ -295,7 +306,7 @@ function NCList() {
       nc_id: resolving.id,
       user_id: uid,
       user_nome: userNome,
-      acao: novoStatus === "concluida" ? "Tratativa concluída" : "Tratativa atualizada",
+      acao: hasEvidencia ? "Ação concluída — aguardando aprovação" : "Tratativa atualizada",
       comentario: planoAcao.trim(),
     });
 
@@ -307,21 +318,68 @@ function NCList() {
   };
 
 
+  const openApprove = (n: any, mode: "aprovar" | "reprovar") => {
+    setApproving(n);
+    setApprovalMode(mode);
+    setParecer("");
+  };
+
+  const saveApproval = async () => {
+    if (!approving) return;
+    if (approvalMode === "reprovar" && !parecer.trim()) {
+      return toast.error("Comentário é obrigatório ao reprovar.");
+    }
+    setApproveSaving(true);
+    const { data: userData } = await supabase.auth.getUser();
+    const uid = userData.user?.id ?? null;
+    let userNome: string | null = null;
+    if (uid) {
+      const { data: prof } = await supabase.from("profiles").select("nome").eq("id", uid).maybeSingle();
+      userNome = (prof as any)?.nome ?? null;
+    }
+    const isAprovar = approvalMode === "aprovar";
+    const patch: any = {
+      status: isAprovar ? "encerrada" : "em_andamento",
+      parecer_aprovador: parecer.trim() || null,
+      data_aprovacao: new Date().toISOString(),
+      aprovado_por: uid,
+    };
+    const { error } = await supabase.from("nao_conformidades").update(patch).eq("id", approving.id);
+    if (error) {
+      setApproveSaving(false);
+      return toast.error(error.message);
+    }
+    await supabase.from("nc_historico").insert({
+      nc_id: approving.id,
+      user_id: uid,
+      user_nome: userNome,
+      acao: isAprovar ? "Ação aprovada — NC encerrada" : "Ação reprovada — retornou para Em Andamento",
+      comentario: parecer.trim() || null,
+    });
+    setApproveSaving(false);
+    toast.success(isAprovar ? "Ação aprovada e encerrada." : "Ação reprovada.");
+    if (!isAprovar) {
+      toast.info("Notificação por e-mail requer domínio configurado em Cloud → Emails.");
+    }
+    setApproving(null);
+    qc.invalidateQueries({ queryKey: ["ncs-all"] });
+    qc.invalidateQueries({ queryKey: ["nc-historico", approving.id] });
+  };
+
   const fotoPublicUrl = (path?: string | null) => {
     if (!path) return null;
     if (path.startsWith("http")) return path;
     return supabase.storage.from("audit-photos").getPublicUrl(path).data.publicUrl;
   };
 
-  const pendentes = data.filter(
-    (n: any) => n.status === "aberta" || n.status === "em_andamento",
-  );
+  const PENDING_STATUS = ["aberta", "em_andamento", "aguardando_aprovacao", "reprovada"];
+  const pendentes = data.filter((n: any) => PENDING_STATUS.includes(n.status));
   const responsaveis = Array.from(
     new Set(data.map((n: any) => n.responsavel).filter((r: any) => r && String(r).trim())),
   ).sort() as string[];
   const filtered = data.filter((n: any) => {
     if (status === "pendentes") {
-      if (n.status !== "aberta" && n.status !== "em_andamento") return false;
+      if (!PENDING_STATUS.includes(n.status)) return false;
     } else if (status !== "todos" && n.status !== status) return false;
     if (sev !== "todos" && n.severidade !== sev) return false;
     if (resp === "sem") {
@@ -339,6 +397,10 @@ function NCList() {
   const statusColor: Record<string, string> = {
     aberta: "bg-red-100 text-red-700",
     em_andamento: "bg-amber-100 text-amber-700",
+    aguardando_aprovacao: "bg-indigo-100 text-indigo-700",
+    aprovada: "bg-emerald-100 text-emerald-700",
+    reprovada: "bg-red-100 text-red-700",
+    encerrada: "bg-emerald-100 text-emerald-700",
     concluida: "bg-emerald-100 text-emerald-700",
     cancelada: "bg-slate-100 text-slate-700",
   };
@@ -449,7 +511,9 @@ function NCList() {
               ? (n.foto_urls as string[]).map((p) => fotoPublicUrl(p)).filter(Boolean) as string[]
               : [];
             const allFotos = Array.from(new Set([...(legacy ? [legacy] : []), ...extras]));
-            const isPend = n.status === "aberta" || n.status === "em_andamento";
+            const isPend = ["aberta", "em_andamento", "reprovada"].includes(n.status);
+            const isWaitingApproval = n.status === "aguardando_aprovacao";
+            const isClosed = n.status === "encerrada" || n.status === "aprovada" || n.status === "concluida";
             return (
               <Card
                 key={n.id}
@@ -512,10 +576,28 @@ function NCList() {
                           <CheckCircle2 className="h-3 w-3 mr-1" /> Tratativa
                         </Button>
                       )}
-                      {canResolveNC && !isPend && (n.plano_acao || allFotos.length > 0) && (
+                      {canResolveNC && (isWaitingApproval || isClosed) && (n.plano_acao || allFotos.length > 0) && (
                         <Button variant="outline" size="sm" onClick={() => openResolve(n)}>
                           <Pencil className="h-3 w-3 mr-1" /> Tratativa
                         </Button>
+                      )}
+                      {canManageNC && isWaitingApproval && (
+                        <>
+                          <Button
+                            size="sm"
+                            onClick={() => openApprove(n, "aprovar")}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                          >
+                            ✅ Aprovar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => openApprove(n, "reprovar")}
+                          >
+                            ❌ Reprovar
+                          </Button>
+                        </>
                       )}
                       {canManageNC && (
                         <Button variant="outline" size="sm" onClick={() => openEdit(n)}>
@@ -524,6 +606,31 @@ function NCList() {
                       )}
                     </div>
                   </div>
+
+                  {(n.data_conclusao || n.parecer_aprovador || n.data_aprovacao) && (
+                    <div className="rounded-md border bg-muted/30 p-3 space-y-1 text-xs">
+                      {n.data_conclusao && (
+                        <p>
+                          <span className="font-semibold">Conclusão da ação:</span>{" "}
+                          {new Date(n.data_conclusao).toLocaleString("pt-BR")}
+                        </p>
+                      )}
+                      {n.data_aprovacao && (
+                        <p>
+                          <span className="font-semibold">
+                            {n.status === "encerrada" ? "Aprovado em:" : "Parecer em:"}
+                          </span>{" "}
+                          {new Date(n.data_aprovacao).toLocaleString("pt-BR")}
+                        </p>
+                      )}
+                      {n.parecer_aprovador && (
+                        <p className="whitespace-pre-wrap">
+                          <span className="font-semibold">Parecer do aprovador:</span>{" "}
+                          {n.parecer_aprovador}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {(n.plano_acao || allFotos.length > 0) && (
                     <div className="rounded-md border bg-muted/30 p-3 space-y-2">
@@ -744,20 +851,9 @@ function NCList() {
                 <Textarea value={acaoPreventiva} onChange={(e) => setAcaoPreventiva(e.target.value)} rows={2} placeholder="O que impede a reincidência." />
               </div>
 
-              <div>
-                <Label>Status após a tratativa</Label>
-                <Select value={novoStatus} onValueChange={setNovoStatus}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATUS_NC.map((s) => (
-                      <SelectItem key={s.value} value={s.value}>
-                        {s.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="rounded-md border border-blue-200 bg-blue-50 p-3 text-xs text-blue-800">
+                Ao anexar evidências (fotos ou documentos) e salvar, a NC muda automaticamente
+                para <strong>Aguardando Aprovação</strong> e aguarda o parecer do aprovador.
               </div>
 
               <HistoricoNC ncId={resolving.id} />
@@ -774,6 +870,75 @@ function NCList() {
             >
               <CheckCircle2 className="h-4 w-4 mr-1" />
               {resolveSaving ? "Salvando..." : "Registrar tratativa"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: aprovar / reprovar */}
+      <Dialog open={!!approving} onOpenChange={(o) => !o && setApproving(null)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {approvalMode === "aprovar" ? "Aprovar ação" : "Reprovar ação"}
+            </DialogTitle>
+          </DialogHeader>
+          {approving && (
+            <div className="space-y-3 text-sm">
+              <div className="rounded-md bg-muted/40 p-3">
+                <p className="font-medium">{approving.criterio}</p>
+                <p className="text-muted-foreground">{approving.descricao}</p>
+              </div>
+              {approving.plano_acao && (
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Comentário do responsável
+                  </p>
+                  <p className="whitespace-pre-wrap">{approving.plano_acao}</p>
+                </div>
+              )}
+              {approving.data_conclusao && (
+                <p className="text-xs text-muted-foreground">
+                  Conclusão em{" "}
+                  {new Date(approving.data_conclusao).toLocaleString("pt-BR")}
+                </p>
+              )}
+              <div>
+                <Label>
+                  Parecer do aprovador{" "}
+                  {approvalMode === "reprovar" && <span className="text-destructive">*</span>}
+                </Label>
+                <Textarea
+                  value={parecer}
+                  onChange={(e) => setParecer(e.target.value)}
+                  rows={4}
+                  placeholder={
+                    approvalMode === "aprovar"
+                      ? "Comentário (opcional)"
+                      : "Explique o motivo da reprovação"
+                  }
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setApproving(null)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={saveApproval}
+              disabled={approveSaving}
+              className={
+                approvalMode === "aprovar"
+                  ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                  : "bg-red-600 hover:bg-red-700 text-white"
+              }
+            >
+              {approveSaving
+                ? "Salvando..."
+                : approvalMode === "aprovar"
+                  ? "✅ Aprovar e encerrar"
+                  : "❌ Reprovar"}
             </Button>
           </DialogFooter>
         </DialogContent>
