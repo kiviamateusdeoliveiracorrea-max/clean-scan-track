@@ -264,33 +264,45 @@ function UsuariosPage() {
                       </p>
                     </div>
                     <Badge variant="secondary">{ROLE_LABEL[currentRole]}</Badge>
-                    <Select
-                      value={currentRole}
-                      onValueChange={(v) => roleMut.mutate({ userId: u.id, role: v as AppRole })}
-                    >
-                      <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {ROLE_OPTIONS.map((r) => (
-                          <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <div className="flex items-center gap-2">
-                      <Label className="text-xs">Ativo</Label>
-                      <Switch
-                        checked={ativo}
-                        onCheckedChange={(v) => updateMut.mutate({ userId: u.id, ativo: v })}
-                      />
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => {
-                        if (confirm(`Excluir ${u.email}?`)) delMut.mutate(u.id);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    {canManageUsers ? (
+                      <>
+                        <Select
+                          value={currentRole}
+                          onValueChange={(v) => roleMut.mutate({ userId: u.id, role: v as AppRole })}
+                        >
+                          <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {ROLE_OPTIONS.map((r) => (
+                              <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <div className="flex items-center gap-2">
+                          <Label className="text-xs">Ativo</Label>
+                          <Switch
+                            checked={ativo}
+                            onCheckedChange={(v) => updateMut.mutate({ userId: u.id, ativo: v })}
+                          />
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            if (confirm(`Excluir ${u.email}?`)) delMut.mutate(u.id);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <span />
+                        <span className="text-xs text-muted-foreground">
+                          {ativo ? "Ativo" : "Inativo"}
+                        </span>
+                        <span />
+                      </>
+                    )}
                   </div>
                 );
               })}
