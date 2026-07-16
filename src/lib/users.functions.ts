@@ -150,16 +150,16 @@ export const createUser = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-    const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
-      email: data.email,
-      password: data.password,
-      email_confirm: true,
-      user_metadata: { nome: data.nome, role: data.role },
+    const created = await adminAuthFetch("/admin/users", {
+      method: "POST",
+      body: JSON.stringify({
+        email: data.email,
+        password: data.password,
+        email_confirm: true,
+        user_metadata: { nome: data.nome, role: data.role },
+      }),
     });
-    if (error) throw new Error(error.message);
-    return { ok: true, userId: created.user?.id };
+    return { ok: true, userId: created?.id };
   });
 
 /** Altera o papel de um usuário (admin). */
