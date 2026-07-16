@@ -1,0 +1,1 @@
+ALTER TABLE public.auditorias ADD COLUMN IF NOT EXISTS fotos TEXT[] NOT NULL DEFAULT '{}';
