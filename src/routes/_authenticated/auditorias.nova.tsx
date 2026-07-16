@@ -47,14 +47,12 @@ function NovaAuditoria() {
     seiketsu: 7,
     shitsuke: 7,
   });
-  type NcEntry = { marked: boolean; descricao: string };
-  const emptyNc: NcEntry = { marked: false, descricao: "" };
-  const [ncs, setNcs] = useState<Record<Criterio5SKey, NcEntry>>({
-    seiri: { ...emptyNc },
-    seiton: { ...emptyNc },
-    seiso: { ...emptyNc },
-    seiketsu: { ...emptyNc },
-    shitsuke: { ...emptyNc },
+  const [comentarios, setComentarios] = useState<Record<Criterio5SKey, string>>({
+    seiri: "",
+    seiton: "",
+    seiso: "",
+    seiketsu: "",
+    shitsuke: "",
   });
   const [ncResponsavel, setNcResponsavel] = useState("");
   const [ncResponsavelEmail, setNcResponsavelEmail] = useState("");
