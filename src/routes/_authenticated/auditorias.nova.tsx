@@ -54,8 +54,8 @@ function NovaAuditoria() {
     seiketsu: "",
     shitsuke: "",
   });
-  const [ncResponsavel, setNcResponsavel] = useState("");
-  const [ncResponsavelEmail, setNcResponsavelEmail] = useState("");
+  const [ncResponsavelAcaoId, setNcResponsavelAcaoId] = useState<string>("");
+  const [ncAprovadorId, setNcAprovadorId] = useState<string>("");
   const [ncPrazo, setNcPrazo] = useState("");
 
   const addFotos = (files: FileList | null) => {
