@@ -185,10 +185,14 @@ export const setUserRole = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    await supabaseAdmin.from("user_roles").delete().eq("user_id", data.userId);
-    const { error } = await supabaseAdmin
+    const { error: deleteError } = await context.supabase
+      .from("user_roles")
+      .delete()
+      .eq("user_id", data.userId);
+    if (deleteError) throw new Error(deleteError.message);
+
+    const { error } = await context.supabase
       .from("user_roles")
       .insert({ user_id: data.userId, role: data.role });
     if (error) throw new Error(error.message);
@@ -210,7 +214,6 @@ export const updateUserProfile = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const patch: {
       nome?: string;
@@ -223,7 +226,8 @@ export const updateUserProfile = createServerFn({ method: "POST" })
     if (data.area_id !== undefined) patch.area_id = data.area_id;
     if (data.ativo !== undefined) patch.ativo = data.ativo;
 
-    const { error } = await (supabaseAdmin.from("profiles") as any)
+    const { error } = await context.supabase
+      .from("profiles")
       .update(patch)
       .eq("id", data.userId);
     if (error) throw new Error(error.message);
@@ -238,9 +242,12 @@ export const deleteUser = createServerFn({ method: "POST" })
     if (data.userId === context.userId) {
       throw new Error("Você não pode excluir a si mesmo.");
     }
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.from("user_roles").delete().eq("user_id", data.userId);
+    const { error } = await context.supabase.from("user_roles").delete().eq("user_id", data.userId);
     if (error) throw new Error(error.message);
-    await supabaseAdmin.from("profiles").update({ ativo: false }).eq("id", data.userId);
+    const { error: profileError } = await context.supabase
+      .from("profiles")
+      .update({ ativo: false })
+      .eq("id", data.userId);
+    if (profileError) throw new Error(profileError.message);
     return { ok: true };
   });
