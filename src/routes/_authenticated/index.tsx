@@ -63,9 +63,10 @@ function Dashboard() {
       ? auditorias.reduce((s, a: any) => s + Number(a.percentual || 0), 0) / total
       : 0;
   const hoje = new Date().toISOString().slice(0, 10);
-  const ncAbertas = ncs.filter(
+  const ncAbertasList = ncs.filter(
     (n: any) => n.status === "aberta" || n.status === "em_andamento",
-  ).length;
+  );
+  const ncAbertas = ncAbertasList.length;
   const ncConcluidas = ncs.filter((n: any) => n.status === "concluida").length;
   const ncVencidas = ncs.filter(
     (n: any) =>
@@ -73,6 +74,12 @@ function Dashboard() {
       n.prazo &&
       n.prazo < hoje,
   ).length;
+  const bySev = {
+    critica: ncAbertasList.filter((n: any) => n.severidade === "critica").length,
+    alta: ncAbertasList.filter((n: any) => n.severidade === "alta").length,
+    media: ncAbertasList.filter((n: any) => n.severidade === "media").length,
+    baixa: ncAbertasList.filter((n: any) => n.severidade === "baixa").length,
+  };
 
   // Últimas 8 auditorias (chart)
   const chartData = [...auditorias]
