@@ -139,6 +139,7 @@ export type Database = {
           criterio: string
           descricao: string
           foto_url: string | null
+          foto_urls: string[]
           id: string
           plano_acao: string | null
           prazo: string | null
@@ -155,6 +156,7 @@ export type Database = {
           criterio: string
           descricao: string
           foto_url?: string | null
+          foto_urls?: string[]
           id?: string
           plano_acao?: string | null
           prazo?: string | null
@@ -171,6 +173,7 @@ export type Database = {
           criterio?: string
           descricao?: string
           foto_url?: string | null
+          foto_urls?: string[]
           id?: string
           plano_acao?: string | null
           prazo?: string | null

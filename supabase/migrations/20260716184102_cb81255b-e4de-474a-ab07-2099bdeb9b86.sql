@@ -1,0 +1,1 @@
+ALTER TABLE public.nao_conformidades ADD COLUMN IF NOT EXISTS foto_urls text[] NOT NULL DEFAULT '{}'::text[];

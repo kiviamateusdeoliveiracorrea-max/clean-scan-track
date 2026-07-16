@@ -43,6 +43,7 @@ export const Route = createFileRoute("/_authenticated/nao-conformidades")({
 function NCList() {
   const [status, setStatus] = useState<"pendentes" | "todos" | string>("pendentes");
   const [sev, setSev] = useState("todos");
+  const [resp, setResp] = useState("todos");
   const { canManageNC, canResolveNC } = useCurrentRole();
   const qc = useQueryClient();
 
@@ -58,8 +59,8 @@ function NCList() {
   const [resolving, setResolving] = useState<any | null>(null);
   const [planoAcao, setPlanoAcao] = useState("");
   const [novoStatus, setNovoStatus] = useState<string>("concluida");
-  const [foto, setFoto] = useState<File | null>(null);
-  const [fotoPreview, setFotoPreview] = useState<string | null>(null);
+  const [fotos, setFotos] = useState<File[]>([]);
+  const [fotosPreview, setFotosPreview] = useState<string[]>([]);
   const [resolveSaving, setResolveSaving] = useState(false);
 
   const { data = [] } = useQuery({
@@ -115,24 +116,32 @@ function NCList() {
     setResolving(n);
     setPlanoAcao(n.plano_acao ?? "");
     setNovoStatus(n.status === "concluida" ? "concluida" : "concluida");
-    setFoto(null);
-    if (fotoPreview) URL.revokeObjectURL(fotoPreview);
-    setFotoPreview(null);
+    setFotos([]);
+    fotosPreview.forEach((u) => URL.revokeObjectURL(u));
+    setFotosPreview([]);
   };
 
   const closeResolve = () => {
     setResolving(null);
-    setFoto(null);
-    if (fotoPreview) URL.revokeObjectURL(fotoPreview);
-    setFotoPreview(null);
+    setFotos([]);
+    fotosPreview.forEach((u) => URL.revokeObjectURL(u));
+    setFotosPreview([]);
   };
 
   const onPickFoto = (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    const f = files[0];
-    setFoto(f);
-    if (fotoPreview) URL.revokeObjectURL(fotoPreview);
-    setFotoPreview(URL.createObjectURL(f));
+    const arr = Array.from(files);
+    setFotos((prev) => [...prev, ...arr]);
+    setFotosPreview((prev) => [...prev, ...arr.map((f) => URL.createObjectURL(f))]);
+  };
+
+  const removeFoto = (idx: number) => {
+    setFotos((prev) => prev.filter((_, i) => i !== idx));
+    setFotosPreview((prev) => {
+      const url = prev[idx];
+      if (url) URL.revokeObjectURL(url);
+      return prev.filter((_, i) => i !== idx);
+    });
   };
 
   const saveResolve = async () => {
@@ -142,28 +151,34 @@ function NCList() {
       return;
     }
     setResolveSaving(true);
-    let fotoPath: string | undefined;
-    if (foto) {
-      const ext = foto.name.split(".").pop() || "jpg";
-      const path = `${resolving.auditoria_id ?? "nc"}/tratativa-${resolving.id}-${Date.now()}.${ext}`;
+    const uploadedPaths: string[] = [];
+    for (const f of fotos) {
+      const ext = f.name.split(".").pop() || "jpg";
+      const path = `${resolving.auditoria_id ?? "nc"}/tratativa-${resolving.id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
       const { error: upErr } = await supabase.storage
         .from("audit-photos")
-        .upload(path, foto);
+        .upload(path, f);
       if (upErr) {
         setResolveSaving(false);
         return toast.error("Erro no upload: " + upErr.message);
       }
-      fotoPath = path;
+      uploadedPaths.push(path);
     }
+    const existing: string[] = Array.isArray(resolving.foto_urls) ? resolving.foto_urls : [];
+    const merged = [...existing, ...uploadedPaths];
     const update: {
       plano_acao: string;
       status: string;
+      foto_urls?: string[];
       foto_url?: string;
     } = {
       plano_acao: planoAcao.trim(),
       status: novoStatus,
     };
-    if (fotoPath) update.foto_url = fotoPath;
+    if (uploadedPaths.length > 0) {
+      update.foto_urls = merged;
+      if (!resolving.foto_url) update.foto_url = uploadedPaths[0];
+    }
     const { error } = await supabase
       .from("nao_conformidades")
       .update(update)
@@ -184,11 +199,17 @@ function NCList() {
   const pendentes = data.filter(
     (n: any) => n.status === "aberta" || n.status === "em_andamento",
   );
+  const responsaveis = Array.from(
+    new Set(data.map((n: any) => n.responsavel).filter((r: any) => r && String(r).trim())),
+  ).sort() as string[];
   const filtered = data.filter((n: any) => {
     if (status === "pendentes") {
       if (n.status !== "aberta" && n.status !== "em_andamento") return false;
     } else if (status !== "todos" && n.status !== status) return false;
     if (sev !== "todos" && n.severidade !== sev) return false;
+    if (resp === "sem") {
+      if (n.responsavel && String(n.responsavel).trim()) return false;
+    } else if (resp !== "todos" && n.responsavel !== resp) return false;
     return true;
   });
 
@@ -246,6 +267,20 @@ function NCList() {
             ))}
           </SelectContent>
         </Select>
+        <Select value={resp} onValueChange={setResp}>
+          <SelectTrigger className="sm:w-56">
+            <SelectValue placeholder="Responsável" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos os responsáveis</SelectItem>
+            <SelectItem value="sem">Sem responsável</SelectItem>
+            {responsaveis.map((r) => (
+              <SelectItem key={r} value={r}>
+                {r}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {filtered.length === 0 ? (
@@ -257,7 +292,11 @@ function NCList() {
       ) : (
         <div className="space-y-3">
           {filtered.map((n: any) => {
-            const foto = fotoPublicUrl(n.foto_url);
+            const legacy = fotoPublicUrl(n.foto_url);
+            const extras = Array.isArray(n.foto_urls)
+              ? (n.foto_urls as string[]).map((p) => fotoPublicUrl(p)).filter(Boolean) as string[]
+              : [];
+            const allFotos = Array.from(new Set([...(legacy ? [legacy] : []), ...extras]));
             const isPend = n.status === "aberta" || n.status === "em_andamento";
             return (
               <Card key={n.id} className="hover:border-accent transition-colors">
@@ -277,6 +316,17 @@ function NCList() {
                             n.severidade}
                         </Badge>
                         <Badge variant="outline">{n.criterio}</Badge>
+                        <Badge
+                          variant="outline"
+                          className={
+                            n.responsavel
+                              ? "border-primary/40 text-primary bg-primary/5"
+                              : "border-dashed text-muted-foreground"
+                          }
+                        >
+                          <User className="h-3 w-3 mr-1" />
+                          {n.responsavel || "Sem responsável"}
+                        </Badge>
                       </div>
                       <p className="text-sm font-medium">{n.descricao}</p>
                       <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
@@ -290,12 +340,6 @@ function NCList() {
                           <span className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
                             {new Date(n.auditorias.data_auditoria).toLocaleDateString("pt-BR")}
-                          </span>
-                        )}
-                        {n.responsavel && (
-                          <span className="flex items-center gap-1">
-                            <User className="h-3 w-3" />
-                            {n.responsavel}
                           </span>
                         )}
                         {n.prazo && (
@@ -313,7 +357,7 @@ function NCList() {
                           <CheckCircle2 className="h-3 w-3 mr-1" /> Tratativa
                         </Button>
                       )}
-                      {canResolveNC && !isPend && (n.plano_acao || n.foto_url) && (
+                      {canResolveNC && !isPend && (n.plano_acao || allFotos.length > 0) && (
                         <Button variant="outline" size="sm" onClick={() => openResolve(n)}>
                           <Pencil className="h-3 w-3 mr-1" /> Tratativa
                         </Button>
@@ -326,7 +370,7 @@ function NCList() {
                     </div>
                   </div>
 
-                  {(n.plano_acao || foto) && (
+                  {(n.plano_acao || allFotos.length > 0) && (
                     <div className="rounded-md border bg-muted/30 p-3 space-y-2">
                       <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         Tratativa realizada
@@ -334,14 +378,18 @@ function NCList() {
                       {n.plano_acao && (
                         <p className="text-sm whitespace-pre-wrap">{n.plano_acao}</p>
                       )}
-                      {foto && (
-                        <a href={foto} target="_blank" rel="noreferrer">
-                          <img
-                            src={foto}
-                            alt="Foto da tratativa"
-                            className="max-h-48 rounded-md border object-cover"
-                          />
-                        </a>
+                      {allFotos.length > 0 && (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {allFotos.map((url, i) => (
+                            <a key={url} href={url} target="_blank" rel="noreferrer">
+                              <img
+                                src={url}
+                                alt={`Foto da tratativa ${i + 1}`}
+                                className="w-full aspect-square rounded-md border object-cover"
+                              />
+                            </a>
+                          ))}
+                        </div>
                       )}
                     </div>
                   )}
@@ -447,7 +495,7 @@ function NCList() {
                 />
               </div>
               <div>
-                <Label>Foto da tratativa (opcional)</Label>
+                <Label>Fotos da tratativa (opcional — várias)</Label>
                 <div className="grid grid-cols-2 gap-2 mt-1">
                   <label className="flex flex-col items-center justify-center gap-1 border-2 border-dashed rounded-md aspect-square cursor-pointer hover:bg-muted/50 text-xs text-muted-foreground">
                     <Camera className="h-6 w-6" />
@@ -465,10 +513,11 @@ function NCList() {
                   </label>
                   <label className="flex flex-col items-center justify-center gap-1 border-2 border-dashed rounded-md aspect-square cursor-pointer hover:bg-muted/50 text-xs text-muted-foreground">
                     <Camera className="h-6 w-6" />
-                    <span>Galeria</span>
+                    <span>Galeria (múltiplas)</span>
                     <input
                       type="file"
                       accept="image/*"
+                      multiple
                       className="hidden"
                       onChange={(e) => {
                         onPickFoto(e.target.files);
@@ -477,30 +526,30 @@ function NCList() {
                     />
                   </label>
                 </div>
-                {fotoPreview && (
-                  <div className="relative mt-2 inline-block">
-                    <img
-                      src={fotoPreview}
-                      alt="Preview"
-                      className="max-h-40 rounded-md border object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (fotoPreview) URL.revokeObjectURL(fotoPreview);
-                        setFotoPreview(null);
-                        setFoto(null);
-                      }}
-                      className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 hover:bg-black/80"
-                      aria-label="Remover foto"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
+                {fotosPreview.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2 mt-2">
+                    {fotosPreview.map((url, idx) => (
+                      <div key={url} className="relative">
+                        <img
+                          src={url}
+                          alt={`Preview ${idx + 1}`}
+                          className="w-full aspect-square rounded-md border object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeFoto(idx)}
+                          className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 hover:bg-black/80"
+                          aria-label="Remover foto"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 )}
-                {resolving.foto_url && !fotoPreview && (
+                {((Array.isArray(resolving.foto_urls) && resolving.foto_urls.length > 0) || resolving.foto_url) && (
                   <p className="text-xs text-muted-foreground mt-2">
-                    Já existe uma foto anexada. Adicionar uma nova irá substituir.
+                    Novas fotos serão adicionadas às já existentes.
                   </p>
                 )}
               </div>
