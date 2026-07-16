@@ -121,8 +121,12 @@ function NCList() {
   const openResolve = (n: any) => {
     setResolving(n);
     setPlanoAcao(n.plano_acao ?? "");
+    setCausaRaiz(n.causa_raiz ?? "");
+    setAcaoCorretiva(n.acao_corretiva ?? "");
+    setAcaoPreventiva(n.acao_preventiva ?? "");
     setNovoStatus(n.status === "concluida" ? "concluida" : "concluida");
     setFotos([]);
+    setDocs([]);
     fotosPreview.forEach((u) => URL.revokeObjectURL(u));
     setFotosPreview([]);
   };
@@ -130,6 +134,7 @@ function NCList() {
   const closeResolve = () => {
     setResolving(null);
     setFotos([]);
+    setDocs([]);
     fotosPreview.forEach((u) => URL.revokeObjectURL(u));
     setFotosPreview([]);
   };
@@ -141,6 +146,11 @@ function NCList() {
     setFotosPreview((prev) => [...prev, ...arr.map((f) => URL.createObjectURL(f))]);
   };
 
+  const onPickDoc = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setDocs((prev) => [...prev, ...Array.from(files)]);
+  };
+
   const removeFoto = (idx: number) => {
     setFotos((prev) => prev.filter((_, i) => i !== idx));
     setFotosPreview((prev) => {
@@ -150,6 +160,10 @@ function NCList() {
     });
   };
 
+  const removeDoc = (idx: number) => {
+    setDocs((prev) => prev.filter((_, i) => i !== idx));
+  };
+
   const saveResolve = async () => {
     if (!resolving) return;
     if (!planoAcao.trim()) {
@@ -157,44 +171,79 @@ function NCList() {
       return;
     }
     setResolveSaving(true);
-    const uploadedPaths: string[] = [];
+    const uploadedPhotos: string[] = [];
     for (const f of fotos) {
       const ext = f.name.split(".").pop() || "jpg";
       const path = `${resolving.auditoria_id ?? "nc"}/tratativa-${resolving.id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
-      const { error: upErr } = await supabase.storage
-        .from("audit-photos")
-        .upload(path, f);
+      const { error: upErr } = await supabase.storage.from("audit-photos").upload(path, f);
       if (upErr) {
         setResolveSaving(false);
         return toast.error("Erro no upload: " + upErr.message);
       }
-      uploadedPaths.push(path);
+      uploadedPhotos.push(path);
     }
-    const existing: string[] = Array.isArray(resolving.foto_urls) ? resolving.foto_urls : [];
-    const merged = [...existing, ...uploadedPaths];
-    const update: {
-      plano_acao: string;
-      status: string;
-      foto_urls?: string[];
-      foto_url?: string;
-    } = {
+    const uploadedDocs: string[] = [];
+    for (const f of docs) {
+      const ext = f.name.split(".").pop() || "pdf";
+      const path = `${resolving.auditoria_id ?? "nc"}/doc-${resolving.id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("audit-photos")
+        .upload(path, f, { contentType: f.type || undefined });
+      if (upErr) {
+        setResolveSaving(false);
+        return toast.error("Erro no upload do documento: " + upErr.message);
+      }
+      uploadedDocs.push(path);
+    }
+    const existingPhotos: string[] = Array.isArray(resolving.foto_urls) ? resolving.foto_urls : [];
+    const existingDocs: string[] = Array.isArray(resolving.documento_urls) ? resolving.documento_urls : [];
+    const mergedPhotos = [...existingPhotos, ...uploadedPhotos];
+    const mergedDocs = [...existingDocs, ...uploadedDocs];
+
+    const { data: userData } = await supabase.auth.getUser();
+    const uid = userData.user?.id ?? null;
+
+    const update: any = {
       plano_acao: planoAcao.trim(),
+      causa_raiz: causaRaiz.trim() || null,
+      acao_corretiva: acaoCorretiva.trim() || null,
+      acao_preventiva: acaoPreventiva.trim() || null,
       status: novoStatus,
+      updated_by: uid,
     };
-    if (uploadedPaths.length > 0) {
-      update.foto_urls = merged;
-      if (!resolving.foto_url) update.foto_url = uploadedPaths[0];
+    if (uploadedPhotos.length > 0) {
+      update.foto_urls = mergedPhotos;
+      if (!resolving.foto_url) update.foto_url = uploadedPhotos[0];
     }
-    const { error } = await supabase
-      .from("nao_conformidades")
-      .update(update)
-      .eq("id", resolving.id);
+    if (uploadedDocs.length > 0) update.documento_urls = mergedDocs;
+
+    const { error } = await supabase.from("nao_conformidades").update(update).eq("id", resolving.id);
+    if (error) {
+      setResolveSaving(false);
+      return toast.error(error.message);
+    }
+
+    // Histórico
+    let userNome: string | null = null;
+    if (uid) {
+      const { data: prof } = await supabase.from("profiles").select("nome").eq("id", uid).maybeSingle();
+      userNome = (prof as any)?.nome ?? null;
+    }
+    await supabase.from("nc_historico").insert({
+      nc_id: resolving.id,
+      user_id: uid,
+      user_nome: userNome,
+      acao: novoStatus === "concluida" ? "Tratativa concluída" : "Tratativa atualizada",
+      comentario: planoAcao.trim(),
+    });
+
     setResolveSaving(false);
-    if (error) return toast.error(error.message);
     toast.success("Tratativa registrada");
     closeResolve();
     qc.invalidateQueries({ queryKey: ["ncs-all"] });
+    qc.invalidateQueries({ queryKey: ["nc-historico", resolving.id] });
   };
+
 
   const fotoPublicUrl = (path?: string | null) => {
     if (!path) return null;
