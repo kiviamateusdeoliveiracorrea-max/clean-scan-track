@@ -191,7 +191,6 @@ function NovaAuditoria() {
           severidade: severidadePorNota(nota),
           status: "aberta",
           responsavel: respUser?.nome ?? null,
-          responsavel_email: respUser?.email ?? null,
           responsavel_nc_id: criadorId,
           responsavel_acao_id: ncResponsavelAcaoId || null,
           aprovador_id: ncAprovadorId || null,
