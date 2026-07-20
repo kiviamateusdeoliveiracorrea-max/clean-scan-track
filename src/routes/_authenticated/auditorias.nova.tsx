@@ -62,15 +62,18 @@ function NovaAuditoria() {
     if (!files || files.length === 0) return;
     const arr = Array.from(files);
     setFotos((f) => [...f, ...arr]);
-    setPreviews((p) => [...p, ...arr.map((f) => URL.createObjectURL(f))]);
+    arr.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setPreviews((p) => [...p, reader.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
   const removeFoto = (idx: number) => {
     setFotos((f) => f.filter((_, i) => i !== idx));
-    setPreviews((p) => {
-      URL.revokeObjectURL(p[idx]);
-      return p.filter((_, i) => i !== idx);
-    });
+    setPreviews((p) => p.filter((_, i) => i !== idx));
   };
 
   const areasQ = useQuery({

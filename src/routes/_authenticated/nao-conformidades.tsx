@@ -197,7 +197,6 @@ function NCList() {
     setAcaoPreventiva(n.acao_preventiva ?? "");
     setFotos([]);
     setDocs([]);
-    fotosPreview.forEach((u) => URL.revokeObjectURL(u));
     setFotosPreview([]);
   };
 
@@ -205,7 +204,6 @@ function NCList() {
     setResolving(null);
     setFotos([]);
     setDocs([]);
-    fotosPreview.forEach((u) => URL.revokeObjectURL(u));
     setFotosPreview([]);
   };
 
@@ -213,7 +211,13 @@ function NCList() {
     if (!files || files.length === 0) return;
     const arr = Array.from(files);
     setFotos((prev) => [...prev, ...arr]);
-    setFotosPreview((prev) => [...prev, ...arr.map((f) => URL.createObjectURL(f))]);
+    arr.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setFotosPreview((prev) => [...prev, reader.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
   const onPickDoc = (files: FileList | null) => {
@@ -223,11 +227,7 @@ function NCList() {
 
   const removeFoto = (idx: number) => {
     setFotos((prev) => prev.filter((_, i) => i !== idx));
-    setFotosPreview((prev) => {
-      const url = prev[idx];
-      if (url) URL.revokeObjectURL(url);
-      return prev.filter((_, i) => i !== idx);
-    });
+    setFotosPreview((prev) => prev.filter((_, i) => i !== idx));
   };
 
   const removeDoc = (idx: number) => {
