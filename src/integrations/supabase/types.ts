@@ -217,7 +217,6 @@ export type Database = {
           prazo: string | null
           responsavel: string | null
           responsavel_acao_id: string | null
-          responsavel_email: string | null
           responsavel_nc_id: string | null
           severidade: string
           status: string
@@ -246,7 +245,6 @@ export type Database = {
           prazo?: string | null
           responsavel?: string | null
           responsavel_acao_id?: string | null
-          responsavel_email?: string | null
           responsavel_nc_id?: string | null
           severidade?: string
           status?: string
@@ -275,7 +273,6 @@ export type Database = {
           prazo?: string | null
           responsavel?: string | null
           responsavel_acao_id?: string | null
-          responsavel_email?: string | null
           responsavel_nc_id?: string | null
           severidade?: string
           status?: string
