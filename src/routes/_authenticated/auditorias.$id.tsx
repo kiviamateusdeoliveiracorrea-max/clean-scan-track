@@ -327,7 +327,7 @@ function NCItem({ nc, onChanged }: { nc: any; onChanged: () => void }) {
             </p>
           )}
           <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-            {nc.responsavel && <span>Resp.: {nc.responsavel}{nc.responsavel_email ? ` (${nc.responsavel_email})` : ""}</span>}
+            {nc.responsavel && <span>Resp.: {nc.responsavel}</span>}
             {nc.prazo && (
               <span>Prazo: {new Date(nc.prazo).toLocaleDateString("pt-BR")}</span>
             )}
@@ -417,7 +417,6 @@ function NovaNCDialog({
       severidade,
       plano_acao: planoAcao || null,
       responsavel: responsavel || null,
-      responsavel_email: responsavelEmail || null,
       prazo: prazo || null,
       foto_url,
       status: "aberta",

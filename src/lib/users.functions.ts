@@ -95,8 +95,18 @@ export const getMyRoles = createServerFn({ method: "GET" })
 export const listUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    // Qualquer usuário autenticado pode consultar a lista.
-    const { data: profiles, error: pErr } = await context.supabase
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Check if caller is admin/gestor to decide whether email is exposed
+    const { data: callerRoles } = await context.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId);
+    const isManager = (callerRoles ?? []).some((r: any) =>
+      r.role === "administrador" || r.role === "gestor",
+    );
+
+    const { data: profiles, error: pErr } = await supabaseAdmin
       .from("profiles")
       .select("id, nome, email, cargo, area_id, ativo, created_at, areas(nome)")
       .order("created_at", { ascending: false });
@@ -105,7 +115,7 @@ export const listUsers = createServerFn({ method: "GET" })
       throw new Error(pErr.message);
     }
 
-    const { data: roles, error: rErr } = await context.supabase
+    const { data: roles, error: rErr } = await supabaseAdmin
       .from("user_roles")
       .select("user_id, role");
     if (rErr) {
@@ -119,9 +129,9 @@ export const listUsers = createServerFn({ method: "GET" })
       list.push(r.role as AppRole);
       byUser.set(r.user_id, list);
     }
-    console.log(`[listUsers] returning ${profiles?.length ?? 0} profiles`);
     return (profiles ?? []).map((p: any) => ({
       ...p,
+      email: isManager || p.id === context.userId ? p.email : null,
       area_nome: p.areas?.nome ?? null,
       roles: byUser.get(p.id) ?? [],
     }));

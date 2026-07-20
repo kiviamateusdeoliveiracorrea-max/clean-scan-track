@@ -122,15 +122,12 @@ function NCList() {
     const users = usuariosQ.data ?? [];
     const nomeOf = (id: string) =>
       (users.find((u: any) => u.id === id) as any)?.nome ?? null;
-    const emailOf = (id: string) =>
-      (users.find((u: any) => u.id === id) as any)?.email ?? null;
     const newRespAcaoId = editRespAcao || null;
     const patch: any = {
       responsavel_nc_id: editRespNc || null,
       responsavel_acao_id: newRespAcaoId,
       aprovador_id: editAprovador || null,
       responsavel: newRespAcaoId ? nomeOf(newRespAcaoId) : null,
-      responsavel_email: newRespAcaoId ? emailOf(newRespAcaoId) : null,
       prazo: editPrazo || null,
       status: editStatus,
     };
