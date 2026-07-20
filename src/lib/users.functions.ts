@@ -94,20 +94,24 @@ export const getMyRoles = createServerFn({ method: "GET" })
 
 export const listUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context: _context }) => {
-    // Todos os usuários autenticados podem visualizar a lista.
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-    const { data: profiles, error: pErr } = await supabaseAdmin
+  .handler(async ({ context }) => {
+    // Qualquer usuário autenticado pode consultar a lista.
+    const { data: profiles, error: pErr } = await context.supabase
       .from("profiles")
       .select("id, nome, email, cargo, area_id, ativo, created_at, areas(nome)")
       .order("created_at", { ascending: false });
-    if (pErr) throw new Error(pErr.message);
+    if (pErr) {
+      console.error("[listUsers] profiles error", pErr);
+      throw new Error(pErr.message);
+    }
 
-    const { data: roles, error: rErr } = await supabaseAdmin
+    const { data: roles, error: rErr } = await context.supabase
       .from("user_roles")
       .select("user_id, role");
-    if (rErr) throw new Error(rErr.message);
+    if (rErr) {
+      console.error("[listUsers] user_roles error", rErr);
+      throw new Error(rErr.message);
+    }
 
     const byUser = new Map<string, AppRole[]>();
     for (const r of roles ?? []) {
@@ -115,12 +119,14 @@ export const listUsers = createServerFn({ method: "GET" })
       list.push(r.role as AppRole);
       byUser.set(r.user_id, list);
     }
+    console.log(`[listUsers] returning ${profiles?.length ?? 0} profiles`);
     return (profiles ?? []).map((p: any) => ({
       ...p,
       area_nome: p.areas?.nome ?? null,
       roles: byUser.get(p.id) ?? [],
     }));
   });
+
 
 export const createUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
