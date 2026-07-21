@@ -242,6 +242,7 @@ export const updateUserProfile = createServerFn({ method: "POST" })
       .object({
         userId: z.string().uuid(),
         nome: z.string().trim().min(1).max(100).optional(),
+        email: z.string().trim().email().max(255).optional(),
         cargo: z.string().trim().max(100).nullable().optional(),
         area_id: z.string().uuid().nullable().optional(),
         ativo: z.boolean().optional(),
@@ -254,14 +255,23 @@ export const updateUserProfile = createServerFn({ method: "POST" })
 
     const patch: {
       nome?: string;
+      email?: string;
       cargo?: string | null;
       area_id?: string | null;
       ativo?: boolean;
     } = {};
     if (data.nome !== undefined) patch.nome = data.nome;
+    if (data.email !== undefined) patch.email = normalizeUserEmail(data.email);
     if (data.cargo !== undefined) patch.cargo = data.cargo;
     if (data.area_id !== undefined) patch.area_id = data.area_id;
     if (data.ativo !== undefined) patch.ativo = data.ativo;
+
+    if (patch.email) {
+      const { error: authErr } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
+        email: patch.email,
+      });
+      if (authErr) throw new Error(authErr.message);
+    }
 
     const { error } = await supabaseAdmin
       .from("profiles")
