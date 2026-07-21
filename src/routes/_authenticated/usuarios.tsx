@@ -23,8 +23,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Trash2, UserPlus, Loader2, Lock } from "lucide-react";
+import { Trash2, UserPlus, Loader2, Lock, Pencil } from "lucide-react";
 import { normalizeUserEmail } from "@/lib/email-normalization";
 import { useCurrentRole } from "@/hooks/use-current-role";
 
@@ -41,12 +53,26 @@ const ROLE_LABEL: Record<AppRole, string> = {
 
 const ROLE_OPTIONS: AppRole[] = ["administrador", "auditor", "gestor", "consulta"];
 
+type StatusFilter = "ativos" | "inativos" | "todos";
+
+type EditingUser = {
+  id: string;
+  nome: string;
+  email: string;
+  cargo: string;
+  area_id: string;
+  role: AppRole;
+  ativo: boolean;
+};
+
 function UsuariosPage() {
   const qc = useQueryClient();
   const { canManageUsers, isLoading: roleLoading } = useCurrentRole();
+  const [status, setStatus] = useState<StatusFilter>("ativos");
+
   const { data: users, isLoading, error } = useQuery({
-    queryKey: ["users"],
-    queryFn: () => listUsers(),
+    queryKey: ["users", status],
+    queryFn: () => listUsers({ data: { status } }),
   });
 
   const areasQ = useQuery({
@@ -65,6 +91,10 @@ function UsuariosPage() {
   const [cargo, setCargo] = useState("");
   const [areaId, setAreaId] = useState<string>("");
 
+  const [editing, setEditing] = useState<EditingUser | null>(null);
+
+  const invalidate = () => qc.invalidateQueries({ queryKey: ["users"] });
+
   const createMut = useMutation({
     mutationFn: () =>
       createUser({
@@ -81,7 +111,7 @@ function UsuariosPage() {
       toast.success("Usuário criado");
       setNome(""); setEmail(""); setPassword(""); setRole("consulta");
       setCargo(""); setAreaId("");
-      qc.invalidateQueries({ queryKey: ["users"] });
+      invalidate();
     },
     onError: (e: any) => toast.error(e.message ?? "Falha ao criar usuário"),
   });
@@ -90,7 +120,7 @@ function UsuariosPage() {
     mutationFn: (v: { userId: string; role: AppRole }) => setUserRole({ data: v }),
     onSuccess: () => {
       toast.success("Papel atualizado");
-      qc.invalidateQueries({ queryKey: ["users"] });
+      invalidate();
     },
     onError: (e: any) => toast.error(e.message ?? "Falha"),
   });
@@ -98,11 +128,13 @@ function UsuariosPage() {
   const updateMut = useMutation({
     mutationFn: (v: {
       userId: string;
+      nome?: string;
+      email?: string;
       cargo?: string | null;
       area_id?: string | null;
       ativo?: boolean;
     }) => updateUserProfile({ data: v }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["users"] }),
+    onSuccess: () => invalidate(),
     onError: (e: any) => toast.error(e.message ?? "Falha"),
   });
 
@@ -110,9 +142,34 @@ function UsuariosPage() {
     mutationFn: (userId: string) => deleteUser({ data: { userId } }),
     onSuccess: () => {
       toast.success("Usuário excluído");
-      qc.invalidateQueries({ queryKey: ["users"] });
+      invalidate();
     },
     onError: (e: any) => toast.error(e.message ?? "Falha"),
+  });
+
+  const saveEdit = useMutation({
+    mutationFn: async (u: EditingUser) => {
+      const orig = users?.find((x: any) => x.id === u.id);
+      const patch: any = { userId: u.id };
+      if (u.nome !== (orig?.nome ?? "")) patch.nome = u.nome;
+      if (u.email && u.email !== (orig?.email ?? "")) patch.email = u.email;
+      if ((u.cargo || null) !== (orig?.cargo ?? null)) patch.cargo = u.cargo.trim() || null;
+      if ((u.area_id || null) !== (orig?.area_id ?? null)) patch.area_id = u.area_id || null;
+      if (u.ativo !== (orig?.ativo ?? true)) patch.ativo = u.ativo;
+      if (Object.keys(patch).length > 1) {
+        await updateUserProfile({ data: patch });
+      }
+      const currentRole = (orig?.roles?.[0] as AppRole) ?? "consulta";
+      if (u.role !== currentRole) {
+        await setUserRole({ data: { userId: u.id, role: u.role } });
+      }
+    },
+    onSuccess: () => {
+      toast.success("Usuário atualizado");
+      setEditing(null);
+      invalidate();
+    },
+    onError: (e: any) => toast.error(e.message ?? "Falha ao salvar"),
   });
 
   if (error) {
@@ -229,8 +286,15 @@ function UsuariosPage() {
       )}
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between gap-2 flex-wrap">
           <CardTitle className="text-base">Usuários cadastrados</CardTitle>
+          <Tabs value={status} onValueChange={(v) => setStatus(v as StatusFilter)}>
+            <TabsList>
+              <TabsTrigger value="ativos">Ativos</TabsTrigger>
+              <TabsTrigger value="inativos">Inativos</TabsTrigger>
+              <TabsTrigger value="todos">Todos</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -239,7 +303,7 @@ function UsuariosPage() {
             </div>
           ) : !users || users.length === 0 ? (
             <p className="text-sm text-muted-foreground py-6 text-center">
-              Nenhum usuário cadastrado.
+              Nenhum usuário encontrado.
             </p>
           ) : (
             <div className="space-y-2">
@@ -249,7 +313,7 @@ function UsuariosPage() {
                 return (
                   <div
                     key={u.id}
-                    className="grid gap-2 md:grid-cols-[1fr_auto_auto_auto_auto] md:items-center border rounded-md p-3"
+                    className="grid gap-2 md:grid-cols-[1fr_auto_auto_auto] md:items-center border rounded-md p-3"
                   >
                     <div className="min-w-0">
                       <p className="font-medium truncate">
@@ -266,29 +330,28 @@ function UsuariosPage() {
                     <Badge variant="secondary">{ROLE_LABEL[currentRole]}</Badge>
                     {canManageUsers ? (
                       <>
-                        <Select
-                          value={currentRole}
-                          onValueChange={(v) => roleMut.mutate({ userId: u.id, role: v as AppRole })}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            setEditing({
+                              id: u.id,
+                              nome: u.nome ?? "",
+                              email: u.email ?? "",
+                              cargo: u.cargo ?? "",
+                              area_id: u.area_id ?? "",
+                              role: currentRole,
+                              ativo,
+                            })
+                          }
                         >
-                          <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            {ROLE_OPTIONS.map((r) => (
-                              <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <div className="flex items-center gap-2">
-                          <Label className="text-xs">Ativo</Label>
-                          <Switch
-                            checked={ativo}
-                            onCheckedChange={(v) => updateMut.mutate({ userId: u.id, ativo: v })}
-                          />
-                        </div>
+                          <Pencil className="h-4 w-4 mr-1" /> Editar
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => {
-                            if (confirm(`Excluir ${u.email}?`)) delMut.mutate(u.id);
+                            if (confirm(`Excluir ${u.email ?? u.nome}?`)) delMut.mutate(u.id);
                           }}
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
@@ -296,7 +359,6 @@ function UsuariosPage() {
                       </>
                     ) : (
                       <>
-                        <span />
                         <span className="text-xs text-muted-foreground">
                           {ativo ? "Ativo" : "Inativo"}
                         </span>
@@ -310,6 +372,96 @@ function UsuariosPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar usuário</DialogTitle>
+          </DialogHeader>
+          {editing && (
+            <form
+              className="space-y-3"
+              onSubmit={(e) => {
+                e.preventDefault();
+                saveEdit.mutate(editing);
+              }}
+            >
+              <div className="space-y-1.5">
+                <Label>Nome</Label>
+                <Input
+                  value={editing.nome}
+                  onChange={(e) => setEditing({ ...editing, nome: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>E-mail</Label>
+                <Input
+                  type="email"
+                  value={editing.email}
+                  onChange={(e) => setEditing({ ...editing, email: e.target.value })}
+                  onBlur={() =>
+                    setEditing((s) => (s ? { ...s, email: normalizeUserEmail(s.email) } : s))
+                  }
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Cargo</Label>
+                <Input
+                  value={editing.cargo}
+                  onChange={(e) => setEditing({ ...editing, cargo: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Área</Label>
+                <Select
+                  value={editing.area_id}
+                  onValueChange={(v) => setEditing({ ...editing, area_id: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(areasQ.data ?? []).map((a: any) => (
+                      <SelectItem key={a.id} value={a.id}>{a.nome}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Perfil de acesso</Label>
+                <Select
+                  value={editing.role}
+                  onValueChange={(v) => setEditing({ ...editing, role: v as AppRole })}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {ROLE_OPTIONS.map((r) => (
+                      <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={editing.ativo}
+                  onCheckedChange={(v) => setEditing({ ...editing, ativo: v })}
+                />
+                <Label>{editing.ativo ? "Ativo" : "Inativo"}</Label>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setEditing(null)}>
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={saveEdit.isPending}>
+                  {saveEdit.isPending ? "Salvando..." : "Salvar"}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
