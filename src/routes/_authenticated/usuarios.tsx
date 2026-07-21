@@ -116,27 +116,8 @@ function UsuariosPage() {
     onError: (e: any) => toast.error(e.message ?? "Falha ao criar usuário"),
   });
 
-  const roleMut = useMutation({
-    mutationFn: (v: { userId: string; role: AppRole }) => setUserRole({ data: v }),
-    onSuccess: () => {
-      toast.success("Papel atualizado");
-      invalidate();
-    },
-    onError: (e: any) => toast.error(e.message ?? "Falha"),
-  });
 
-  const updateMut = useMutation({
-    mutationFn: (v: {
-      userId: string;
-      nome?: string;
-      email?: string;
-      cargo?: string | null;
-      area_id?: string | null;
-      ativo?: boolean;
-    }) => updateUserProfile({ data: v }),
-    onSuccess: () => invalidate(),
-    onError: (e: any) => toast.error(e.message ?? "Falha"),
-  });
+
 
   const delMut = useMutation({
     mutationFn: (userId: string) => deleteUser({ data: { userId } }),
