@@ -95,8 +95,6 @@ export const getMyRoles = createServerFn({ method: "GET" })
 export const listUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
     // Check if caller is admin/gestor to decide whether email is exposed
     const { data: callerRoles } = await context.supabase
       .from("user_roles")
@@ -106,7 +104,7 @@ export const listUsers = createServerFn({ method: "GET" })
       r.role === "administrador" || r.role === "gestor",
     );
 
-    const { data: profiles, error: pErr } = await supabaseAdmin
+    const { data: profiles, error: pErr } = await context.supabase
       .from("profiles")
       .select("id, nome, email, cargo, area_id, ativo, created_at, areas(nome)")
       .order("created_at", { ascending: false });
@@ -115,7 +113,7 @@ export const listUsers = createServerFn({ method: "GET" })
       throw new Error(pErr.message);
     }
 
-    const { data: roles, error: rErr } = await supabaseAdmin
+    const { data: roles, error: rErr } = await context.supabase
       .from("user_roles")
       .select("user_id, role");
     if (rErr) {
@@ -136,6 +134,7 @@ export const listUsers = createServerFn({ method: "GET" })
       roles: byUser.get(p.id) ?? [],
     }));
   });
+
 
 
 export const createUser = createServerFn({ method: "POST" })
