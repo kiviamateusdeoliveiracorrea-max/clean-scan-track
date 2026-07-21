@@ -92,10 +92,17 @@ export const getMyRoles = createServerFn({ method: "GET" })
     return { roles: (data ?? []).map((r: any) => r.role as AppRole) };
   });
 
-export const listUsers = createServerFn({ method: "GET" })
+export const listUsers = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    // Check if caller is admin/gestor to decide whether email is exposed
+  .inputValidator((input) =>
+    z
+      .object({
+        status: z.enum(["ativos", "inativos", "todos"]).optional(),
+      })
+      .parse(input ?? {}),
+  )
+  .handler(async ({ data, context }) => {
+    const status = data?.status ?? "ativos";
     const { data: callerRoles } = await context.supabase
       .from("user_roles")
       .select("role")
@@ -104,10 +111,14 @@ export const listUsers = createServerFn({ method: "GET" })
       r.role === "administrador" || r.role === "gestor",
     );
 
-    const { data: profiles, error: pErr } = await context.supabase
+    let query = context.supabase
       .from("profiles")
       .select("id, nome, email, cargo, area_id, ativo, created_at, areas(nome)")
       .order("created_at", { ascending: false });
+    if (status === "ativos") query = query.eq("ativo", true);
+    else if (status === "inativos") query = query.eq("ativo", false);
+
+    const { data: profiles, error: pErr } = await query;
     if (pErr) {
       console.error("[listUsers] profiles error", pErr);
       throw new Error(pErr.message);
