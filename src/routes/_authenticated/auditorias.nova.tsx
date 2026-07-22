@@ -153,11 +153,18 @@ function NovaAuditoria() {
 
     const uploadedPaths: string[] = [];
     for (const file of fotos) {
-      const ext = file.name.split(".").pop() || "jpg";
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
       const path = `${inserted.id}/auditoria-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const contentType =
+        file.type ||
+        (ext === "png"
+          ? "image/png"
+          : ext === "webp"
+          ? "image/webp"
+          : "image/jpeg");
       const { error: upErr } = await supabase.storage
         .from("audit-photos")
-        .upload(path, file);
+        .upload(path, file, { contentType, upsert: false });
       if (upErr) {
         toast.error("Erro no upload de foto: " + upErr.message);
       } else {
@@ -469,7 +476,7 @@ function NovaAuditoria() {
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             <label className="flex flex-col items-center justify-center gap-1 border-2 border-dashed rounded-md aspect-square cursor-pointer hover:bg-muted/50 text-xs text-muted-foreground">
               <Camera className="h-6 w-6" />
-              <span>Tirar foto</span>
+              <span>Tirar Foto</span>
               <input
                 type="file"
                 accept="image/*"
@@ -483,10 +490,10 @@ function NovaAuditoria() {
             </label>
             <label className="flex flex-col items-center justify-center gap-1 border-2 border-dashed rounded-md aspect-square cursor-pointer hover:bg-muted/50 text-xs text-muted-foreground">
               <Camera className="h-6 w-6" />
-              <span>Galeria</span>
+              <span>Selecionar Arquivo</span>
               <input
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/jpg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
                 multiple
                 className="hidden"
                 onChange={(e) => {
