@@ -153,11 +153,18 @@ function NovaAuditoria() {
 
     const uploadedPaths: string[] = [];
     for (const file of fotos) {
-      const ext = file.name.split(".").pop() || "jpg";
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
       const path = `${inserted.id}/auditoria-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const contentType =
+        file.type ||
+        (ext === "png"
+          ? "image/png"
+          : ext === "webp"
+          ? "image/webp"
+          : "image/jpeg");
       const { error: upErr } = await supabase.storage
         .from("audit-photos")
-        .upload(path, file);
+        .upload(path, file, { contentType, upsert: false });
       if (upErr) {
         toast.error("Erro no upload de foto: " + upErr.message);
       } else {
