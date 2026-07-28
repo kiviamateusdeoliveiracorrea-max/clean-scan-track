@@ -639,9 +639,10 @@ function NCList() {
             const docPaths: string[] = Array.isArray(n.documento_urls) ? (n.documento_urls as string[]) : [];
             const allFotos = Array.from(new Set([...(legacyPath ? [legacyPath] : []), ...extraPaths]));
             const allEvidencias = [...allFotos, ...docPaths];
-            const isPend = ["aberta", "em_andamento", "reprovada"].includes(n.status);
-            const isWaitingApproval = n.status === "aguardando_aprovacao";
-            const isClosed = n.status === "encerrada" || n.status === "aprovada" || n.status === "concluida";
+            const isExcluida = !!n.excluida;
+            const isPend = !isExcluida && ["aberta", "em_andamento", "reprovada"].includes(n.status);
+            const isWaitingApproval = !isExcluida && n.status === "aguardando_aprovacao";
+            const isClosed = !isExcluida && (n.status === "encerrada" || n.status === "aprovada" || n.status === "concluida");
             return (
               <Card
                 key={n.id}
