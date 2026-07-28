@@ -1095,6 +1095,74 @@ function NCList() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog: excluir NC */}
+      <Dialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Excluir Não Conformidade</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm">
+              Tem certeza que deseja excluir esta Não Conformidade?
+            </p>
+            {deleting && (
+              <div className="rounded-md border bg-muted/30 p-3 text-xs space-y-1">
+                <p>
+                  <span className="font-semibold">NC:</span> {String(deleting.id).slice(0, 8)}
+                </p>
+                <p>
+                  <span className="font-semibold">Área:</span> {deleting.areas?.nome ?? "—"}
+                </p>
+                <p className="whitespace-pre-wrap">{deleting.descricao}</p>
+              </div>
+            )}
+            <div>
+              <Label>Justificativa *</Label>
+              <Textarea
+                rows={3}
+                value={justificativa}
+                onChange={(e) => setJustificativa(e.target.value)}
+                placeholder="Motivo da exclusão (registro de teste, duplicado, incorreto...)"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              A exclusão é lógica: o registro é mantido no histórico e deixa de impactar
+              indicadores e dashboards.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleting(null)}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete} disabled={deleteSaving}>
+              {deleteSaving ? "Excluindo..." : "Confirmar exclusão"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: restaurar NC */}
+      <Dialog open={!!restoring} onOpenChange={(o) => !o && setRestoring(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Restaurar Não Conformidade</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm">
+            A NC voltará ao status anterior (
+            {restoring?.status_anterior ?? "aberta"}) e passará a contar novamente nos
+            indicadores.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRestoring(null)}>
+              Cancelar
+            </Button>
+            <Button onClick={confirmRestore} disabled={restoreSaving}>
+              {restoreSaving ? "Restaurando..." : "Restaurar NC"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
