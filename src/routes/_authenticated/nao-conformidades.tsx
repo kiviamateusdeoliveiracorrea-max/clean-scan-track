@@ -582,8 +582,14 @@ function NCList() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="pendentes">Pendentes ({pendentes.length})</SelectItem>
-            <SelectItem value="todos">Todos os status</SelectItem>
-            {STATUS_NC.map((s) => (
+            <SelectItem value="aberta">Abertas</SelectItem>
+            <SelectItem value="em_andamento">Em andamento</SelectItem>
+            <SelectItem value="encerradas">Encerradas</SelectItem>
+            <SelectItem value="excluidas">Excluídas ({excluidas.length})</SelectItem>
+            <SelectItem value="todos">Todas</SelectItem>
+            {STATUS_NC.filter(
+              (s) => !["aberta", "em_andamento", "encerrada", "cancelada"].includes(s.value),
+            ).map((s) => (
               <SelectItem key={s.value} value={s.value}>
                 {s.label}
               </SelectItem>
