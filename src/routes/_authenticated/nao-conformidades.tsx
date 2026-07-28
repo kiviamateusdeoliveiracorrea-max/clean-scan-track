@@ -486,13 +486,22 @@ function NCList() {
   // porque o bucket audit-photos é privado (getPublicUrl retornaria 400/403).
 
   const PENDING_STATUS = ["aberta", "em_andamento", "aguardando_aprovacao", "reprovada"];
-  const pendentes = data.filter((n: any) => PENDING_STATUS.includes(n.status));
+  const CLOSED_STATUS = ["encerrada", "aprovada", "concluida"];
+  const ativas = data.filter((n: any) => !n.excluida);
+  const excluidas = data.filter((n: any) => n.excluida);
+  const pendentes = ativas.filter((n: any) => PENDING_STATUS.includes(n.status));
   const responsaveis = Array.from(
-    new Set(data.map((n: any) => n.responsavel).filter((r: any) => r && String(r).trim())),
+    new Set(ativas.map((n: any) => n.responsavel).filter((r: any) => r && String(r).trim())),
   ).sort() as string[];
   const filtered = data.filter((n: any) => {
-    if (status === "pendentes") {
+    if (status === "excluidas") {
+      if (!n.excluida) return false;
+    } else if (n.excluida) {
+      return false;
+    } else if (status === "pendentes") {
       if (!PENDING_STATUS.includes(n.status)) return false;
+    } else if (status === "encerradas") {
+      if (!CLOSED_STATUS.includes(n.status)) return false;
     } else if (status !== "todos" && n.status !== status) return false;
     if (sev !== "todos" && n.severidade !== sev) return false;
     if (resp === "sem") {
