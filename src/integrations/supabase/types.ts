@@ -209,9 +209,13 @@ export type Database = {
           data_conclusao: string | null
           descricao: string
           documento_urls: string[]
+          excluida: boolean
+          excluida_em: string | null
+          excluida_por: string | null
           foto_url: string | null
           foto_urls: string[]
           id: string
+          justificativa_exclusao: string | null
           parecer_aprovador: string | null
           plano_acao: string | null
           prazo: string | null
@@ -220,6 +224,7 @@ export type Database = {
           responsavel_nc_id: string | null
           severidade: string
           status: string
+          status_anterior: string | null
           updated_at: string
           updated_by: string | null
         }
@@ -237,9 +242,13 @@ export type Database = {
           data_conclusao?: string | null
           descricao: string
           documento_urls?: string[]
+          excluida?: boolean
+          excluida_em?: string | null
+          excluida_por?: string | null
           foto_url?: string | null
           foto_urls?: string[]
           id?: string
+          justificativa_exclusao?: string | null
           parecer_aprovador?: string | null
           plano_acao?: string | null
           prazo?: string | null
@@ -248,6 +257,7 @@ export type Database = {
           responsavel_nc_id?: string | null
           severidade?: string
           status?: string
+          status_anterior?: string | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -265,9 +275,13 @@ export type Database = {
           data_conclusao?: string | null
           descricao?: string
           documento_urls?: string[]
+          excluida?: boolean
+          excluida_em?: string | null
+          excluida_por?: string | null
           foto_url?: string | null
           foto_urls?: string[]
           id?: string
+          justificativa_exclusao?: string | null
           parecer_aprovador?: string | null
           plano_acao?: string | null
           prazo?: string | null
@@ -276,6 +290,7 @@ export type Database = {
           responsavel_nc_id?: string | null
           severidade?: string
           status?: string
+          status_anterior?: string | null
           updated_at?: string
           updated_by?: string | null
         }

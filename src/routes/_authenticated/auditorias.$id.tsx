@@ -119,6 +119,7 @@ function AuditoriaDetail() {
         .from("nao_conformidades")
         .select("*")
         .eq("auditoria_id", id)
+        .eq("excluida", false)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];

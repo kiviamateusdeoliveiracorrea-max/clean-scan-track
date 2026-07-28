@@ -53,7 +53,8 @@ function Dashboard() {
         .from("nao_conformidades")
         .select(
           "*, resp_acao:profiles!nao_conformidades_responsavel_acao_id_fkey(id,nome,cargo,areas(nome))",
-        );
+        )
+        .eq("excluida", false);
       if (error) throw error;
       return data ?? [];
     },

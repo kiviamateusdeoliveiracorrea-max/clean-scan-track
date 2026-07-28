@@ -33,6 +33,8 @@ import {
   X,
   FileText,
   History,
+  Trash2,
+  RotateCcw,
 } from "lucide-react";
 import { STATUS_NC, SEVERIDADES } from "@/lib/audit-constants";
 import { EvidenceThumbs } from "@/components/EvidenceThumbs";
@@ -50,8 +52,95 @@ function NCList() {
   const [status, setStatus] = useState<"pendentes" | "todos" | string>("pendentes");
   const [sev, setSev] = useState("todos");
   const [resp, setResp] = useState("todos");
-  const { canManageNC, canResolveNC } = useCurrentRole();
+  const { canManageNC, canResolveNC, isAdmin } = useCurrentRole();
   const qc = useQueryClient();
+
+  // Exclusão lógica / restauração
+  const [deleting, setDeleting] = useState<any | null>(null);
+  const [justificativa, setJustificativa] = useState("");
+  const [deleteSaving, setDeleteSaving] = useState(false);
+  const [restoring, setRestoring] = useState<any | null>(null);
+  const [restoreSaving, setRestoreSaving] = useState(false);
+
+  const currentUser = async () => {
+    const { data: userData } = await supabase.auth.getUser();
+    const uid = userData.user?.id ?? null;
+    let nome: string | null = null;
+    if (uid) {
+      const { data: prof } = await supabase.from("profiles").select("nome").eq("id", uid).maybeSingle();
+      nome = (prof as any)?.nome ?? null;
+    }
+    return { uid, nome };
+  };
+
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    if (!justificativa.trim()) return toast.error("Justificativa é obrigatória.");
+    setDeleteSaving(true);
+    const { uid, nome } = await currentUser();
+    const { error } = await supabase
+      .from("nao_conformidades")
+      .update({
+        excluida: true,
+        excluida_em: new Date().toISOString(),
+        excluida_por: uid,
+        justificativa_exclusao: justificativa.trim(),
+        status_anterior: deleting.status,
+        status: "cancelada",
+      } as any)
+      .eq("id", deleting.id);
+    if (error) {
+      setDeleteSaving(false);
+      return toast.error(error.message);
+    }
+    await supabase.from("nc_historico").insert({
+      nc_id: deleting.id,
+      user_id: uid,
+      user_nome: nome,
+      acao: `NC excluída — Área: ${deleting.areas?.nome ?? "—"} · ID: ${String(deleting.id).slice(0, 8)}`,
+      comentario: justificativa.trim(),
+    });
+    setDeleteSaving(false);
+    toast.success("Não Conformidade excluída.");
+    setDeleting(null);
+    setJustificativa("");
+    qc.invalidateQueries({ queryKey: ["ncs-all"] });
+    qc.invalidateQueries({ queryKey: ["nc-dashboard"] });
+  };
+
+  const confirmRestore = async () => {
+    if (!restoring) return;
+    setRestoreSaving(true);
+    const { uid, nome } = await currentUser();
+    const { error } = await supabase
+      .from("nao_conformidades")
+      .update({
+        excluida: false,
+        excluida_em: null,
+        excluida_por: null,
+        justificativa_exclusao: null,
+        status: restoring.status_anterior ?? "aberta",
+        status_anterior: null,
+      } as any)
+      .eq("id", restoring.id);
+    if (error) {
+      setRestoreSaving(false);
+      return toast.error(error.message);
+    }
+    await supabase.from("nc_historico").insert({
+      nc_id: restoring.id,
+      user_id: uid,
+      user_nome: nome,
+      acao: `NC restaurada — status ${restoring.status_anterior ?? "aberta"}`,
+      comentario: null,
+    });
+    setRestoreSaving(false);
+    toast.success("Não Conformidade restaurada.");
+    setRestoring(null);
+    qc.invalidateQueries({ queryKey: ["ncs-all"] });
+    qc.invalidateQueries({ queryKey: ["nc-dashboard"] });
+  };
+
 
   // Edição de responsabilidade (admin/gestor)
   const [editing, setEditing] = useState<any | null>(null);
@@ -399,13 +488,22 @@ function NCList() {
   // porque o bucket audit-photos é privado (getPublicUrl retornaria 400/403).
 
   const PENDING_STATUS = ["aberta", "em_andamento", "aguardando_aprovacao", "reprovada"];
-  const pendentes = data.filter((n: any) => PENDING_STATUS.includes(n.status));
+  const CLOSED_STATUS = ["encerrada", "aprovada", "concluida"];
+  const ativas = data.filter((n: any) => !n.excluida);
+  const excluidas = data.filter((n: any) => n.excluida);
+  const pendentes = ativas.filter((n: any) => PENDING_STATUS.includes(n.status));
   const responsaveis = Array.from(
-    new Set(data.map((n: any) => n.responsavel).filter((r: any) => r && String(r).trim())),
+    new Set(ativas.map((n: any) => n.responsavel).filter((r: any) => r && String(r).trim())),
   ).sort() as string[];
   const filtered = data.filter((n: any) => {
-    if (status === "pendentes") {
+    if (status === "excluidas") {
+      if (!n.excluida) return false;
+    } else if (n.excluida) {
+      return false;
+    } else if (status === "pendentes") {
       if (!PENDING_STATUS.includes(n.status)) return false;
+    } else if (status === "encerradas") {
+      if (!CLOSED_STATUS.includes(n.status)) return false;
     } else if (status !== "todos" && n.status !== status) return false;
     if (sev !== "todos" && n.severidade !== sev) return false;
     if (resp === "sem") {
@@ -439,7 +537,7 @@ function NCList() {
           Não Conformidades
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          {pendentes.length} pendente(s) · {data.length} no total
+          {pendentes.length} pendente(s) · {ativas.length} ativa(s) · {excluidas.length} excluída(s)
           {canManageNC && " · Você pode editar responsáveis e prazos"}
         </p>
       </header>
@@ -486,8 +584,14 @@ function NCList() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="pendentes">Pendentes ({pendentes.length})</SelectItem>
-            <SelectItem value="todos">Todos os status</SelectItem>
-            {STATUS_NC.map((s) => (
+            <SelectItem value="aberta">Abertas</SelectItem>
+            <SelectItem value="em_andamento">Em andamento</SelectItem>
+            <SelectItem value="encerradas">Encerradas</SelectItem>
+            <SelectItem value="excluidas">Excluídas ({excluidas.length})</SelectItem>
+            <SelectItem value="todos">Todas</SelectItem>
+            {STATUS_NC.filter(
+              (s) => !["aberta", "em_andamento", "encerrada", "cancelada"].includes(s.value),
+            ).map((s) => (
               <SelectItem key={s.value} value={s.value}>
                 {s.label}
               </SelectItem>
@@ -537,9 +641,10 @@ function NCList() {
             const docPaths: string[] = Array.isArray(n.documento_urls) ? (n.documento_urls as string[]) : [];
             const allFotos = Array.from(new Set([...(legacyPath ? [legacyPath] : []), ...extraPaths]));
             const allEvidencias = [...allFotos, ...docPaths];
-            const isPend = ["aberta", "em_andamento", "reprovada"].includes(n.status);
-            const isWaitingApproval = n.status === "aguardando_aprovacao";
-            const isClosed = n.status === "encerrada" || n.status === "aprovada" || n.status === "concluida";
+            const isExcluida = !!n.excluida;
+            const isPend = !isExcluida && ["aberta", "em_andamento", "reprovada"].includes(n.status);
+            const isWaitingApproval = !isExcluida && n.status === "aguardando_aprovacao";
+            const isClosed = !isExcluida && (n.status === "encerrada" || n.status === "aprovada" || n.status === "concluida");
             return (
               <Card
                 key={n.id}
@@ -625,13 +730,44 @@ function NCList() {
                           </Button>
                         </>
                       )}
-                      {canManageNC && (
+                      {canManageNC && !isExcluida && (
                         <Button variant="outline" size="sm" onClick={() => openEdit(n)}>
                           <Pencil className="h-3 w-3 mr-1" /> Editar
                         </Button>
                       )}
+                      {canManageNC && !isExcluida && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => {
+                            setJustificativa("");
+                            setDeleting(n);
+                          }}
+                        >
+                          <Trash2 className="h-3 w-3 mr-1" /> Excluir NC
+                        </Button>
+                      )}
+                      {isAdmin && isExcluida && (
+                        <Button variant="outline" size="sm" onClick={() => setRestoring(n)}>
+                          <RotateCcw className="h-3 w-3 mr-1" /> Restaurar NC
+                        </Button>
+                      )}
                     </div>
                   </div>
+
+                  {isExcluida && (
+                    <div className="rounded-md border border-red-200 bg-red-50 p-3 text-xs text-red-700 space-y-1">
+                      <p className="font-semibold">Não Conformidade excluída</p>
+                      {n.excluida_em && (
+                        <p>Em: {new Date(n.excluida_em).toLocaleString("pt-BR")}</p>
+                      )}
+                      {n.justificativa_exclusao && (
+                        <p className="whitespace-pre-wrap">
+                          Justificativa: {n.justificativa_exclusao}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {(n.data_conclusao || n.parecer_aprovador || n.data_aprovacao) && (
                     <div className="rounded-md border bg-muted/30 p-3 space-y-1 text-xs">
@@ -955,6 +1091,74 @@ function NCList() {
                 : approvalMode === "aprovar"
                   ? "✅ Aprovar e encerrar"
                   : "❌ Reprovar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: excluir NC */}
+      <Dialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Excluir Não Conformidade</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm">
+              Tem certeza que deseja excluir esta Não Conformidade?
+            </p>
+            {deleting && (
+              <div className="rounded-md border bg-muted/30 p-3 text-xs space-y-1">
+                <p>
+                  <span className="font-semibold">NC:</span> {String(deleting.id).slice(0, 8)}
+                </p>
+                <p>
+                  <span className="font-semibold">Área:</span> {deleting.areas?.nome ?? "—"}
+                </p>
+                <p className="whitespace-pre-wrap">{deleting.descricao}</p>
+              </div>
+            )}
+            <div>
+              <Label>Justificativa *</Label>
+              <Textarea
+                rows={3}
+                value={justificativa}
+                onChange={(e) => setJustificativa(e.target.value)}
+                placeholder="Motivo da exclusão (registro de teste, duplicado, incorreto...)"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              A exclusão é lógica: o registro é mantido no histórico e deixa de impactar
+              indicadores e dashboards.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleting(null)}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete} disabled={deleteSaving}>
+              {deleteSaving ? "Excluindo..." : "Confirmar exclusão"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: restaurar NC */}
+      <Dialog open={!!restoring} onOpenChange={(o) => !o && setRestoring(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Restaurar Não Conformidade</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm">
+            A NC voltará ao status anterior (
+            {restoring?.status_anterior ?? "aberta"}) e passará a contar novamente nos
+            indicadores.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRestoring(null)}>
+              Cancelar
+            </Button>
+            <Button onClick={confirmRestore} disabled={restoreSaving}>
+              {restoreSaving ? "Restaurando..." : "Restaurar NC"}
             </Button>
           </DialogFooter>
         </DialogContent>
