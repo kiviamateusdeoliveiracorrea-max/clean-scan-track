@@ -728,13 +728,44 @@ function NCList() {
                           </Button>
                         </>
                       )}
-                      {canManageNC && (
+                      {canManageNC && !isExcluida && (
                         <Button variant="outline" size="sm" onClick={() => openEdit(n)}>
                           <Pencil className="h-3 w-3 mr-1" /> Editar
                         </Button>
                       )}
+                      {canManageNC && !isExcluida && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => {
+                            setJustificativa("");
+                            setDeleting(n);
+                          }}
+                        >
+                          <Trash2 className="h-3 w-3 mr-1" /> Excluir NC
+                        </Button>
+                      )}
+                      {isAdmin && isExcluida && (
+                        <Button variant="outline" size="sm" onClick={() => setRestoring(n)}>
+                          <RotateCcw className="h-3 w-3 mr-1" /> Restaurar NC
+                        </Button>
+                      )}
                     </div>
                   </div>
+
+                  {isExcluida && (
+                    <div className="rounded-md border border-red-200 bg-red-50 p-3 text-xs text-red-700 space-y-1">
+                      <p className="font-semibold">Não Conformidade excluída</p>
+                      {n.excluida_em && (
+                        <p>Em: {new Date(n.excluida_em).toLocaleString("pt-BR")}</p>
+                      )}
+                      {n.justificativa_exclusao && (
+                        <p className="whitespace-pre-wrap">
+                          Justificativa: {n.justificativa_exclusao}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {(n.data_conclusao || n.parecer_aprovador || n.data_aprovacao) && (
                     <div className="rounded-md border bg-muted/30 p-3 space-y-1 text-xs">
