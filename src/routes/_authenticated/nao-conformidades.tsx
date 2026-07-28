@@ -537,7 +537,7 @@ function NCList() {
           Não Conformidades
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          {pendentes.length} pendente(s) · {data.length} no total
+          {pendentes.length} pendente(s) · {ativas.length} ativa(s) · {excluidas.length} excluída(s)
           {canManageNC && " · Você pode editar responsáveis e prazos"}
         </p>
       </header>
