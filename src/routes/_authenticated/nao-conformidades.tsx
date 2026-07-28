@@ -50,8 +50,95 @@ function NCList() {
   const [status, setStatus] = useState<"pendentes" | "todos" | string>("pendentes");
   const [sev, setSev] = useState("todos");
   const [resp, setResp] = useState("todos");
-  const { canManageNC, canResolveNC } = useCurrentRole();
+  const { canManageNC, canResolveNC, isAdmin } = useCurrentRole();
   const qc = useQueryClient();
+
+  // Exclusão lógica / restauração
+  const [deleting, setDeleting] = useState<any | null>(null);
+  const [justificativa, setJustificativa] = useState("");
+  const [deleteSaving, setDeleteSaving] = useState(false);
+  const [restoring, setRestoring] = useState<any | null>(null);
+  const [restoreSaving, setRestoreSaving] = useState(false);
+
+  const currentUser = async () => {
+    const { data: userData } = await supabase.auth.getUser();
+    const uid = userData.user?.id ?? null;
+    let nome: string | null = null;
+    if (uid) {
+      const { data: prof } = await supabase.from("profiles").select("nome").eq("id", uid).maybeSingle();
+      nome = (prof as any)?.nome ?? null;
+    }
+    return { uid, nome };
+  };
+
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    if (!justificativa.trim()) return toast.error("Justificativa é obrigatória.");
+    setDeleteSaving(true);
+    const { uid, nome } = await currentUser();
+    const { error } = await supabase
+      .from("nao_conformidades")
+      .update({
+        excluida: true,
+        excluida_em: new Date().toISOString(),
+        excluida_por: uid,
+        justificativa_exclusao: justificativa.trim(),
+        status_anterior: deleting.status,
+        status: "cancelada",
+      } as any)
+      .eq("id", deleting.id);
+    if (error) {
+      setDeleteSaving(false);
+      return toast.error(error.message);
+    }
+    await supabase.from("nc_historico").insert({
+      nc_id: deleting.id,
+      user_id: uid,
+      user_nome: nome,
+      acao: `NC excluída — Área: ${deleting.areas?.nome ?? "—"} · ID: ${String(deleting.id).slice(0, 8)}`,
+      comentario: justificativa.trim(),
+    });
+    setDeleteSaving(false);
+    toast.success("Não Conformidade excluída.");
+    setDeleting(null);
+    setJustificativa("");
+    qc.invalidateQueries({ queryKey: ["ncs-all"] });
+    qc.invalidateQueries({ queryKey: ["nc-dashboard"] });
+  };
+
+  const confirmRestore = async () => {
+    if (!restoring) return;
+    setRestoreSaving(true);
+    const { uid, nome } = await currentUser();
+    const { error } = await supabase
+      .from("nao_conformidades")
+      .update({
+        excluida: false,
+        excluida_em: null,
+        excluida_por: null,
+        justificativa_exclusao: null,
+        status: restoring.status_anterior ?? "aberta",
+        status_anterior: null,
+      } as any)
+      .eq("id", restoring.id);
+    if (error) {
+      setRestoreSaving(false);
+      return toast.error(error.message);
+    }
+    await supabase.from("nc_historico").insert({
+      nc_id: restoring.id,
+      user_id: uid,
+      user_nome: nome,
+      acao: `NC restaurada — status ${restoring.status_anterior ?? "aberta"}`,
+      comentario: null,
+    });
+    setRestoreSaving(false);
+    toast.success("Não Conformidade restaurada.");
+    setRestoring(null);
+    qc.invalidateQueries({ queryKey: ["ncs-all"] });
+    qc.invalidateQueries({ queryKey: ["nc-dashboard"] });
+  };
+
 
   // Edição de responsabilidade (admin/gestor)
   const [editing, setEditing] = useState<any | null>(null);
