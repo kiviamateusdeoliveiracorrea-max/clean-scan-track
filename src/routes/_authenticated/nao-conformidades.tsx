@@ -33,6 +33,8 @@ import {
   X,
   FileText,
   History,
+  Trash2,
+  RotateCcw,
 } from "lucide-react";
 import { STATUS_NC, SEVERIDADES } from "@/lib/audit-constants";
 import { EvidenceThumbs } from "@/components/EvidenceThumbs";
