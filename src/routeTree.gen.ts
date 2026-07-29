@@ -16,6 +16,7 @@ import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedNaoConformidadesRouteImport } from './routes/_authenticated/nao-conformidades'
 import { Route as AuthenticatedMelhoriasRouteImport } from './routes/_authenticated/melhorias'
 import { Route as AuthenticatedHistoricoRouteImport } from './routes/_authenticated/historico'
+import { Route as AuthenticatedGembaRouteImport } from './routes/_authenticated/gemba'
 import { Route as AuthenticatedAuditoresRouteImport } from './routes/_authenticated/auditores'
 import { Route as AuthenticatedAreasRouteImport } from './routes/_authenticated/areas'
 import { Route as AuthenticatedAuditoriasIndexRouteImport } from './routes/_authenticated/auditorias.index'
@@ -57,6 +58,11 @@ const AuthenticatedHistoricoRoute = AuthenticatedHistoricoRouteImport.update({
   path: '/historico',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedGembaRoute = AuthenticatedGembaRouteImport.update({
+  id: '/gemba',
+  path: '/gemba',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAuditoresRoute = AuthenticatedAuditoresRouteImport.update({
   id: '/auditores',
   path: '/auditores',
@@ -91,6 +97,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/areas': typeof AuthenticatedAreasRoute
   '/auditores': typeof AuthenticatedAuditoresRoute
+  '/gemba': typeof AuthenticatedGembaRoute
   '/historico': typeof AuthenticatedHistoricoRoute
   '/melhorias': typeof AuthenticatedMelhoriasRoute
   '/nao-conformidades': typeof AuthenticatedNaoConformidadesRoute
@@ -103,6 +110,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/areas': typeof AuthenticatedAreasRoute
   '/auditores': typeof AuthenticatedAuditoresRoute
+  '/gemba': typeof AuthenticatedGembaRoute
   '/historico': typeof AuthenticatedHistoricoRoute
   '/melhorias': typeof AuthenticatedMelhoriasRoute
   '/nao-conformidades': typeof AuthenticatedNaoConformidadesRoute
@@ -118,6 +126,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/areas': typeof AuthenticatedAreasRoute
   '/_authenticated/auditores': typeof AuthenticatedAuditoresRoute
+  '/_authenticated/gemba': typeof AuthenticatedGembaRoute
   '/_authenticated/historico': typeof AuthenticatedHistoricoRoute
   '/_authenticated/melhorias': typeof AuthenticatedMelhoriasRoute
   '/_authenticated/nao-conformidades': typeof AuthenticatedNaoConformidadesRoute
@@ -134,6 +143,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/areas'
     | '/auditores'
+    | '/gemba'
     | '/historico'
     | '/melhorias'
     | '/nao-conformidades'
@@ -146,6 +156,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/areas'
     | '/auditores'
+    | '/gemba'
     | '/historico'
     | '/melhorias'
     | '/nao-conformidades'
@@ -160,6 +171,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/areas'
     | '/_authenticated/auditores'
+    | '/_authenticated/gemba'
     | '/_authenticated/historico'
     | '/_authenticated/melhorias'
     | '/_authenticated/nao-conformidades'
@@ -226,6 +238,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHistoricoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/gemba': {
+      id: '/_authenticated/gemba'
+      path: '/gemba'
+      fullPath: '/gemba'
+      preLoaderRoute: typeof AuthenticatedGembaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/auditores': {
       id: '/_authenticated/auditores'
       path: '/auditores'
@@ -267,6 +286,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAreasRoute: typeof AuthenticatedAreasRoute
   AuthenticatedAuditoresRoute: typeof AuthenticatedAuditoresRoute
+  AuthenticatedGembaRoute: typeof AuthenticatedGembaRoute
   AuthenticatedHistoricoRoute: typeof AuthenticatedHistoricoRoute
   AuthenticatedMelhoriasRoute: typeof AuthenticatedMelhoriasRoute
   AuthenticatedNaoConformidadesRoute: typeof AuthenticatedNaoConformidadesRoute
@@ -280,6 +300,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAreasRoute: AuthenticatedAreasRoute,
   AuthenticatedAuditoresRoute: AuthenticatedAuditoresRoute,
+  AuthenticatedGembaRoute: AuthenticatedGembaRoute,
   AuthenticatedHistoricoRoute: AuthenticatedHistoricoRoute,
   AuthenticatedMelhoriasRoute: AuthenticatedMelhoriasRoute,
   AuthenticatedNaoConformidadesRoute: AuthenticatedNaoConformidadesRoute,
