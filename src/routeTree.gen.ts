@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as AuthenticatedNaoConformidadesRouteImport } from './routes/_authenticated/nao-conformidades'
+import { Route as AuthenticatedMelhoriasRouteImport } from './routes/_authenticated/melhorias'
 import { Route as AuthenticatedHistoricoRouteImport } from './routes/_authenticated/historico'
 import { Route as AuthenticatedAuditoresRouteImport } from './routes/_authenticated/auditores'
 import { Route as AuthenticatedAreasRouteImport } from './routes/_authenticated/areas'
@@ -46,6 +47,11 @@ const AuthenticatedNaoConformidadesRoute =
     path: '/nao-conformidades',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedMelhoriasRoute = AuthenticatedMelhoriasRouteImport.update({
+  id: '/melhorias',
+  path: '/melhorias',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedHistoricoRoute = AuthenticatedHistoricoRouteImport.update({
   id: '/historico',
   path: '/historico',
@@ -86,6 +92,7 @@ export interface FileRoutesByFullPath {
   '/areas': typeof AuthenticatedAreasRoute
   '/auditores': typeof AuthenticatedAuditoresRoute
   '/historico': typeof AuthenticatedHistoricoRoute
+  '/melhorias': typeof AuthenticatedMelhoriasRoute
   '/nao-conformidades': typeof AuthenticatedNaoConformidadesRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/auditorias/$id': typeof AuthenticatedAuditoriasIdRoute
@@ -97,6 +104,7 @@ export interface FileRoutesByTo {
   '/areas': typeof AuthenticatedAreasRoute
   '/auditores': typeof AuthenticatedAuditoresRoute
   '/historico': typeof AuthenticatedHistoricoRoute
+  '/melhorias': typeof AuthenticatedMelhoriasRoute
   '/nao-conformidades': typeof AuthenticatedNaoConformidadesRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/': typeof AuthenticatedIndexRoute
@@ -111,6 +119,7 @@ export interface FileRoutesById {
   '/_authenticated/areas': typeof AuthenticatedAreasRoute
   '/_authenticated/auditores': typeof AuthenticatedAuditoresRoute
   '/_authenticated/historico': typeof AuthenticatedHistoricoRoute
+  '/_authenticated/melhorias': typeof AuthenticatedMelhoriasRoute
   '/_authenticated/nao-conformidades': typeof AuthenticatedNaoConformidadesRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -126,6 +135,7 @@ export interface FileRouteTypes {
     | '/areas'
     | '/auditores'
     | '/historico'
+    | '/melhorias'
     | '/nao-conformidades'
     | '/usuarios'
     | '/auditorias/$id'
@@ -137,6 +147,7 @@ export interface FileRouteTypes {
     | '/areas'
     | '/auditores'
     | '/historico'
+    | '/melhorias'
     | '/nao-conformidades'
     | '/usuarios'
     | '/'
@@ -150,6 +161,7 @@ export interface FileRouteTypes {
     | '/_authenticated/areas'
     | '/_authenticated/auditores'
     | '/_authenticated/historico'
+    | '/_authenticated/melhorias'
     | '/_authenticated/nao-conformidades'
     | '/_authenticated/usuarios'
     | '/_authenticated/'
@@ -198,6 +210,13 @@ declare module '@tanstack/react-router' {
       path: '/nao-conformidades'
       fullPath: '/nao-conformidades'
       preLoaderRoute: typeof AuthenticatedNaoConformidadesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/melhorias': {
+      id: '/_authenticated/melhorias'
+      path: '/melhorias'
+      fullPath: '/melhorias'
+      preLoaderRoute: typeof AuthenticatedMelhoriasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/historico': {
@@ -249,6 +268,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAreasRoute: typeof AuthenticatedAreasRoute
   AuthenticatedAuditoresRoute: typeof AuthenticatedAuditoresRoute
   AuthenticatedHistoricoRoute: typeof AuthenticatedHistoricoRoute
+  AuthenticatedMelhoriasRoute: typeof AuthenticatedMelhoriasRoute
   AuthenticatedNaoConformidadesRoute: typeof AuthenticatedNaoConformidadesRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -261,6 +281,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAreasRoute: AuthenticatedAreasRoute,
   AuthenticatedAuditoresRoute: AuthenticatedAuditoresRoute,
   AuthenticatedHistoricoRoute: AuthenticatedHistoricoRoute,
+  AuthenticatedMelhoriasRoute: AuthenticatedMelhoriasRoute,
   AuthenticatedNaoConformidadesRoute: AuthenticatedNaoConformidadesRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
