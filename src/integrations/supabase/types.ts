@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      alertas_processo: {
+        Row: {
+          area_id: string | null
+          created_at: string
+          created_by: string | null
+          data_emissao: string
+          descricao: string | null
+          foto_urls: string[]
+          id: string
+          procedimento: string | null
+          status: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          area_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_emissao?: string
+          descricao?: string | null
+          foto_urls?: string[]
+          id?: string
+          procedimento?: string | null
+          status?: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          area_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_emissao?: string
+          descricao?: string | null
+          foto_urls?: string[]
+          id?: string
+          procedimento?: string | null
+          status?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alertas_processo_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       areas: {
         Row: {
           created_at: string
@@ -188,6 +238,141 @@ export type Database = {
           {
             foreignKeyName: "auditorias_log_executado_por_fkey"
             columns: ["executado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gemba_visitas: {
+        Row: {
+          acao_definida: string | null
+          area_id: string | null
+          created_at: string
+          created_by: string | null
+          data_visita: string
+          foto_antes_urls: string[]
+          foto_depois_urls: string[]
+          id: string
+          oportunidade: string | null
+          participantes: string | null
+          ponto_positivo: string | null
+          prazo: string | null
+          responsavel_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          acao_definida?: string | null
+          area_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_visita?: string
+          foto_antes_urls?: string[]
+          foto_depois_urls?: string[]
+          id?: string
+          oportunidade?: string | null
+          participantes?: string | null
+          ponto_positivo?: string | null
+          prazo?: string | null
+          responsavel_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          acao_definida?: string | null
+          area_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_visita?: string
+          foto_antes_urls?: string[]
+          foto_depois_urls?: string[]
+          id?: string
+          oportunidade?: string | null
+          participantes?: string | null
+          ponto_positivo?: string | null
+          prazo?: string | null
+          responsavel_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gemba_visitas_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gemba_visitas_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      melhorias: {
+        Row: {
+          area_id: string | null
+          categoria: string
+          comentarios: string | null
+          created_at: string
+          created_by: string | null
+          data_identificacao: string
+          descricao: string
+          foto_urls: string[]
+          id: string
+          prazo: string | null
+          processo: string | null
+          responsavel_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          area_id?: string | null
+          categoria?: string
+          comentarios?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_identificacao?: string
+          descricao: string
+          foto_urls?: string[]
+          id?: string
+          prazo?: string | null
+          processo?: string | null
+          responsavel_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          area_id?: string | null
+          categoria?: string
+          comentarios?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_identificacao?: string
+          descricao?: string
+          foto_urls?: string[]
+          id?: string
+          prazo?: string | null
+          processo?: string | null
+          responsavel_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "melhorias_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "melhorias_responsavel_id_fkey"
+            columns: ["responsavel_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

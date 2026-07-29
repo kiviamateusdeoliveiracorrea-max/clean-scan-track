@@ -20,6 +20,9 @@ import {
   Menu,
   X,
   Users,
+  Lightbulb,
+  Footprints,
+  Megaphone,
   LogOut,
 } from "lucide-react";
 
@@ -152,6 +155,9 @@ const navItems: NavItem[] = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/auditorias", label: "Auditorias", icon: ClipboardCheck },
   { to: "/nao-conformidades", label: "Não Conformidades", icon: AlertTriangle },
+  { to: "/melhorias", label: "Melhorias", icon: Lightbulb },
+  { to: "/gemba", label: "Gemba", icon: Footprints },
+  { to: "/alertas", label: "Alertas de Processo", icon: Megaphone },
   { to: "/historico", label: "Histórico", icon: History },
   { to: "/areas", label: "Áreas", icon: MapPin },
   { to: "/auditores", label: "Auditores", icon: UserCog },
