@@ -61,6 +61,15 @@ function Dashboard() {
   });
 
 
+  const melhoriasQuery = useQuery({
+    queryKey: ["melhorias-dashboard"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("melhorias").select("id, status, area_id, areas(nome)");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const auditorias = auditoriasQuery.data ?? [];
   const ncs = ncQuery.data ?? [];
 
@@ -145,6 +154,29 @@ function Dashboard() {
   const respChart = Array.from(porResp.values())
     .sort((a, b) => b.count - a.count)
     .slice(0, 8);
+
+  // Oportunidades de melhoria
+  const melhorias = melhoriasQuery.data ?? [];
+  const melhoriasAbertas = melhorias.filter((m: any) => m.status !== "concluido").length;
+  const melhoriasConcluidas = melhorias.filter((m: any) => m.status === "concluido").length;
+
+  // Áreas com maior número de desvios (NCs ativas + oportunidades abertas)
+  const desviosPorArea = new Map<string, number>();
+  ncs.forEach((n: any) => {
+    const area = auditorias.find((a: any) => a.id === n.auditoria_id)?.areas?.nome ?? "Sem área";
+    desviosPorArea.set(area, (desviosPorArea.get(area) ?? 0) + 1);
+  });
+  const desviosChart = Array.from(desviosPorArea.entries())
+    .map(([nome, qtd]) => ({ nome, qtd }))
+    .sort((a, b) => b.qtd - a.qtd)
+    .slice(0, 6);
+
+  // Pódio das áreas (nota final média das auditorias)
+  const podio = Array.from(porArea.entries())
+    .map(([nome, v]) => ({ nome, media: Math.round(v.total / v.count), auditorias: v.count }))
+    .sort((a, b) => b.media - a.media)
+    .slice(0, 3);
+  const medalha = ["🥇", "🥈", "🥉"];
 
 
   return (
@@ -231,6 +263,82 @@ function Dashboard() {
       </Card>
 
 
+
+      {/* Melhorias + Pódio */}
+      <div className="grid lg:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Gestão de Melhorias</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-2 gap-3">
+            <div className="rounded-lg border p-4">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">Abertas</p>
+              <p className="text-3xl font-bold text-amber-600">{melhoriasAbertas}</p>
+            </div>
+            <div className="rounded-lg border p-4">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">Concluídas</p>
+              <p className="text-3xl font-bold text-emerald-600">{melhoriasConcluidas}</p>
+            </div>
+            <div className="col-span-2 rounded-lg border p-4">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                Percentual geral de conformidade
+              </p>
+              <p className="text-3xl font-bold text-primary">{mediaPct.toFixed(0)}%</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Ranking das áreas auditadas</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {podio.length === 0 ? (
+              <EmptyChart />
+            ) : (
+              podio.map((p, i) => (
+                <div
+                  key={p.nome}
+                  className="flex items-center justify-between rounded-lg border px-4 py-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{medalha[i]}</span>
+                    <div>
+                      <p className="font-semibold">{p.nome}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {p.auditorias} auditoria(s) · {i + 1}º lugar
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-xl font-bold text-primary">{p.media}%</span>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Áreas com maior número de desvios */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Áreas com maior número de desvios</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {desviosChart.length === 0 ? (
+            <EmptyChart />
+          ) : (
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={desviosChart} layout="vertical" margin={{ left: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
+                <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
+                <YAxis dataKey="nome" type="category" tick={{ fontSize: 11 }} width={90} />
+                <Tooltip />
+                <Bar dataKey="qtd" fill="#DC2626" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Charts */}
       <div className="grid lg:grid-cols-2 gap-4">
