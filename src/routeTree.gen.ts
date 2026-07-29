@@ -19,6 +19,7 @@ import { Route as AuthenticatedHistoricoRouteImport } from './routes/_authentica
 import { Route as AuthenticatedGembaRouteImport } from './routes/_authenticated/gemba'
 import { Route as AuthenticatedAuditoresRouteImport } from './routes/_authenticated/auditores'
 import { Route as AuthenticatedAreasRouteImport } from './routes/_authenticated/areas'
+import { Route as AuthenticatedAlertasRouteImport } from './routes/_authenticated/alertas'
 import { Route as AuthenticatedAuditoriasIndexRouteImport } from './routes/_authenticated/auditorias.index'
 import { Route as AuthenticatedAuditoriasNovaRouteImport } from './routes/_authenticated/auditorias.nova'
 import { Route as AuthenticatedAuditoriasIdRouteImport } from './routes/_authenticated/auditorias.$id'
@@ -73,6 +74,11 @@ const AuthenticatedAreasRoute = AuthenticatedAreasRouteImport.update({
   path: '/areas',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAlertasRoute = AuthenticatedAlertasRouteImport.update({
+  id: '/alertas',
+  path: '/alertas',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAuditoriasIndexRoute =
   AuthenticatedAuditoriasIndexRouteImport.update({
     id: '/auditorias/',
@@ -95,6 +101,7 @@ const AuthenticatedAuditoriasIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
+  '/alertas': typeof AuthenticatedAlertasRoute
   '/areas': typeof AuthenticatedAreasRoute
   '/auditores': typeof AuthenticatedAuditoresRoute
   '/gemba': typeof AuthenticatedGembaRoute
@@ -108,6 +115,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
+  '/alertas': typeof AuthenticatedAlertasRoute
   '/areas': typeof AuthenticatedAreasRoute
   '/auditores': typeof AuthenticatedAuditoresRoute
   '/gemba': typeof AuthenticatedGembaRoute
@@ -124,6 +132,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/alertas': typeof AuthenticatedAlertasRoute
   '/_authenticated/areas': typeof AuthenticatedAreasRoute
   '/_authenticated/auditores': typeof AuthenticatedAuditoresRoute
   '/_authenticated/gemba': typeof AuthenticatedGembaRoute
@@ -141,6 +150,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/alertas'
     | '/areas'
     | '/auditores'
     | '/gemba'
@@ -154,6 +164,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
+    | '/alertas'
     | '/areas'
     | '/auditores'
     | '/gemba'
@@ -169,6 +180,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/alertas'
     | '/_authenticated/areas'
     | '/_authenticated/auditores'
     | '/_authenticated/gemba'
@@ -259,6 +271,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAreasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/alertas': {
+      id: '/_authenticated/alertas'
+      path: '/alertas'
+      fullPath: '/alertas'
+      preLoaderRoute: typeof AuthenticatedAlertasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/auditorias/': {
       id: '/_authenticated/auditorias/'
       path: '/auditorias'
@@ -284,6 +303,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAlertasRoute: typeof AuthenticatedAlertasRoute
   AuthenticatedAreasRoute: typeof AuthenticatedAreasRoute
   AuthenticatedAuditoresRoute: typeof AuthenticatedAuditoresRoute
   AuthenticatedGembaRoute: typeof AuthenticatedGembaRoute
@@ -298,6 +318,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAlertasRoute: AuthenticatedAlertasRoute,
   AuthenticatedAreasRoute: AuthenticatedAreasRoute,
   AuthenticatedAuditoresRoute: AuthenticatedAuditoresRoute,
   AuthenticatedGembaRoute: AuthenticatedGembaRoute,
