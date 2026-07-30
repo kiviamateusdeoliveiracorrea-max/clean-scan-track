@@ -225,6 +225,21 @@ function NovaAuditoria() {
         .eq("id", inserted.id);
     }
 
+    const respostaRows = Object.entries(respostas).map(([perguntaId, r]) => ({
+      auditoria_id: inserted.id,
+      pergunta_id: perguntaId,
+      resposta: r.resposta,
+      observacao: r.observacao || null,
+    }));
+    if (respostaRows.length > 0) {
+      const { error: respErr } = await supabase
+        .from("respostas_auditoria")
+        .insert(respostaRows);
+      if (respErr) toast.error("Erro ao salvar respostas: " + respErr.message);
+    }
+
+
+
     const users = usuariosQ.data ?? [];
     const respUser = users.find((u: any) => u.id === ncResponsavelAcaoId) as any;
     const { data: userData } = await supabase.auth.getUser();
