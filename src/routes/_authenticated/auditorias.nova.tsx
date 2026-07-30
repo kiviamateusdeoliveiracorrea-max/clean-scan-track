@@ -31,6 +31,21 @@ export const Route = createFileRoute("/_authenticated/auditorias/nova")({
   component: NovaAuditoria,
 });
 
+const AREAS_PADRAO = [
+  "Recebimento",
+  "Estocagem",
+  "Ativação",
+  "Almoxarifado",
+  "CEM",
+  "Expedição",
+  "Usinagem",
+  "Oleamento",
+  "Blocado",
+  "CTT",
+];
+
+const CATEGORIAS = ["Pessoas", "Ambiente", "Processo"] as const;
+
 function NovaAuditoria() {
   const navigate = useNavigate();
   const [areaId, setAreaId] = useState("");
@@ -40,6 +55,10 @@ function NovaAuditoria() {
   const [saving, setSaving] = useState(false);
   const [fotos, setFotos] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
+  const [respostas, setRespostas] = useState<
+    Record<string, { resposta: "SIM" | "NÃO"; observacao: string }>
+  >({});
+
   const [scores, setScores] = useState<Record<Criterio5SKey, number>>({
     seiri: 7,
     seiton: 7,
