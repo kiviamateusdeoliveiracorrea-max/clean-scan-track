@@ -160,6 +160,7 @@ const navItems: NavItem[] = [
   { to: "/gemba", label: "Gemba", icon: Footprints },
   { to: "/alertas", label: "Alertas de Processo", icon: Megaphone },
   { to: "/historico", label: "Histórico", icon: History },
+  { to: "/perguntas", label: "Cadastro de Perguntas", icon: ListChecks },
   { to: "/areas", label: "Áreas", icon: MapPin },
   { to: "/auditores", label: "Auditores", icon: UserCog },
   { to: "/usuarios", label: "Usuários", icon: Users },
