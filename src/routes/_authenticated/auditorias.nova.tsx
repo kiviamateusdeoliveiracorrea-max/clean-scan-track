@@ -125,6 +125,34 @@ function NovaAuditoria() {
     },
   });
 
+  const areasDisponiveis = (areasQ.data ?? [])
+    .filter((a: any) => AREAS_PADRAO.includes(a.nome))
+    .sort(
+      (a: any, b: any) =>
+        AREAS_PADRAO.indexOf(a.nome) - AREAS_PADRAO.indexOf(b.nome),
+    );
+  const areaNome =
+    (areasQ.data ?? []).find((a: any) => a.id === areaId)?.nome ?? "";
+
+  const perguntasQ = useQuery({
+    queryKey: ["perguntas-auditoria", areaNome],
+    enabled: !!areaNome,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("perguntas_auditoria")
+        .select("*")
+        .eq("area_nome", areaNome)
+        .eq("ativo", true)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const perguntas = perguntasQ.data ?? [];
+
+
+
 
 
   const total = Object.values(scores).reduce((a, b) => a + b, 0);
