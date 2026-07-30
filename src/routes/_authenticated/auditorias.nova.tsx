@@ -31,6 +31,21 @@ export const Route = createFileRoute("/_authenticated/auditorias/nova")({
   component: NovaAuditoria,
 });
 
+const AREAS_PADRAO = [
+  "Recebimento",
+  "Estocagem",
+  "Ativação",
+  "Almoxarifado",
+  "CEM",
+  "Expedição",
+  "Usinagem",
+  "Oleamento",
+  "Blocado",
+  "CTT",
+];
+
+const CATEGORIAS = ["Pessoas", "Ambiente", "Processo"] as const;
+
 function NovaAuditoria() {
   const navigate = useNavigate();
   const [areaId, setAreaId] = useState("");
@@ -40,6 +55,10 @@ function NovaAuditoria() {
   const [saving, setSaving] = useState(false);
   const [fotos, setFotos] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
+  const [respostas, setRespostas] = useState<
+    Record<string, { resposta: "SIM" | "NÃO"; observacao: string }>
+  >({});
+
   const [scores, setScores] = useState<Record<Criterio5SKey, number>>({
     seiri: 7,
     seiton: 7,
@@ -105,6 +124,34 @@ function NovaAuditoria() {
       return data ?? [];
     },
   });
+
+  const areasDisponiveis = (areasQ.data ?? [])
+    .filter((a: any) => AREAS_PADRAO.includes(a.nome))
+    .sort(
+      (a: any, b: any) =>
+        AREAS_PADRAO.indexOf(a.nome) - AREAS_PADRAO.indexOf(b.nome),
+    );
+  const areaNome =
+    (areasQ.data ?? []).find((a: any) => a.id === areaId)?.nome ?? "";
+
+  const perguntasQ = useQuery({
+    queryKey: ["perguntas-auditoria", areaNome],
+    enabled: !!areaNome,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("perguntas_auditoria")
+        .select("*")
+        .eq("area_nome", areaNome)
+        .eq("ativo", true)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const perguntas = perguntasQ.data ?? [];
+
+
 
 
 
@@ -177,6 +224,21 @@ function NovaAuditoria() {
         .update({ fotos: uploadedPaths })
         .eq("id", inserted.id);
     }
+
+    const respostaRows = Object.entries(respostas).map(([perguntaId, r]) => ({
+      auditoria_id: inserted.id,
+      pergunta_id: perguntaId,
+      resposta: r.resposta,
+      observacao: r.observacao || null,
+    }));
+    if (respostaRows.length > 0) {
+      const { error: respErr } = await supabase
+        .from("respostas_auditoria")
+        .insert(respostaRows);
+      if (respErr) toast.error("Erro ao salvar respostas: " + respErr.message);
+    }
+
+
 
     const users = usuariosQ.data ?? [];
     const respUser = users.find((u: any) => u.id === ncResponsavelAcaoId) as any;
@@ -263,18 +325,25 @@ function NovaAuditoria() {
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div>
             <Label>Área</Label>
-            <Select value={areaId} onValueChange={setAreaId}>
+            <Select
+              value={areaId}
+              onValueChange={(v) => {
+                setAreaId(v);
+                setRespostas({});
+              }}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione..." />
               </SelectTrigger>
               <SelectContent>
-                {(areasQ.data ?? []).map((a: any) => (
+                {areasDisponiveis.map((a: any) => (
                   <SelectItem key={a.id} value={a.id}>
-                    {a.nome} {a.setor ? `· ${a.setor}` : ""}
+                    {a.nome}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+
           </div>
           <div>
             <Label>Auditor</Label>
@@ -297,6 +366,92 @@ function NovaAuditoria() {
           </div>
         </CardContent>
       </Card>
+
+      {areaId && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              Checklist da área {areaNome}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {perguntasQ.isLoading && (
+              <p className="text-sm text-muted-foreground">Carregando perguntas...</p>
+            )}
+            {!perguntasQ.isLoading && perguntas.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                Nenhuma pergunta cadastrada para esta área.{" "}
+                <Link to="/perguntas" className="underline">
+                  Cadastrar perguntas
+                </Link>
+              </p>
+            )}
+            {CATEGORIAS.map((cat) => {
+              const lista = perguntas.filter((p: any) => p.categoria === cat);
+              if (lista.length === 0) return null;
+              return (
+                <div key={cat} className="space-y-3">
+                  <h3 className="font-semibold text-primary border-b pb-1">{cat}</h3>
+                  {lista.map((p: any, i: number) => {
+                    const r = respostas[p.id];
+                    return (
+                      <div key={p.id} className="rounded-md border p-3 space-y-2">
+                        <p className="text-sm font-medium">
+                          {i + 1}. {p.pergunta}{" "}
+                          <span className="text-xs text-muted-foreground">
+                            (peso {p.peso})
+                          </span>
+                        </p>
+                        <div className="flex gap-2">
+                          {(["SIM", "NÃO"] as const).map((op) => (
+                            <Button
+                              key={op}
+                              type="button"
+                              size="sm"
+                              variant={r?.resposta === op ? "default" : "outline"}
+                              className={
+                                r?.resposta === op && op === "NÃO"
+                                  ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  : ""
+                              }
+                              onClick={() =>
+                                setRespostas((s) => ({
+                                  ...s,
+                                  [p.id]: {
+                                    resposta: op,
+                                    observacao: s[p.id]?.observacao ?? "",
+                                  },
+                                }))
+                              }
+                            >
+                              {op}
+                            </Button>
+                          ))}
+                        </div>
+                        {r?.resposta === "NÃO" && (
+                          <Textarea
+                            rows={2}
+                            placeholder="Descreva o desvio observado..."
+                            value={r.observacao}
+                            onChange={(e) =>
+                              setRespostas((s) => ({
+                                ...s,
+                                [p.id]: { resposta: "NÃO", observacao: e.target.value },
+                              }))
+                            }
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      )}
+
+
 
       <Card>
         <CardHeader>
