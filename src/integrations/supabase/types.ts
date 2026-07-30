@@ -562,6 +562,39 @@ export type Database = {
           },
         ]
       }
+      perguntas_auditoria: {
+        Row: {
+          area_nome: string
+          ativo: boolean
+          categoria: string
+          created_at: string
+          id: string
+          pergunta: string
+          peso: number
+          updated_at: string
+        }
+        Insert: {
+          area_nome: string
+          ativo?: boolean
+          categoria: string
+          created_at?: string
+          id?: string
+          pergunta: string
+          peso?: number
+          updated_at?: string
+        }
+        Update: {
+          area_nome?: string
+          ativo?: boolean
+          categoria?: string
+          created_at?: string
+          id?: string
+          pergunta?: string
+          peso?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           area_id: string | null
