@@ -310,18 +310,25 @@ function NovaAuditoria() {
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div>
             <Label>Área</Label>
-            <Select value={areaId} onValueChange={setAreaId}>
+            <Select
+              value={areaId}
+              onValueChange={(v) => {
+                setAreaId(v);
+                setRespostas({});
+              }}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione..." />
               </SelectTrigger>
               <SelectContent>
-                {(areasQ.data ?? []).map((a: any) => (
+                {areasDisponiveis.map((a: any) => (
                   <SelectItem key={a.id} value={a.id}>
-                    {a.nome} {a.setor ? `· ${a.setor}` : ""}
+                    {a.nome}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+
           </div>
           <div>
             <Label>Auditor</Label>
