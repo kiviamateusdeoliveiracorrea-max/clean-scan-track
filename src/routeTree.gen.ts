@@ -13,6 +13,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
+import { Route as AuthenticatedPerguntasRouteImport } from './routes/_authenticated/perguntas'
 import { Route as AuthenticatedNaoConformidadesRouteImport } from './routes/_authenticated/nao-conformidades'
 import { Route as AuthenticatedMelhoriasRouteImport } from './routes/_authenticated/melhorias'
 import { Route as AuthenticatedHistoricoRouteImport } from './routes/_authenticated/historico'
@@ -41,6 +42,11 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
 const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
   id: '/usuarios',
   path: '/usuarios',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPerguntasRoute = AuthenticatedPerguntasRouteImport.update({
+  id: '/perguntas',
+  path: '/perguntas',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedNaoConformidadesRoute =
@@ -108,6 +114,7 @@ export interface FileRoutesByFullPath {
   '/historico': typeof AuthenticatedHistoricoRoute
   '/melhorias': typeof AuthenticatedMelhoriasRoute
   '/nao-conformidades': typeof AuthenticatedNaoConformidadesRoute
+  '/perguntas': typeof AuthenticatedPerguntasRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/auditorias/$id': typeof AuthenticatedAuditoriasIdRoute
   '/auditorias/nova': typeof AuthenticatedAuditoriasNovaRoute
@@ -122,6 +129,7 @@ export interface FileRoutesByTo {
   '/historico': typeof AuthenticatedHistoricoRoute
   '/melhorias': typeof AuthenticatedMelhoriasRoute
   '/nao-conformidades': typeof AuthenticatedNaoConformidadesRoute
+  '/perguntas': typeof AuthenticatedPerguntasRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/': typeof AuthenticatedIndexRoute
   '/auditorias/$id': typeof AuthenticatedAuditoriasIdRoute
@@ -139,6 +147,7 @@ export interface FileRoutesById {
   '/_authenticated/historico': typeof AuthenticatedHistoricoRoute
   '/_authenticated/melhorias': typeof AuthenticatedMelhoriasRoute
   '/_authenticated/nao-conformidades': typeof AuthenticatedNaoConformidadesRoute
+  '/_authenticated/perguntas': typeof AuthenticatedPerguntasRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/auditorias/$id': typeof AuthenticatedAuditoriasIdRoute
@@ -157,6 +166,7 @@ export interface FileRouteTypes {
     | '/historico'
     | '/melhorias'
     | '/nao-conformidades'
+    | '/perguntas'
     | '/usuarios'
     | '/auditorias/$id'
     | '/auditorias/nova'
@@ -171,6 +181,7 @@ export interface FileRouteTypes {
     | '/historico'
     | '/melhorias'
     | '/nao-conformidades'
+    | '/perguntas'
     | '/usuarios'
     | '/'
     | '/auditorias/$id'
@@ -187,6 +198,7 @@ export interface FileRouteTypes {
     | '/_authenticated/historico'
     | '/_authenticated/melhorias'
     | '/_authenticated/nao-conformidades'
+    | '/_authenticated/perguntas'
     | '/_authenticated/usuarios'
     | '/_authenticated/'
     | '/_authenticated/auditorias/$id'
@@ -227,6 +239,13 @@ declare module '@tanstack/react-router' {
       path: '/usuarios'
       fullPath: '/usuarios'
       preLoaderRoute: typeof AuthenticatedUsuariosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/perguntas': {
+      id: '/_authenticated/perguntas'
+      path: '/perguntas'
+      fullPath: '/perguntas'
+      preLoaderRoute: typeof AuthenticatedPerguntasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/nao-conformidades': {
@@ -310,6 +329,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedHistoricoRoute: typeof AuthenticatedHistoricoRoute
   AuthenticatedMelhoriasRoute: typeof AuthenticatedMelhoriasRoute
   AuthenticatedNaoConformidadesRoute: typeof AuthenticatedNaoConformidadesRoute
+  AuthenticatedPerguntasRoute: typeof AuthenticatedPerguntasRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedAuditoriasIdRoute: typeof AuthenticatedAuditoriasIdRoute
@@ -325,6 +345,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedHistoricoRoute: AuthenticatedHistoricoRoute,
   AuthenticatedMelhoriasRoute: AuthenticatedMelhoriasRoute,
   AuthenticatedNaoConformidadesRoute: AuthenticatedNaoConformidadesRoute,
+  AuthenticatedPerguntasRoute: AuthenticatedPerguntasRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedAuditoriasIdRoute: AuthenticatedAuditoriasIdRoute,
@@ -342,3 +363,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
