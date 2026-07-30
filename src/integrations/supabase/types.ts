@@ -636,6 +636,51 @@ export type Database = {
           },
         ]
       }
+      respostas_auditoria: {
+        Row: {
+          auditoria_id: string
+          created_at: string
+          foto_url: string | null
+          id: string
+          observacao: string | null
+          pergunta_id: string
+          resposta: string
+        }
+        Insert: {
+          auditoria_id: string
+          created_at?: string
+          foto_url?: string | null
+          id?: string
+          observacao?: string | null
+          pergunta_id: string
+          resposta: string
+        }
+        Update: {
+          auditoria_id?: string
+          created_at?: string
+          foto_url?: string | null
+          id?: string
+          observacao?: string | null
+          pergunta_id?: string
+          resposta?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "respostas_auditoria_auditoria_id_fkey"
+            columns: ["auditoria_id"]
+            isOneToOne: false
+            referencedRelation: "auditorias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "respostas_auditoria_pergunta_id_fkey"
+            columns: ["pergunta_id"]
+            isOneToOne: false
+            referencedRelation: "perguntas_auditoria"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
