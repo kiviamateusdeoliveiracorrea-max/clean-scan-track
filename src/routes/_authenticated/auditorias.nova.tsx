@@ -352,6 +352,92 @@ function NovaAuditoria() {
         </CardContent>
       </Card>
 
+      {areaId && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              Checklist da área {areaNome}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {perguntasQ.isLoading && (
+              <p className="text-sm text-muted-foreground">Carregando perguntas...</p>
+            )}
+            {!perguntasQ.isLoading && perguntas.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                Nenhuma pergunta cadastrada para esta área.{" "}
+                <Link to="/perguntas" className="underline">
+                  Cadastrar perguntas
+                </Link>
+              </p>
+            )}
+            {CATEGORIAS.map((cat) => {
+              const lista = perguntas.filter((p: any) => p.categoria === cat);
+              if (lista.length === 0) return null;
+              return (
+                <div key={cat} className="space-y-3">
+                  <h3 className="font-semibold text-primary border-b pb-1">{cat}</h3>
+                  {lista.map((p: any, i: number) => {
+                    const r = respostas[p.id];
+                    return (
+                      <div key={p.id} className="rounded-md border p-3 space-y-2">
+                        <p className="text-sm font-medium">
+                          {i + 1}. {p.pergunta}{" "}
+                          <span className="text-xs text-muted-foreground">
+                            (peso {p.peso})
+                          </span>
+                        </p>
+                        <div className="flex gap-2">
+                          {(["SIM", "NÃO"] as const).map((op) => (
+                            <Button
+                              key={op}
+                              type="button"
+                              size="sm"
+                              variant={r?.resposta === op ? "default" : "outline"}
+                              className={
+                                r?.resposta === op && op === "NÃO"
+                                  ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  : ""
+                              }
+                              onClick={() =>
+                                setRespostas((s) => ({
+                                  ...s,
+                                  [p.id]: {
+                                    resposta: op,
+                                    observacao: s[p.id]?.observacao ?? "",
+                                  },
+                                }))
+                              }
+                            >
+                              {op}
+                            </Button>
+                          ))}
+                        </div>
+                        {r?.resposta === "NÃO" && (
+                          <Textarea
+                            rows={2}
+                            placeholder="Descreva o desvio observado..."
+                            value={r.observacao}
+                            onChange={(e) =>
+                              setRespostas((s) => ({
+                                ...s,
+                                [p.id]: { resposta: "NÃO", observacao: e.target.value },
+                              }))
+                            }
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      )}
+
+
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Avaliação dos 5 Sensos</CardTitle>
