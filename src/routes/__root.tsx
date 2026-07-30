@@ -23,6 +23,7 @@ import {
   Lightbulb,
   Footprints,
   Megaphone,
+  ListChecks,
   LogOut,
 } from "lucide-react";
 
