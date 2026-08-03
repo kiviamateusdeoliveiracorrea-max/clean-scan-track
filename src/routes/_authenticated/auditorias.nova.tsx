@@ -591,7 +591,7 @@ function NovaAuditoria() {
                             (peso {p.peso})
                           </span>
                         </p>
-                        <div className="flex gap-2">
+                        <div className="flex items-center gap-2">
                           {(["SIM", "NÃO"] as const).map((op) => (
                             <Button
                               key={op}
@@ -603,36 +603,143 @@ function NovaAuditoria() {
                                   ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                   : ""
                               }
-                              onClick={() =>
-                                setRespostas((s) => ({
-                                  ...s,
-                                  [p.id]: {
-                                    resposta: op,
-                                    observacao: s[p.id]?.observacao ?? "",
-                                  },
-                                }))
-                              }
+                              onClick={() => responder(p.id, op)}
                             >
-                              {op}
+                              {op === "SIM" ? "Sim" : "Não"}
                             </Button>
                           ))}
+                          {r?.salvando && (
+                            <span className="text-[11px] text-muted-foreground">
+                              salvando...
+                            </span>
+                          )}
+                          {!r?.salvando && r?.salvo && (
+                            <span className="text-[11px] text-emerald-600">
+                              salvo automaticamente
+                            </span>
+                          )}
                         </div>
                         {r?.resposta === "NÃO" && (
-                          <Textarea
-                            rows={2}
-                            placeholder="Descreva o desvio observado..."
-                            value={r.observacao}
-                            onChange={(e) =>
-                              setRespostas((s) => ({
-                                ...s,
-                                [p.id]: { resposta: "NÃO", observacao: e.target.value },
-                              }))
-                            }
-                          />
+                          <div className="rounded-md border border-red-300 bg-red-50/60 p-3 space-y-3">
+                            <p className="text-xs font-semibold text-red-700 flex items-center gap-1.5">
+                              <AlertTriangle className="h-3.5 w-3.5" />
+                              Não conformidade — todos os campos são obrigatórios
+                            </p>
+                            <div>
+                              <Label className="text-xs">Descrição da não conformidade *</Label>
+                              <Textarea
+                                rows={2}
+                                placeholder="Descreva o desvio observado..."
+                                value={r.descricao}
+                                onChange={(e) =>
+                                  patchResposta(p.id, { descricao: e.target.value })
+                                }
+                                onBlur={() =>
+                                  persistResposta(p.id, "NÃO", {
+                                    observacao: r.descricao,
+                                    fotoPath: r.fotoPath,
+                                  })
+                                }
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Evidência fotográfica *</Label>
+                              <div className="flex items-center gap-2 mt-1">
+                                <label className="inline-flex items-center gap-1 text-xs border rounded-md px-3 py-2 cursor-pointer hover:bg-muted/50">
+                                  <Camera className="h-4 w-4" /> Tirar foto
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    capture="environment"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                      uploadNcFoto(p.id, e.target.files?.[0]);
+                                      e.target.value = "";
+                                    }}
+                                  />
+                                </label>
+                                <label className="inline-flex items-center gap-1 text-xs border rounded-md px-3 py-2 cursor-pointer hover:bg-muted/50">
+                                  <Camera className="h-4 w-4" /> Selecionar arquivo
+                                  <input
+                                    type="file"
+                                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                      uploadNcFoto(p.id, e.target.files?.[0]);
+                                      e.target.value = "";
+                                    }}
+                                  />
+                                </label>
+                                {r.fotoPreview && (
+                                  <img
+                                    src={r.fotoPreview}
+                                    alt="Evidência"
+                                    className="h-14 w-14 object-cover rounded border"
+                                  />
+                                )}
+                              </div>
+                            </div>
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              <UserPickerField
+                                label="Responsável pela ação *"
+                                value={r.responsavelId}
+                                onChange={(v) => patchResposta(p.id, { responsavelId: v })}
+                                users={usuariosQ.data ?? []}
+                              />
+                              <div>
+                                <Label className="text-xs">Prazo *</Label>
+                                <Input
+                                  type="date"
+                                  value={r.prazo}
+                                  onChange={(e) => patchResposta(p.id, { prazo: e.target.value })}
+                                />
+                              </div>
+                            </div>
+                            <div className="rounded-md border bg-background p-3 space-y-3">
+                              <p className="text-xs font-semibold text-primary">
+                                Plano de Ação
+                              </p>
+                              <div>
+                                <Label className="text-xs">O que será feito</Label>
+                                <Textarea
+                                  rows={2}
+                                  placeholder="Descreva a ação que será executada..."
+                                  value={r.planoAcao}
+                                  onChange={(e) =>
+                                    patchResposta(p.id, { planoAcao: e.target.value })
+                                  }
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs">Status</Label>
+                                <Select
+                                  value={r.statusAcao}
+                                  onValueChange={(v) =>
+                                    patchResposta(p.id, {
+                                      statusAcao: v as RespostaItem["statusAcao"],
+                                    })
+                                  }
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="aberta">Aberto</SelectItem>
+                                    <SelectItem value="em_andamento">Em andamento</SelectItem>
+                                    <SelectItem value="concluida">Concluído</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <p className="text-[11px] text-muted-foreground">
+                                Responsável e prazo do plano seguem os campos acima.
+                              </p>
+                            </div>
+                          </div>
                         )}
                       </div>
                     );
                   })}
+
                 </div>
               );
             })}
