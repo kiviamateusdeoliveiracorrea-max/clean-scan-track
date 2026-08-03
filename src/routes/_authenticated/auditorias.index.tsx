@@ -139,6 +139,7 @@ function AuditoriasList() {
 
   const filtered = useMemo(() => {
     return data.filter((a: any) => {
+      if (a.status === "rascunho") return false;
       if (filtro === "ativas" && a.status === "cancelada") return false;
       if (filtro === "canceladas" && a.status !== "cancelada") return false;
       if (!q) return true;
