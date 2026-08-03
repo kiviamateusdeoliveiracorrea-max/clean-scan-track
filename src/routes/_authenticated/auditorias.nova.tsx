@@ -268,13 +268,28 @@ function NovaAuditoria() {
 
   const perguntas = perguntasQ.data ?? [];
 
-
-
-
+  // ---- Notas por categoria (SIM / respondidas × 100) ----
+  const notaCategoria = (cat: string) => {
+    const ids = perguntas.filter((p: any) => p.categoria === cat).map((p: any) => p.id);
+    const respondidas = ids.filter((id: string) => respostas[id]);
+    if (respondidas.length === 0) return null;
+    const sim = respondidas.filter((id: string) => respostas[id].resposta === "SIM").length;
+    return (sim / respondidas.length) * 100;
+  };
+  const notaPessoas = notaCategoria("Pessoas");
+  const notaAmbiente = notaCategoria("Ambiente");
+  const notaProcesso = notaCategoria("Processo");
+  const respondidasTodas = perguntas.filter((p: any) => respostas[p.id]);
+  const simTotal = respondidasTodas.filter(
+    (p: any) => respostas[p.id].resposta === "SIM",
+  ).length;
+  const notaFinal =
+    respondidasTodas.length > 0 ? (simTotal / respondidasTodas.length) * 100 : null;
 
   const total = Object.values(scores).reduce((a, b) => a + b, 0);
-  const percentual = (total / 50) * 100;
+  const percentual = notaFinal ?? (total / 50) * 100;
   const cls = classificaPontuacao(percentual);
+
 
   const handleSave = async () => {
     if (!areaId || !auditorId) {
