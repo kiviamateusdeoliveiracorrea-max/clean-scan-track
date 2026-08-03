@@ -55,9 +55,22 @@ function NovaAuditoria() {
   const [saving, setSaving] = useState(false);
   const [fotos, setFotos] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
-  const [respostas, setRespostas] = useState<
-    Record<string, { resposta: "SIM" | "NÃO"; observacao: string }>
-  >({});
+  type RespostaItem = {
+    resposta: "SIM" | "NÃO";
+    observacao: string;
+    descricao: string;
+    fotoPath: string;
+    fotoPreview: string;
+    responsavelId: string;
+    prazo: string;
+    planoAcao: string;
+    statusAcao: "aberta" | "em_andamento" | "concluida";
+    salvando?: boolean;
+    salvo?: boolean;
+  };
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [respostas, setRespostas] = useState<Record<string, RespostaItem>>({});
+
 
   const [scores, setScores] = useState<Record<Criterio5SKey, number>>({
     seiri: 7,
@@ -94,6 +107,110 @@ function NovaAuditoria() {
     setFotos((f) => f.filter((_, i) => i !== idx));
     setPreviews((p) => p.filter((_, i) => i !== idx));
   };
+
+  // ---- Rascunho + salvamento automático das respostas ----
+  const ensureDraft = async (): Promise<string | null> => {
+    if (draftId) return draftId;
+    if (!areaId || !auditorId) {
+      toast.error("Selecione a área e o auditor antes de responder.");
+      return null;
+    }
+    const { data: d, error } = await supabase
+      .from("auditorias")
+      .insert({
+        area_id: areaId,
+        auditor_id: auditorId,
+        data_auditoria: data,
+        status: "rascunho",
+      })
+      .select("id")
+      .single();
+    if (error || !d) {
+      toast.error("Erro ao iniciar auditoria: " + (error?.message ?? ""));
+      return null;
+    }
+    setDraftId(d.id);
+    return d.id;
+  };
+
+  const respostaVazia: RespostaItem = {
+    resposta: "SIM",
+    observacao: "",
+    descricao: "",
+    fotoPath: "",
+    fotoPreview: "",
+    responsavelId: "",
+    prazo: "",
+    planoAcao: "",
+    statusAcao: "aberta",
+  };
+
+  const patchResposta = (perguntaId: string, patch: Partial<RespostaItem>) =>
+    setRespostas((s) => ({
+      ...s,
+      [perguntaId]: { ...respostaVazia, ...(s[perguntaId] ?? {}), ...patch },
+    }));
+
+
+  const persistResposta = async (
+    perguntaId: string,
+    resposta: "SIM" | "NÃO",
+    extra?: { observacao?: string; fotoPath?: string },
+  ) => {
+    const id = await ensureDraft();
+    if (!id) return;
+    patchResposta(perguntaId, { salvando: true });
+    const { error } = await supabase.from("respostas_auditoria").upsert(
+      {
+        auditoria_id: id,
+        pergunta_id: perguntaId,
+        resposta,
+        observacao: extra?.observacao || null,
+        foto_url: extra?.fotoPath || null,
+      },
+      { onConflict: "auditoria_id,pergunta_id" },
+    );
+    patchResposta(perguntaId, { salvando: false, salvo: !error });
+    if (error) toast.error("Erro ao salvar resposta: " + error.message);
+  };
+
+  const responder = async (perguntaId: string, resposta: "SIM" | "NÃO") => {
+    patchResposta(perguntaId, { resposta });
+    const atual = respostas[perguntaId];
+    await persistResposta(perguntaId, resposta, {
+      observacao: resposta === "NÃO" ? atual?.descricao || atual?.observacao : "",
+      fotoPath: resposta === "NÃO" ? atual?.fotoPath : "",
+    });
+  };
+
+  const uploadNcFoto = async (perguntaId: string, file: File | undefined) => {
+    if (!file) return;
+    const id = await ensureDraft();
+    if (!id) return;
+    const reader = new FileReader();
+    reader.onload = () => patchResposta(perguntaId, { fotoPreview: reader.result as string });
+    reader.readAsDataURL(file);
+    const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+    const path = `${id}/nc-${perguntaId}-${Date.now()}.${ext}`;
+    const contentType =
+      file.type ||
+      (ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg");
+    const { error } = await supabase.storage
+      .from("audit-photos")
+      .upload(path, file, { contentType, upsert: true });
+    if (error) {
+      toast.error("Erro no upload da evidência: " + error.message);
+      return;
+    }
+    patchResposta(perguntaId, { fotoPath: path });
+    const atual = respostas[perguntaId];
+    await persistResposta(perguntaId, "NÃO", {
+      observacao: atual?.descricao,
+      fotoPath: path,
+    });
+  };
+
+
 
   const areasQ = useQuery({
     queryKey: ["areas"],
@@ -151,18 +268,58 @@ function NovaAuditoria() {
 
   const perguntas = perguntasQ.data ?? [];
 
-
-
-
+  // ---- Notas por categoria (SIM / respondidas × 100) ----
+  const notaCategoria = (cat: string) => {
+    const ids = perguntas.filter((p: any) => p.categoria === cat).map((p: any) => p.id);
+    const respondidas = ids.filter((id: string) => respostas[id]);
+    if (respondidas.length === 0) return null;
+    const sim = respondidas.filter((id: string) => respostas[id].resposta === "SIM").length;
+    return (sim / respondidas.length) * 100;
+  };
+  const notaPessoas = notaCategoria("Pessoas");
+  const notaAmbiente = notaCategoria("Ambiente");
+  const notaProcesso = notaCategoria("Processo");
+  const respondidasTodas = perguntas.filter((p: any) => respostas[p.id]);
+  const simTotal = respondidasTodas.filter(
+    (p: any) => respostas[p.id].resposta === "SIM",
+  ).length;
+  const notaFinal =
+    respondidasTodas.length > 0 ? (simTotal / respondidasTodas.length) * 100 : null;
 
   const total = Object.values(scores).reduce((a, b) => a + b, 0);
-  const percentual = (total / 50) * 100;
+  const percentual = notaFinal ?? (total / 50) * 100;
   const cls = classificaPontuacao(percentual);
+
 
   const handleSave = async () => {
     if (!areaId || !auditorId) {
       toast.error("Selecione a área e o auditor");
       return;
+    }
+    const naoRespondidas = perguntas.filter((p: any) => !respostas[p.id]);
+    if (naoRespondidas.length > 0) {
+      toast.error(`Responda todas as perguntas (${naoRespondidas.length} pendente(s)).`);
+      return;
+    }
+    const naos = perguntas.filter((p: any) => respostas[p.id]?.resposta === "NÃO");
+    for (const p of naos) {
+      const r = respostas[p.id];
+      if (!r.descricao.trim()) {
+        toast.error("Descrição da não conformidade obrigatória: " + p.pergunta);
+        return;
+      }
+      if (!r.fotoPath) {
+        toast.error("Evidência fotográfica obrigatória: " + p.pergunta);
+        return;
+      }
+      if (!r.responsavelId) {
+        toast.error("Responsável pela ação obrigatório: " + p.pergunta);
+        return;
+      }
+      if (!r.prazo) {
+        toast.error("Prazo obrigatório: " + p.pergunta);
+        return;
+      }
     }
     const semComentario = CRITERIOS_5S.filter(
       (c) => scores[c.key] < 8 && !comentarios[c.key].trim(),
@@ -174,34 +331,17 @@ function NovaAuditoria() {
       return;
     }
     setSaving(true);
-    const { data: inserted, error } = await supabase
-      .from("auditorias")
-      .insert({
-        area_id: areaId,
-        auditor_id: auditorId,
-        data_auditoria: data,
-        seiri: scores.seiri,
-        seiton: scores.seiton,
-        seiso: scores.seiso,
-        seiketsu: scores.seiketsu,
-        shitsuke: scores.shitsuke,
-        pontuacao_total: total,
-        percentual: Number(percentual.toFixed(2)),
-        observacoes,
-        status: "concluida",
-      })
-      .select()
-      .single();
-    if (error) {
+
+    const auditoriaId = await ensureDraft();
+    if (!auditoriaId) {
       setSaving(false);
-      toast.error("Erro ao salvar: " + error.message);
       return;
     }
 
     const uploadedPaths: string[] = [];
     for (const file of fotos) {
       const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-      const path = `${inserted.id}/auditoria-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const path = `${auditoriaId}/auditoria-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
       const contentType =
         file.type ||
         (ext === "png"
@@ -218,41 +358,88 @@ function NovaAuditoria() {
         uploadedPaths.push(path);
       }
     }
-    if (uploadedPaths.length > 0) {
-      await supabase
-        .from("auditorias")
-        .update({ fotos: uploadedPaths })
-        .eq("id", inserted.id);
+
+    const { error } = await supabase
+      .from("auditorias")
+      .update({
+        area_id: areaId,
+        auditor_id: auditorId,
+        data_auditoria: data,
+        seiri: scores.seiri,
+        seiton: scores.seiton,
+        seiso: scores.seiso,
+        seiketsu: scores.seiketsu,
+        shitsuke: scores.shitsuke,
+        pontuacao_total: total,
+        percentual: Number(percentual.toFixed(2)),
+        nota_pessoas: notaPessoas === null ? null : Number(notaPessoas.toFixed(2)),
+        nota_ambiente: notaAmbiente === null ? null : Number(notaAmbiente.toFixed(2)),
+        nota_processo: notaProcesso === null ? null : Number(notaProcesso.toFixed(2)),
+        observacoes,
+        status: "concluida",
+        ...(uploadedPaths.length > 0 ? { fotos: uploadedPaths } : {}),
+      })
+      .eq("id", auditoriaId);
+    if (error) {
+      setSaving(false);
+      toast.error("Erro ao salvar: " + error.message);
+      return;
     }
 
-    const respostaRows = Object.entries(respostas).map(([perguntaId, r]) => ({
-      auditoria_id: inserted.id,
-      pergunta_id: perguntaId,
-      resposta: r.resposta,
-      observacao: r.observacao || null,
-    }));
+    // garante que todas as respostas estão gravadas
+    const respostaRows = perguntas
+      .filter((p: any) => respostas[p.id])
+      .map((p: any) => ({
+        auditoria_id: auditoriaId,
+        pergunta_id: p.id,
+        resposta: respostas[p.id].resposta,
+        observacao:
+          (respostas[p.id].resposta === "NÃO"
+            ? respostas[p.id].descricao
+            : respostas[p.id].observacao) || null,
+        foto_url: respostas[p.id].fotoPath || null,
+      }));
     if (respostaRows.length > 0) {
       const { error: respErr } = await supabase
         .from("respostas_auditoria")
-        .insert(respostaRows);
+        .upsert(respostaRows, { onConflict: "auditoria_id,pergunta_id" });
       if (respErr) toast.error("Erro ao salvar respostas: " + respErr.message);
     }
-
-
 
     const users = usuariosQ.data ?? [];
     const respUser = users.find((u: any) => u.id === ncResponsavelAcaoId) as any;
     const { data: userData } = await supabase.auth.getUser();
     const criadorId = userData.user?.id ?? null;
 
-    // Ação corretiva automática para todo critério com nota < 6
-    const ncRows = CRITERIOS_5S
+    // NC + Plano de Ação para cada resposta "NÃO"
+    const ncPerguntas = naos.map((p: any) => {
+      const r = respostas[p.id];
+      const alvo = users.find((u: any) => u.id === r.responsavelId) as any;
+      return {
+        auditoria_id: auditoriaId,
+        area_id: areaId,
+        criterio: `${p.categoria} · ${p.pergunta}`,
+        descricao: r.descricao.trim(),
+        severidade: "media",
+        status: r.statusAcao,
+        plano_acao: r.planoAcao.trim() || null,
+        responsavel: alvo?.nome ?? null,
+        responsavel_nc_id: criadorId,
+        responsavel_acao_id: r.responsavelId || null,
+        aprovador_id: ncAprovadorId || null,
+        prazo: r.prazo,
+        foto_urls: r.fotoPath ? [r.fotoPath] : [],
+      };
+    });
+
+    // Ação corretiva automática para todo critério 5S com nota < 6
+    const ncRows5S = CRITERIOS_5S
       .filter((c) => scores[c.key] < 6)
       .map((c) => {
         const nota = scores[c.key];
         const comentario = comentarios[c.key].trim();
         return {
-          auditoria_id: inserted.id,
+          auditoria_id: auditoriaId,
           area_id: areaId,
           criterio: c.nome,
           descricao:
@@ -266,11 +453,12 @@ function NovaAuditoria() {
           prazo: ncPrazo || null,
         };
       });
+
+    const ncRows = [...ncPerguntas, ...ncRows5S];
     if (ncRows.length > 0) {
       const { error: ncErr } = await supabase.from("nao_conformidades").insert(ncRows);
       if (ncErr) toast.error("Erro ao gerar ações corretivas: " + ncErr.message);
     }
-
 
     setSaving(false);
     toast.success(
@@ -278,8 +466,9 @@ function NovaAuditoria() {
         ? `Auditoria salva! ${ncRows.length} ação(ões) corretiva(s) gerada(s).`
         : "Auditoria salva com sucesso!",
     );
-    navigate({ to: "/auditorias/$id", params: { id: inserted.id } });
+    navigate({ to: "/auditorias/$id", params: { id: auditoriaId } });
   };
+
 
   const noAreas = !areasQ.isLoading && (areasQ.data?.length ?? 0) === 0;
   const noAuditores = !auditoresQ.isLoading && (auditoresQ.data?.length ?? 0) === 0;
@@ -402,7 +591,7 @@ function NovaAuditoria() {
                             (peso {p.peso})
                           </span>
                         </p>
-                        <div className="flex gap-2">
+                        <div className="flex items-center gap-2">
                           {(["SIM", "NÃO"] as const).map((op) => (
                             <Button
                               key={op}
@@ -414,36 +603,143 @@ function NovaAuditoria() {
                                   ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                   : ""
                               }
-                              onClick={() =>
-                                setRespostas((s) => ({
-                                  ...s,
-                                  [p.id]: {
-                                    resposta: op,
-                                    observacao: s[p.id]?.observacao ?? "",
-                                  },
-                                }))
-                              }
+                              onClick={() => responder(p.id, op)}
                             >
-                              {op}
+                              {op === "SIM" ? "Sim" : "Não"}
                             </Button>
                           ))}
+                          {r?.salvando && (
+                            <span className="text-[11px] text-muted-foreground">
+                              salvando...
+                            </span>
+                          )}
+                          {!r?.salvando && r?.salvo && (
+                            <span className="text-[11px] text-emerald-600">
+                              salvo automaticamente
+                            </span>
+                          )}
                         </div>
                         {r?.resposta === "NÃO" && (
-                          <Textarea
-                            rows={2}
-                            placeholder="Descreva o desvio observado..."
-                            value={r.observacao}
-                            onChange={(e) =>
-                              setRespostas((s) => ({
-                                ...s,
-                                [p.id]: { resposta: "NÃO", observacao: e.target.value },
-                              }))
-                            }
-                          />
+                          <div className="rounded-md border border-red-300 bg-red-50/60 p-3 space-y-3">
+                            <p className="text-xs font-semibold text-red-700 flex items-center gap-1.5">
+                              <AlertTriangle className="h-3.5 w-3.5" />
+                              Não conformidade — todos os campos são obrigatórios
+                            </p>
+                            <div>
+                              <Label className="text-xs">Descrição da não conformidade *</Label>
+                              <Textarea
+                                rows={2}
+                                placeholder="Descreva o desvio observado..."
+                                value={r.descricao}
+                                onChange={(e) =>
+                                  patchResposta(p.id, { descricao: e.target.value })
+                                }
+                                onBlur={() =>
+                                  persistResposta(p.id, "NÃO", {
+                                    observacao: r.descricao,
+                                    fotoPath: r.fotoPath,
+                                  })
+                                }
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Evidência fotográfica *</Label>
+                              <div className="flex items-center gap-2 mt-1">
+                                <label className="inline-flex items-center gap-1 text-xs border rounded-md px-3 py-2 cursor-pointer hover:bg-muted/50">
+                                  <Camera className="h-4 w-4" /> Tirar foto
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    capture="environment"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                      uploadNcFoto(p.id, e.target.files?.[0]);
+                                      e.target.value = "";
+                                    }}
+                                  />
+                                </label>
+                                <label className="inline-flex items-center gap-1 text-xs border rounded-md px-3 py-2 cursor-pointer hover:bg-muted/50">
+                                  <Camera className="h-4 w-4" /> Selecionar arquivo
+                                  <input
+                                    type="file"
+                                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                      uploadNcFoto(p.id, e.target.files?.[0]);
+                                      e.target.value = "";
+                                    }}
+                                  />
+                                </label>
+                                {r.fotoPreview && (
+                                  <img
+                                    src={r.fotoPreview}
+                                    alt="Evidência"
+                                    className="h-14 w-14 object-cover rounded border"
+                                  />
+                                )}
+                              </div>
+                            </div>
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              <UserPickerField
+                                label="Responsável pela ação *"
+                                value={r.responsavelId}
+                                onChange={(v) => patchResposta(p.id, { responsavelId: v })}
+                                users={usuariosQ.data ?? []}
+                              />
+                              <div>
+                                <Label className="text-xs">Prazo *</Label>
+                                <Input
+                                  type="date"
+                                  value={r.prazo}
+                                  onChange={(e) => patchResposta(p.id, { prazo: e.target.value })}
+                                />
+                              </div>
+                            </div>
+                            <div className="rounded-md border bg-background p-3 space-y-3">
+                              <p className="text-xs font-semibold text-primary">
+                                Plano de Ação
+                              </p>
+                              <div>
+                                <Label className="text-xs">O que será feito</Label>
+                                <Textarea
+                                  rows={2}
+                                  placeholder="Descreva a ação que será executada..."
+                                  value={r.planoAcao}
+                                  onChange={(e) =>
+                                    patchResposta(p.id, { planoAcao: e.target.value })
+                                  }
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs">Status</Label>
+                                <Select
+                                  value={r.statusAcao}
+                                  onValueChange={(v) =>
+                                    patchResposta(p.id, {
+                                      statusAcao: v as RespostaItem["statusAcao"],
+                                    })
+                                  }
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="aberta">Aberto</SelectItem>
+                                    <SelectItem value="em_andamento">Em andamento</SelectItem>
+                                    <SelectItem value="concluida">Concluído</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <p className="text-[11px] text-muted-foreground">
+                                Responsável e prazo do plano seguem os campos acima.
+                              </p>
+                            </div>
+                          </div>
                         )}
                       </div>
                     );
                   })}
+
                 </div>
               );
             })}
@@ -681,6 +977,31 @@ function NovaAuditoria() {
 
 
 
+      {perguntas.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Notas do checklist</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { l: "Pessoas", v: notaPessoas },
+              { l: "Ambiente", v: notaAmbiente },
+              { l: "Processo", v: notaProcesso },
+              { l: "Nota Final", v: notaFinal },
+            ].map((n) => (
+              <div key={n.l} className="rounded-lg border p-3">
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                  {n.l}
+                </p>
+                <p className="text-2xl font-bold text-primary">
+                  {n.v === null ? "—" : `${n.v.toFixed(0)}%`}
+                </p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
       <Card className="bg-primary text-primary-foreground">
         <CardContent className="p-5 flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
           <div>
@@ -692,6 +1013,7 @@ function NovaAuditoria() {
             </p>
             <p className="text-sm mt-1">{cls.label}</p>
           </div>
+
           <Button
             onClick={handleSave}
             disabled={saving}

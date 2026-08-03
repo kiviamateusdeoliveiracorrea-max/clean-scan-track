@@ -123,6 +123,9 @@ export type Database = {
           fotos: string[]
           id: string
           justificativa_cancelamento: string | null
+          nota_ambiente: number | null
+          nota_pessoas: number | null
+          nota_processo: number | null
           observacoes: string | null
           percentual: number
           pontuacao_total: number
@@ -143,6 +146,9 @@ export type Database = {
           fotos?: string[]
           id?: string
           justificativa_cancelamento?: string | null
+          nota_ambiente?: number | null
+          nota_pessoas?: number | null
+          nota_processo?: number | null
           observacoes?: string | null
           percentual?: number
           pontuacao_total?: number
@@ -163,6 +169,9 @@ export type Database = {
           fotos?: string[]
           id?: string
           justificativa_cancelamento?: string | null
+          nota_ambiente?: number | null
+          nota_pessoas?: number | null
+          nota_processo?: number | null
           observacoes?: string | null
           percentual?: number
           pontuacao_total?: number
