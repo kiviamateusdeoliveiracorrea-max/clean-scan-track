@@ -55,9 +55,22 @@ function NovaAuditoria() {
   const [saving, setSaving] = useState(false);
   const [fotos, setFotos] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
-  const [respostas, setRespostas] = useState<
-    Record<string, { resposta: "SIM" | "NÃO"; observacao: string }>
-  >({});
+  type RespostaItem = {
+    resposta: "SIM" | "NÃO";
+    observacao: string;
+    descricao: string;
+    fotoPath: string;
+    fotoPreview: string;
+    responsavelId: string;
+    prazo: string;
+    planoAcao: string;
+    statusAcao: "aberta" | "em_andamento" | "concluida";
+    salvando?: boolean;
+    salvo?: boolean;
+  };
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [respostas, setRespostas] = useState<Record<string, RespostaItem>>({});
+
 
   const [scores, setScores] = useState<Record<Criterio5SKey, number>>({
     seiri: 7,
