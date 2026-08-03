@@ -133,23 +133,24 @@ function NovaAuditoria() {
     return d.id;
   };
 
+  const respostaVazia: RespostaItem = {
+    resposta: "SIM",
+    observacao: "",
+    descricao: "",
+    fotoPath: "",
+    fotoPreview: "",
+    responsavelId: "",
+    prazo: "",
+    planoAcao: "",
+    statusAcao: "aberta",
+  };
+
   const patchResposta = (perguntaId: string, patch: Partial<RespostaItem>) =>
     setRespostas((s) => ({
       ...s,
-      [perguntaId]: {
-        resposta: "SIM",
-        observacao: "",
-        descricao: "",
-        fotoPath: "",
-        fotoPreview: "",
-        responsavelId: "",
-        prazo: "",
-        planoAcao: "",
-        statusAcao: "aberta",
-        ...(s[perguntaId] ?? {}),
-        ...patch,
-      },
+      [perguntaId]: { ...respostaVazia, ...(s[perguntaId] ?? {}), ...patch },
     }));
+
 
   const persistResposta = async (
     perguntaId: string,
