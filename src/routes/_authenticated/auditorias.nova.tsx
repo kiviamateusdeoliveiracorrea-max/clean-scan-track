@@ -977,6 +977,31 @@ function NovaAuditoria() {
 
 
 
+      {perguntas.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Notas do checklist</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { l: "Pessoas", v: notaPessoas },
+              { l: "Ambiente", v: notaAmbiente },
+              { l: "Processo", v: notaProcesso },
+              { l: "Nota Final", v: notaFinal },
+            ].map((n) => (
+              <div key={n.l} className="rounded-lg border p-3">
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                  {n.l}
+                </p>
+                <p className="text-2xl font-bold text-primary">
+                  {n.v === null ? "—" : `${n.v.toFixed(0)}%`}
+                </p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
       <Card className="bg-primary text-primary-foreground">
         <CardContent className="p-5 flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
           <div>
@@ -988,6 +1013,7 @@ function NovaAuditoria() {
             </p>
             <p className="text-sm mt-1">{cls.label}</p>
           </div>
+
           <Button
             onClick={handleSave}
             disabled={saving}
