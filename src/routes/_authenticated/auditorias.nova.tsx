@@ -108,6 +108,109 @@ function NovaAuditoria() {
     setPreviews((p) => p.filter((_, i) => i !== idx));
   };
 
+  // ---- Rascunho + salvamento automático das respostas ----
+  const ensureDraft = async (): Promise<string | null> => {
+    if (draftId) return draftId;
+    if (!areaId || !auditorId) {
+      toast.error("Selecione a área e o auditor antes de responder.");
+      return null;
+    }
+    const { data: d, error } = await supabase
+      .from("auditorias")
+      .insert({
+        area_id: areaId,
+        auditor_id: auditorId,
+        data_auditoria: data,
+        status: "rascunho",
+      })
+      .select("id")
+      .single();
+    if (error || !d) {
+      toast.error("Erro ao iniciar auditoria: " + (error?.message ?? ""));
+      return null;
+    }
+    setDraftId(d.id);
+    return d.id;
+  };
+
+  const patchResposta = (perguntaId: string, patch: Partial<RespostaItem>) =>
+    setRespostas((s) => ({
+      ...s,
+      [perguntaId]: {
+        resposta: "SIM",
+        observacao: "",
+        descricao: "",
+        fotoPath: "",
+        fotoPreview: "",
+        responsavelId: "",
+        prazo: "",
+        planoAcao: "",
+        statusAcao: "aberta",
+        ...(s[perguntaId] ?? {}),
+        ...patch,
+      },
+    }));
+
+  const persistResposta = async (
+    perguntaId: string,
+    resposta: "SIM" | "NÃO",
+    extra?: { observacao?: string; fotoPath?: string },
+  ) => {
+    const id = await ensureDraft();
+    if (!id) return;
+    patchResposta(perguntaId, { salvando: true });
+    const { error } = await supabase.from("respostas_auditoria").upsert(
+      {
+        auditoria_id: id,
+        pergunta_id: perguntaId,
+        resposta,
+        observacao: extra?.observacao || null,
+        foto_url: extra?.fotoPath || null,
+      },
+      { onConflict: "auditoria_id,pergunta_id" },
+    );
+    patchResposta(perguntaId, { salvando: false, salvo: !error });
+    if (error) toast.error("Erro ao salvar resposta: " + error.message);
+  };
+
+  const responder = async (perguntaId: string, resposta: "SIM" | "NÃO") => {
+    patchResposta(perguntaId, { resposta });
+    const atual = respostas[perguntaId];
+    await persistResposta(perguntaId, resposta, {
+      observacao: resposta === "NÃO" ? atual?.descricao || atual?.observacao : "",
+      fotoPath: resposta === "NÃO" ? atual?.fotoPath : "",
+    });
+  };
+
+  const uploadNcFoto = async (perguntaId: string, file: File | undefined) => {
+    if (!file) return;
+    const id = await ensureDraft();
+    if (!id) return;
+    const reader = new FileReader();
+    reader.onload = () => patchResposta(perguntaId, { fotoPreview: reader.result as string });
+    reader.readAsDataURL(file);
+    const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+    const path = `${id}/nc-${perguntaId}-${Date.now()}.${ext}`;
+    const contentType =
+      file.type ||
+      (ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg");
+    const { error } = await supabase.storage
+      .from("audit-photos")
+      .upload(path, file, { contentType, upsert: true });
+    if (error) {
+      toast.error("Erro no upload da evidência: " + error.message);
+      return;
+    }
+    patchResposta(perguntaId, { fotoPath: path });
+    const atual = respostas[perguntaId];
+    await persistResposta(perguntaId, "NÃO", {
+      observacao: atual?.descricao,
+      fotoPath: path,
+    });
+  };
+
+
+
   const areasQ = useQuery({
     queryKey: ["areas"],
     queryFn: async () => {
