@@ -296,6 +296,31 @@ function NovaAuditoria() {
       toast.error("Selecione a área e o auditor");
       return;
     }
+    const naoRespondidas = perguntas.filter((p: any) => !respostas[p.id]);
+    if (naoRespondidas.length > 0) {
+      toast.error(`Responda todas as perguntas (${naoRespondidas.length} pendente(s)).`);
+      return;
+    }
+    const naos = perguntas.filter((p: any) => respostas[p.id]?.resposta === "NÃO");
+    for (const p of naos) {
+      const r = respostas[p.id];
+      if (!r.descricao.trim()) {
+        toast.error("Descrição da não conformidade obrigatória: " + p.pergunta);
+        return;
+      }
+      if (!r.fotoPath) {
+        toast.error("Evidência fotográfica obrigatória: " + p.pergunta);
+        return;
+      }
+      if (!r.responsavelId) {
+        toast.error("Responsável pela ação obrigatório: " + p.pergunta);
+        return;
+      }
+      if (!r.prazo) {
+        toast.error("Prazo obrigatório: " + p.pergunta);
+        return;
+      }
+    }
     const semComentario = CRITERIOS_5S.filter(
       (c) => scores[c.key] < 8 && !comentarios[c.key].trim(),
     );
@@ -306,34 +331,17 @@ function NovaAuditoria() {
       return;
     }
     setSaving(true);
-    const { data: inserted, error } = await supabase
-      .from("auditorias")
-      .insert({
-        area_id: areaId,
-        auditor_id: auditorId,
-        data_auditoria: data,
-        seiri: scores.seiri,
-        seiton: scores.seiton,
-        seiso: scores.seiso,
-        seiketsu: scores.seiketsu,
-        shitsuke: scores.shitsuke,
-        pontuacao_total: total,
-        percentual: Number(percentual.toFixed(2)),
-        observacoes,
-        status: "concluida",
-      })
-      .select()
-      .single();
-    if (error) {
+
+    const auditoriaId = await ensureDraft();
+    if (!auditoriaId) {
       setSaving(false);
-      toast.error("Erro ao salvar: " + error.message);
       return;
     }
 
     const uploadedPaths: string[] = [];
     for (const file of fotos) {
       const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-      const path = `${inserted.id}/auditoria-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const path = `${auditoriaId}/auditoria-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
       const contentType =
         file.type ||
         (ext === "png"
@@ -350,41 +358,88 @@ function NovaAuditoria() {
         uploadedPaths.push(path);
       }
     }
-    if (uploadedPaths.length > 0) {
-      await supabase
-        .from("auditorias")
-        .update({ fotos: uploadedPaths })
-        .eq("id", inserted.id);
+
+    const { error } = await supabase
+      .from("auditorias")
+      .update({
+        area_id: areaId,
+        auditor_id: auditorId,
+        data_auditoria: data,
+        seiri: scores.seiri,
+        seiton: scores.seiton,
+        seiso: scores.seiso,
+        seiketsu: scores.seiketsu,
+        shitsuke: scores.shitsuke,
+        pontuacao_total: total,
+        percentual: Number(percentual.toFixed(2)),
+        nota_pessoas: notaPessoas === null ? null : Number(notaPessoas.toFixed(2)),
+        nota_ambiente: notaAmbiente === null ? null : Number(notaAmbiente.toFixed(2)),
+        nota_processo: notaProcesso === null ? null : Number(notaProcesso.toFixed(2)),
+        observacoes,
+        status: "concluida",
+        ...(uploadedPaths.length > 0 ? { fotos: uploadedPaths } : {}),
+      })
+      .eq("id", auditoriaId);
+    if (error) {
+      setSaving(false);
+      toast.error("Erro ao salvar: " + error.message);
+      return;
     }
 
-    const respostaRows = Object.entries(respostas).map(([perguntaId, r]) => ({
-      auditoria_id: inserted.id,
-      pergunta_id: perguntaId,
-      resposta: r.resposta,
-      observacao: r.observacao || null,
-    }));
+    // garante que todas as respostas estão gravadas
+    const respostaRows = perguntas
+      .filter((p: any) => respostas[p.id])
+      .map((p: any) => ({
+        auditoria_id: auditoriaId,
+        pergunta_id: p.id,
+        resposta: respostas[p.id].resposta,
+        observacao:
+          (respostas[p.id].resposta === "NÃO"
+            ? respostas[p.id].descricao
+            : respostas[p.id].observacao) || null,
+        foto_url: respostas[p.id].fotoPath || null,
+      }));
     if (respostaRows.length > 0) {
       const { error: respErr } = await supabase
         .from("respostas_auditoria")
-        .insert(respostaRows);
+        .upsert(respostaRows, { onConflict: "auditoria_id,pergunta_id" });
       if (respErr) toast.error("Erro ao salvar respostas: " + respErr.message);
     }
-
-
 
     const users = usuariosQ.data ?? [];
     const respUser = users.find((u: any) => u.id === ncResponsavelAcaoId) as any;
     const { data: userData } = await supabase.auth.getUser();
     const criadorId = userData.user?.id ?? null;
 
-    // Ação corretiva automática para todo critério com nota < 6
-    const ncRows = CRITERIOS_5S
+    // NC + Plano de Ação para cada resposta "NÃO"
+    const ncPerguntas = naos.map((p: any) => {
+      const r = respostas[p.id];
+      const alvo = users.find((u: any) => u.id === r.responsavelId) as any;
+      return {
+        auditoria_id: auditoriaId,
+        area_id: areaId,
+        criterio: `${p.categoria} · ${p.pergunta}`,
+        descricao: r.descricao.trim(),
+        severidade: "media",
+        status: r.statusAcao,
+        plano_acao: r.planoAcao.trim() || null,
+        responsavel: alvo?.nome ?? null,
+        responsavel_nc_id: criadorId,
+        responsavel_acao_id: r.responsavelId || null,
+        aprovador_id: ncAprovadorId || null,
+        prazo: r.prazo,
+        foto_urls: r.fotoPath ? [r.fotoPath] : [],
+      };
+    });
+
+    // Ação corretiva automática para todo critério 5S com nota < 6
+    const ncRows5S = CRITERIOS_5S
       .filter((c) => scores[c.key] < 6)
       .map((c) => {
         const nota = scores[c.key];
         const comentario = comentarios[c.key].trim();
         return {
-          auditoria_id: inserted.id,
+          auditoria_id: auditoriaId,
           area_id: areaId,
           criterio: c.nome,
           descricao:
@@ -398,11 +453,12 @@ function NovaAuditoria() {
           prazo: ncPrazo || null,
         };
       });
+
+    const ncRows = [...ncPerguntas, ...ncRows5S];
     if (ncRows.length > 0) {
       const { error: ncErr } = await supabase.from("nao_conformidades").insert(ncRows);
       if (ncErr) toast.error("Erro ao gerar ações corretivas: " + ncErr.message);
     }
-
 
     setSaving(false);
     toast.success(
@@ -410,8 +466,9 @@ function NovaAuditoria() {
         ? `Auditoria salva! ${ncRows.length} ação(ões) corretiva(s) gerada(s).`
         : "Auditoria salva com sucesso!",
     );
-    navigate({ to: "/auditorias/$id", params: { id: inserted.id } });
+    navigate({ to: "/auditorias/$id", params: { id: auditoriaId } });
   };
+
 
   const noAreas = !areasQ.isLoading && (areasQ.data?.length ?? 0) === 0;
   const noAuditores = !auditoresQ.isLoading && (auditoresQ.data?.length ?? 0) === 0;
