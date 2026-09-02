@@ -113,7 +113,7 @@ export const listUsers = createServerFn({ method: "POST" })
 
     let query = context.supabase
       .from("profiles")
-      .select("id, nome, email, cargo, area_id, ativo, created_at, areas(nome)")
+      .select("id, nome, email, cargo, area_id, ativo, deve_alterar_senha, created_at, areas(nome)")
       .order("created_at", { ascending: false });
     if (status === "ativos") query = query.eq("ativo", true);
     else if (status === "inativos") query = query.eq("ativo", false);
