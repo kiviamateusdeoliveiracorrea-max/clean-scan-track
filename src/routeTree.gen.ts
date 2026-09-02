@@ -9,12 +9,14 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as AuthenticatedPerguntasRouteImport } from './routes/_authenticated/perguntas'
 import { Route as AuthenticatedNaoConformidadesRouteImport } from './routes/_authenticated/nao-conformidades'
+import { Route as AuthenticatedMinhaContaRouteImport } from './routes/_authenticated/minha-conta'
 import { Route as AuthenticatedMelhoriasRouteImport } from './routes/_authenticated/melhorias'
 import { Route as AuthenticatedHistoricoRouteImport } from './routes/_authenticated/historico'
 import { Route as AuthenticatedGembaRouteImport } from './routes/_authenticated/gemba'
@@ -25,6 +27,11 @@ import { Route as AuthenticatedAuditoriasIndexRouteImport } from './routes/_auth
 import { Route as AuthenticatedAuditoriasNovaRouteImport } from './routes/_authenticated/auditorias.nova'
 import { Route as AuthenticatedAuditoriasIdRouteImport } from './routes/_authenticated/auditorias.$id'
 
+const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
+  id: '/redefinir-senha',
+  path: '/redefinir-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -55,6 +62,11 @@ const AuthenticatedNaoConformidadesRoute =
     path: '/nao-conformidades',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedMinhaContaRoute = AuthenticatedMinhaContaRouteImport.update({
+  id: '/minha-conta',
+  path: '/minha-conta',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedMelhoriasRoute = AuthenticatedMelhoriasRouteImport.update({
   id: '/melhorias',
   path: '/melhorias',
@@ -107,12 +119,14 @@ const AuthenticatedAuditoriasIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/alertas': typeof AuthenticatedAlertasRoute
   '/areas': typeof AuthenticatedAreasRoute
   '/auditores': typeof AuthenticatedAuditoresRoute
   '/gemba': typeof AuthenticatedGembaRoute
   '/historico': typeof AuthenticatedHistoricoRoute
   '/melhorias': typeof AuthenticatedMelhoriasRoute
+  '/minha-conta': typeof AuthenticatedMinhaContaRoute
   '/nao-conformidades': typeof AuthenticatedNaoConformidadesRoute
   '/perguntas': typeof AuthenticatedPerguntasRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
@@ -122,12 +136,14 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/alertas': typeof AuthenticatedAlertasRoute
   '/areas': typeof AuthenticatedAreasRoute
   '/auditores': typeof AuthenticatedAuditoresRoute
   '/gemba': typeof AuthenticatedGembaRoute
   '/historico': typeof AuthenticatedHistoricoRoute
   '/melhorias': typeof AuthenticatedMelhoriasRoute
+  '/minha-conta': typeof AuthenticatedMinhaContaRoute
   '/nao-conformidades': typeof AuthenticatedNaoConformidadesRoute
   '/perguntas': typeof AuthenticatedPerguntasRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
@@ -140,12 +156,14 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/_authenticated/alertas': typeof AuthenticatedAlertasRoute
   '/_authenticated/areas': typeof AuthenticatedAreasRoute
   '/_authenticated/auditores': typeof AuthenticatedAuditoresRoute
   '/_authenticated/gemba': typeof AuthenticatedGembaRoute
   '/_authenticated/historico': typeof AuthenticatedHistoricoRoute
   '/_authenticated/melhorias': typeof AuthenticatedMelhoriasRoute
+  '/_authenticated/minha-conta': typeof AuthenticatedMinhaContaRoute
   '/_authenticated/nao-conformidades': typeof AuthenticatedNaoConformidadesRoute
   '/_authenticated/perguntas': typeof AuthenticatedPerguntasRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
@@ -159,12 +177,14 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/redefinir-senha'
     | '/alertas'
     | '/areas'
     | '/auditores'
     | '/gemba'
     | '/historico'
     | '/melhorias'
+    | '/minha-conta'
     | '/nao-conformidades'
     | '/perguntas'
     | '/usuarios'
@@ -174,12 +194,14 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
+    | '/redefinir-senha'
     | '/alertas'
     | '/areas'
     | '/auditores'
     | '/gemba'
     | '/historico'
     | '/melhorias'
+    | '/minha-conta'
     | '/nao-conformidades'
     | '/perguntas'
     | '/usuarios'
@@ -191,12 +213,14 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_authenticated'
     | '/auth'
+    | '/redefinir-senha'
     | '/_authenticated/alertas'
     | '/_authenticated/areas'
     | '/_authenticated/auditores'
     | '/_authenticated/gemba'
     | '/_authenticated/historico'
     | '/_authenticated/melhorias'
+    | '/_authenticated/minha-conta'
     | '/_authenticated/nao-conformidades'
     | '/_authenticated/perguntas'
     | '/_authenticated/usuarios'
@@ -209,10 +233,18 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  RedefinirSenhaRoute: typeof RedefinirSenhaRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/redefinir-senha': {
+      id: '/redefinir-senha'
+      path: '/redefinir-senha'
+      fullPath: '/redefinir-senha'
+      preLoaderRoute: typeof RedefinirSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -253,6 +285,13 @@ declare module '@tanstack/react-router' {
       path: '/nao-conformidades'
       fullPath: '/nao-conformidades'
       preLoaderRoute: typeof AuthenticatedNaoConformidadesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/minha-conta': {
+      id: '/_authenticated/minha-conta'
+      path: '/minha-conta'
+      fullPath: '/minha-conta'
+      preLoaderRoute: typeof AuthenticatedMinhaContaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/melhorias': {
@@ -328,6 +367,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedGembaRoute: typeof AuthenticatedGembaRoute
   AuthenticatedHistoricoRoute: typeof AuthenticatedHistoricoRoute
   AuthenticatedMelhoriasRoute: typeof AuthenticatedMelhoriasRoute
+  AuthenticatedMinhaContaRoute: typeof AuthenticatedMinhaContaRoute
   AuthenticatedNaoConformidadesRoute: typeof AuthenticatedNaoConformidadesRoute
   AuthenticatedPerguntasRoute: typeof AuthenticatedPerguntasRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
@@ -344,6 +384,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedGembaRoute: AuthenticatedGembaRoute,
   AuthenticatedHistoricoRoute: AuthenticatedHistoricoRoute,
   AuthenticatedMelhoriasRoute: AuthenticatedMelhoriasRoute,
+  AuthenticatedMinhaContaRoute: AuthenticatedMinhaContaRoute,
   AuthenticatedNaoConformidadesRoute: AuthenticatedNaoConformidadesRoute,
   AuthenticatedPerguntasRoute: AuthenticatedPerguntasRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
@@ -359,7 +400,18 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  RedefinirSenhaRoute: RedefinirSenhaRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

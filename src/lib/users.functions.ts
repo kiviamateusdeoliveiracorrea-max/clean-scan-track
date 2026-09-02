@@ -113,7 +113,7 @@ export const listUsers = createServerFn({ method: "POST" })
 
     let query = context.supabase
       .from("profiles")
-      .select("id, nome, email, cargo, area_id, ativo, created_at, areas(nome)")
+      .select("id, nome, email, cargo, area_id, ativo, deve_alterar_senha, created_at, areas(nome)")
       .order("created_at", { ascending: false });
     if (status === "ativos") query = query.eq("ativo", true);
     else if (status === "inativos") query = query.eq("ativo", false);
@@ -298,4 +298,323 @@ export const deleteUser = createServerFn({ method: "POST" })
       .eq("id", data.userId);
     if (profileError) throw new Error(profileError.message);
     return { ok: true };
+  });
+
+// ===================== Administração de contas =====================
+
+async function assertAdmin(supabase: any, userId: string) {
+  const { data, error } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "administrador");
+  if (error) throw new Error(error.message);
+  if (!data || data.length === 0) {
+    throw new Error("Acesso negado: apenas administradores podem realizar esta ação.");
+  }
+}
+
+async function logAdminAction(
+  admin: any,
+  params: {
+    acao: string;
+    targetUserId?: string | null;
+    targetNome?: string | null;
+    targetEmail?: string | null;
+    executadoPor: string;
+    detalhes?: string | null;
+  },
+) {
+  const { data: me } = await admin
+    .from("profiles")
+    .select("nome")
+    .eq("id", params.executadoPor)
+    .maybeSingle();
+  await admin.from("admin_logs").insert({
+    acao: params.acao,
+    target_user_id: params.targetUserId ?? null,
+    target_user_nome: params.targetNome ?? null,
+    target_user_email: params.targetEmail ?? null,
+    executado_por: params.executadoPor,
+    executado_por_nome: (me as any)?.nome ?? null,
+    detalhes: params.detalhes ?? null,
+  });
+}
+
+/** Limpa a exigência de troca de senha do próprio usuário (após alterar a senha). */
+export const clearMustChangePassword = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("profiles")
+      .update({ deve_alterar_senha: false })
+      .eq("id", context.userId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Dados da própria conta. */
+export const getMyAccount = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase
+      .from("profiles")
+      .select("id, nome, email, cargo, ativo, deve_alterar_senha, created_at, areas(nome)")
+      .eq("id", context.userId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    const { data: roles } = await context.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId);
+    return {
+      profile: data as any,
+      roles: (roles ?? []).map((r: any) => r.role as AppRole),
+    };
+  });
+
+/** Envia link de recuperação de senha (admin). */
+export const adminSendPasswordReset = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({ userId: z.string().uuid(), redirectTo: z.string().url().max(500) })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: target, error: tErr } = await supabaseAdmin
+      .from("profiles")
+      .select("id, nome, email")
+      .eq("id", data.userId)
+      .maybeSingle();
+    if (tErr) throw new Error(tErr.message);
+    const email = (target as any)?.email;
+    if (!email) throw new Error("Usuário sem e-mail cadastrado.");
+
+    const { createClient } = await import("@supabase/supabase-js");
+    const anon = createClient(
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_PUBLISHABLE_KEY!,
+      { auth: { persistSession: false, autoRefreshToken: false } },
+    );
+    const { error } = await anon.auth.resetPasswordForEmail(email, {
+      redirectTo: data.redirectTo,
+    });
+    if (error) throw new Error(error.message);
+
+    await logAdminAction(supabaseAdmin, {
+      acao: "envio_link_redefinicao_senha",
+      targetUserId: data.userId,
+      targetNome: (target as any)?.nome,
+      targetEmail: email,
+      executadoPor: context.userId,
+    });
+    return { ok: true };
+  });
+
+/** Define senha temporária e obriga troca no próximo login (admin). */
+export const adminSetTemporaryPassword = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({ userId: z.string().uuid(), password: z.string().min(8).max(72) })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { error: authErr } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
+      password: data.password,
+    });
+    if (authErr) throw new Error(authErr.message);
+
+    const { error } = await supabaseAdmin
+      .from("profiles")
+      .update({ deve_alterar_senha: true })
+      .eq("id", data.userId);
+    if (error) throw new Error(error.message);
+
+    const { data: target } = await supabaseAdmin
+      .from("profiles")
+      .select("nome, email")
+      .eq("id", data.userId)
+      .maybeSingle();
+    await logAdminAction(supabaseAdmin, {
+      acao: "senha_temporaria_definida",
+      targetUserId: data.userId,
+      targetNome: (target as any)?.nome,
+      targetEmail: (target as any)?.email,
+      executadoPor: context.userId,
+      detalhes: "Usuário deverá criar nova senha no próximo acesso.",
+    });
+    return { ok: true };
+  });
+
+async function countActiveAdmins(admin: any) {
+  const { data, error } = await admin
+    .from("user_roles")
+    .select("user_id, profiles:user_id(ativo)")
+    .eq("role", "administrador");
+  if (error) throw new Error(error.message);
+  return (data ?? []).filter((r: any) => r.profiles?.ativo !== false).length;
+}
+
+/** Ativa ou desativa um usuário (admin). */
+export const setUserActive = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ userId: z.string().uuid(), ativo: z.boolean() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    if (data.userId === context.userId) {
+      throw new Error("Você não pode desativar o próprio cadastro.");
+    }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    if (!data.ativo) {
+      const { data: roles } = await supabaseAdmin
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", data.userId)
+        .eq("role", "administrador");
+      if ((roles ?? []).length > 0 && (await countActiveAdmins(supabaseAdmin)) <= 1) {
+        throw new Error("Não é possível desativar o último administrador ativo.");
+      }
+    }
+
+    const { error } = await supabaseAdmin
+      .from("profiles")
+      .update({ ativo: data.ativo })
+      .eq("id", data.userId);
+    if (error) throw new Error(error.message);
+
+    const { data: target } = await supabaseAdmin
+      .from("profiles")
+      .select("nome, email")
+      .eq("id", data.userId)
+      .maybeSingle();
+    await logAdminAction(supabaseAdmin, {
+      acao: data.ativo ? "usuario_reativado" : "usuario_desativado",
+      targetUserId: data.userId,
+      targetNome: (target as any)?.nome,
+      targetEmail: (target as any)?.email,
+      executadoPor: context.userId,
+    });
+    return { ok: true };
+  });
+
+/** Verifica vínculos do usuário antes da exclusão. */
+export const getUserLinkedRecords = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ userId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const count = async (table: string, column: string) => {
+      const { count: c } = await supabaseAdmin
+        .from(table as any)
+        .select("*", { count: "exact", head: true })
+        .eq(column, data.userId);
+      return c ?? 0;
+    };
+    const [ncResp, ncAcao, ncAprov, melhorias, gemba, auditoriasCanc] = await Promise.all([
+      count("nao_conformidades", "responsavel_nc_id"),
+      count("nao_conformidades", "responsavel_acao_id"),
+      count("nao_conformidades", "aprovador_id"),
+      count("melhorias", "responsavel_id"),
+      count("gemba_visitas", "responsavel_id"),
+      count("auditorias", "cancelada_por"),
+    ]);
+    const total = ncResp + ncAcao + ncAprov + melhorias + gemba + auditoriasCanc;
+    return {
+      total,
+      detalhes: {
+        nao_conformidades: ncResp + ncAcao + ncAprov,
+        melhorias,
+        gemba: gemba,
+        auditorias: auditoriasCanc,
+      },
+    };
+  });
+
+/**
+ * Exclui o acesso do usuário (autenticação) preservando todo o histórico.
+ * O cadastro permanece como "Usuário excluído" para manter as referências.
+ */
+export const deleteUserPermanently = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ userId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    if (data.userId === context.userId) {
+      throw new Error("Você não pode excluir o próprio cadastro.");
+    }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: target } = await supabaseAdmin
+      .from("profiles")
+      .select("nome, email")
+      .eq("id", data.userId)
+      .maybeSingle();
+
+    const { data: roles } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", data.userId)
+      .eq("role", "administrador");
+    if ((roles ?? []).length > 0 && (await countActiveAdmins(supabaseAdmin)) <= 1) {
+      throw new Error("Não é possível excluir o último administrador ativo.");
+    }
+
+    // 1) remove permissões
+    const { error: rErr } = await supabaseAdmin
+      .from("user_roles")
+      .delete()
+      .eq("user_id", data.userId);
+    if (rErr) throw new Error(rErr.message);
+
+    // 2) mantém o cadastro como referência histórica anonimizada
+    const { error: pErr } = await supabaseAdmin
+      .from("profiles")
+      .update({
+        nome: "Usuário excluído",
+        email: null,
+        ativo: false,
+        deve_alterar_senha: false,
+      })
+      .eq("id", data.userId);
+    if (pErr) throw new Error(pErr.message);
+
+    // 3) remove o login (somente no servidor)
+    const { error: aErr } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
+    if (aErr) throw new Error(aErr.message);
+
+    await logAdminAction(supabaseAdmin, {
+      acao: "usuario_excluido",
+      targetUserId: data.userId,
+      targetNome: (target as any)?.nome,
+      targetEmail: (target as any)?.email,
+      executadoPor: context.userId,
+      detalhes: "Acesso removido; histórico de auditorias e tratativas preservado.",
+    });
+    return { ok: true };
+  });
+
+/** Log administrativo (somente administradores). */
+export const listAdminLogs = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { data, error } = await context.supabase
+      .from("admin_logs")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(100);
+    if (error) throw new Error(error.message);
+    return data ?? [];
   });

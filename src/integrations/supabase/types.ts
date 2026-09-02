@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_logs: {
+        Row: {
+          acao: string
+          created_at: string
+          detalhes: string | null
+          executado_por: string | null
+          executado_por_nome: string | null
+          id: string
+          target_user_email: string | null
+          target_user_id: string | null
+          target_user_nome: string | null
+        }
+        Insert: {
+          acao: string
+          created_at?: string
+          detalhes?: string | null
+          executado_por?: string | null
+          executado_por_nome?: string | null
+          id?: string
+          target_user_email?: string | null
+          target_user_id?: string | null
+          target_user_nome?: string | null
+        }
+        Update: {
+          acao?: string
+          created_at?: string
+          detalhes?: string | null
+          executado_por?: string | null
+          executado_por_nome?: string | null
+          id?: string
+          target_user_email?: string | null
+          target_user_id?: string | null
+          target_user_nome?: string | null
+        }
+        Relationships: []
+      }
       alertas_processo: {
         Row: {
           area_id: string | null
@@ -610,6 +646,7 @@ export type Database = {
           ativo: boolean
           cargo: string | null
           created_at: string
+          deve_alterar_senha: boolean
           email: string | null
           id: string
           nome: string | null
@@ -620,6 +657,7 @@ export type Database = {
           ativo?: boolean
           cargo?: string | null
           created_at?: string
+          deve_alterar_senha?: boolean
           email?: string | null
           id: string
           nome?: string | null
@@ -630,6 +668,7 @@ export type Database = {
           ativo?: boolean
           cargo?: string | null
           created_at?: string
+          deve_alterar_senha?: boolean
           email?: string | null
           id?: string
           nome?: string | null
@@ -741,12 +780,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -770,11 +809,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -795,11 +834,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -820,11 +859,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -837,11 +876,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
