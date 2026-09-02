@@ -15,6 +15,7 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as AuthenticatedPerguntasRouteImport } from './routes/_authenticated/perguntas'
 import { Route as AuthenticatedNaoConformidadesRouteImport } from './routes/_authenticated/nao-conformidades'
+import { Route as AuthenticatedMinhaContaRouteImport } from './routes/_authenticated/minha-conta'
 import { Route as AuthenticatedMelhoriasRouteImport } from './routes/_authenticated/melhorias'
 import { Route as AuthenticatedHistoricoRouteImport } from './routes/_authenticated/historico'
 import { Route as AuthenticatedGembaRouteImport } from './routes/_authenticated/gemba'
@@ -55,6 +56,11 @@ const AuthenticatedNaoConformidadesRoute =
     path: '/nao-conformidades',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedMinhaContaRoute = AuthenticatedMinhaContaRouteImport.update({
+  id: '/minha-conta',
+  path: '/minha-conta',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedMelhoriasRoute = AuthenticatedMelhoriasRouteImport.update({
   id: '/melhorias',
   path: '/melhorias',
@@ -113,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/gemba': typeof AuthenticatedGembaRoute
   '/historico': typeof AuthenticatedHistoricoRoute
   '/melhorias': typeof AuthenticatedMelhoriasRoute
+  '/minha-conta': typeof AuthenticatedMinhaContaRoute
   '/nao-conformidades': typeof AuthenticatedNaoConformidadesRoute
   '/perguntas': typeof AuthenticatedPerguntasRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
@@ -128,6 +135,7 @@ export interface FileRoutesByTo {
   '/gemba': typeof AuthenticatedGembaRoute
   '/historico': typeof AuthenticatedHistoricoRoute
   '/melhorias': typeof AuthenticatedMelhoriasRoute
+  '/minha-conta': typeof AuthenticatedMinhaContaRoute
   '/nao-conformidades': typeof AuthenticatedNaoConformidadesRoute
   '/perguntas': typeof AuthenticatedPerguntasRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
@@ -146,6 +154,7 @@ export interface FileRoutesById {
   '/_authenticated/gemba': typeof AuthenticatedGembaRoute
   '/_authenticated/historico': typeof AuthenticatedHistoricoRoute
   '/_authenticated/melhorias': typeof AuthenticatedMelhoriasRoute
+  '/_authenticated/minha-conta': typeof AuthenticatedMinhaContaRoute
   '/_authenticated/nao-conformidades': typeof AuthenticatedNaoConformidadesRoute
   '/_authenticated/perguntas': typeof AuthenticatedPerguntasRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
@@ -165,6 +174,7 @@ export interface FileRouteTypes {
     | '/gemba'
     | '/historico'
     | '/melhorias'
+    | '/minha-conta'
     | '/nao-conformidades'
     | '/perguntas'
     | '/usuarios'
@@ -180,6 +190,7 @@ export interface FileRouteTypes {
     | '/gemba'
     | '/historico'
     | '/melhorias'
+    | '/minha-conta'
     | '/nao-conformidades'
     | '/perguntas'
     | '/usuarios'
@@ -197,6 +208,7 @@ export interface FileRouteTypes {
     | '/_authenticated/gemba'
     | '/_authenticated/historico'
     | '/_authenticated/melhorias'
+    | '/_authenticated/minha-conta'
     | '/_authenticated/nao-conformidades'
     | '/_authenticated/perguntas'
     | '/_authenticated/usuarios'
@@ -253,6 +265,13 @@ declare module '@tanstack/react-router' {
       path: '/nao-conformidades'
       fullPath: '/nao-conformidades'
       preLoaderRoute: typeof AuthenticatedNaoConformidadesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/minha-conta': {
+      id: '/_authenticated/minha-conta'
+      path: '/minha-conta'
+      fullPath: '/minha-conta'
+      preLoaderRoute: typeof AuthenticatedMinhaContaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/melhorias': {
@@ -328,6 +347,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedGembaRoute: typeof AuthenticatedGembaRoute
   AuthenticatedHistoricoRoute: typeof AuthenticatedHistoricoRoute
   AuthenticatedMelhoriasRoute: typeof AuthenticatedMelhoriasRoute
+  AuthenticatedMinhaContaRoute: typeof AuthenticatedMinhaContaRoute
   AuthenticatedNaoConformidadesRoute: typeof AuthenticatedNaoConformidadesRoute
   AuthenticatedPerguntasRoute: typeof AuthenticatedPerguntasRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
@@ -344,6 +364,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedGembaRoute: AuthenticatedGembaRoute,
   AuthenticatedHistoricoRoute: AuthenticatedHistoricoRoute,
   AuthenticatedMelhoriasRoute: AuthenticatedMelhoriasRoute,
+  AuthenticatedMinhaContaRoute: AuthenticatedMinhaContaRoute,
   AuthenticatedNaoConformidadesRoute: AuthenticatedNaoConformidadesRoute,
   AuthenticatedPerguntasRoute: AuthenticatedPerguntasRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
