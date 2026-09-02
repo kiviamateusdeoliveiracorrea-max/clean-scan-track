@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_logs: {
+        Row: {
+          acao: string
+          created_at: string
+          detalhes: string | null
+          executado_por: string | null
+          executado_por_nome: string | null
+          id: string
+          target_user_email: string | null
+          target_user_id: string | null
+          target_user_nome: string | null
+        }
+        Insert: {
+          acao: string
+          created_at?: string
+          detalhes?: string | null
+          executado_por?: string | null
+          executado_por_nome?: string | null
+          id?: string
+          target_user_email?: string | null
+          target_user_id?: string | null
+          target_user_nome?: string | null
+        }
+        Update: {
+          acao?: string
+          created_at?: string
+          detalhes?: string | null
+          executado_por?: string | null
+          executado_por_nome?: string | null
+          id?: string
+          target_user_email?: string | null
+          target_user_id?: string | null
+          target_user_nome?: string | null
+        }
+        Relationships: []
+      }
       alertas_processo: {
         Row: {
           area_id: string | null
@@ -610,6 +646,7 @@ export type Database = {
           ativo: boolean
           cargo: string | null
           created_at: string
+          deve_alterar_senha: boolean
           email: string | null
           id: string
           nome: string | null
@@ -620,6 +657,7 @@ export type Database = {
           ativo?: boolean
           cargo?: string | null
           created_at?: string
+          deve_alterar_senha?: boolean
           email?: string | null
           id: string
           nome?: string | null
@@ -630,6 +668,7 @@ export type Database = {
           ativo?: boolean
           cargo?: string | null
           created_at?: string
+          deve_alterar_senha?: boolean
           email?: string | null
           id?: string
           nome?: string | null
