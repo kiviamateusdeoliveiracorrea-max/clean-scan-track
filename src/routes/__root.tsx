@@ -25,6 +25,7 @@ import {
   Megaphone,
   ListChecks,
   LogOut,
+  UserCircle,
 } from "lucide-react";
 
 import appCss from "../styles.css?url";
