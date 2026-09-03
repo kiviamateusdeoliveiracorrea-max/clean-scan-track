@@ -40,7 +40,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Trash2, UserPlus, Loader2, Lock, Pencil } from "lucide-react";
+import { Trash2, UserPlus, Loader2, Lock, Pencil, KeyRound, UserX } from "lucide-react";
 import { normalizeUserEmail } from "@/lib/email-normalization";
 import { useCurrentRole } from "@/hooks/use-current-role";
 
@@ -71,7 +71,7 @@ type EditingUser = {
 
 function UsuariosPage() {
   const qc = useQueryClient();
-  const { canManageUsers, isLoading: roleLoading } = useCurrentRole();
+  const { canManageUsers, isAdmin, isLoading: roleLoading } = useCurrentRole();
   const [status, setStatus] = useState<StatusFilter>("ativos");
 
   const { data: users, isLoading, error } = useQuery({
