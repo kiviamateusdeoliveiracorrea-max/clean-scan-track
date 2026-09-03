@@ -6,7 +6,11 @@ import {
   createUser,
   setUserRole,
   updateUserProfile,
-  deleteUser,
+  adminSendPasswordReset,
+  adminSetTemporaryPassword,
+  setUserActive,
+  getUserLinkedRecords,
+  deleteUserPermanently,
   type AppRole,
 } from "@/lib/users.functions";
 import { supabase } from "@/integrations/supabase/client";
