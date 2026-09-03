@@ -534,6 +534,122 @@ function UsuariosPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Redefinição administrativa de senha */}
+      <Dialog
+        open={!!resetting}
+        onOpenChange={(o) => {
+          if (!o) {
+            setResetting(null);
+            setTempPass("");
+          }
+        }}
+      >
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Redefinir senha</DialogTitle>
+          </DialogHeader>
+          {resetting && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                {resetting.nome || resetting.email} — a senha atual nunca é exibida.
+              </p>
+              <Button
+                className="w-full"
+                variant="outline"
+                disabled={resetLinkMut.isPending || !resetting.email}
+                onClick={() => resetLinkMut.mutate(resetting.id)}
+              >
+                {resetLinkMut.isPending
+                  ? "Enviando..."
+                  : "Enviar link de recuperação por e-mail"}
+              </Button>
+              <div className="space-y-1.5 border-t pt-4">
+                <Label>Ou definir senha temporária</Label>
+                <Input
+                  type="password"
+                  value={tempPass}
+                  onChange={(e) => setTempPass(e.target.value)}
+                  placeholder="Mínimo 8 caracteres"
+                  minLength={8}
+                />
+                <p className="text-xs text-muted-foreground">
+                  O usuário será obrigado a criar uma nova senha no próximo acesso.
+                </p>
+                <Button
+                  className="w-full mt-2"
+                  disabled={tempPassMut.isPending}
+                  onClick={() => {
+                    if (tempPass.length < 8) {
+                      toast.error("A senha temporária deve ter ao menos 8 caracteres.");
+                      return;
+                    }
+                    tempPassMut.mutate({ userId: resetting.id, password: tempPass });
+                  }}
+                >
+                  {tempPassMut.isPending ? "Salvando..." : "Definir senha temporária"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Exclusão de usuário */}
+      <Dialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Excluir usuário</DialogTitle>
+          </DialogHeader>
+          {deleting && (
+            <div className="space-y-4">
+              <p className="text-sm">
+                Tem certeza de que deseja excluir este usuário? O acesso será removido.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {deleting.nome || "(sem nome)"} · {deleting.email || "sem e-mail"}
+              </p>
+              <div className="rounded-md border p-3 text-xs space-y-1">
+                {linkedQ.isLoading ? (
+                  <span className="text-muted-foreground">Verificando registros vinculados…</span>
+                ) : (
+                  <>
+                    <p className="font-medium">
+                      Registros vinculados: {linkedQ.data?.total ?? 0}
+                    </p>
+                    <p className="text-muted-foreground">
+                      O histórico de auditorias e tratativas é preservado. A referência passa a
+                      exibir “Usuário excluído”.
+                    </p>
+                  </>
+                )}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setDeleting(null)}>
+                  Cancelar
+                </Button>
+                <Button
+                  variant="outline"
+                  disabled={activeMut.isPending}
+                  onClick={() => {
+                    activeMut.mutate({ userId: deleting.id, ativo: false });
+                    setDeleting(null);
+                  }}
+                >
+                  Apenas desativar
+                </Button>
+                <Button
+                  variant="destructive"
+                  disabled={delMut.isPending}
+                  onClick={() => delMut.mutate(deleting.id)}
+                >
+                  {delMut.isPending ? "Excluindo..." : "Excluir definitivamente"}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
