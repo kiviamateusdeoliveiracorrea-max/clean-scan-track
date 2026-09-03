@@ -124,12 +124,52 @@ function UsuariosPage() {
 
 
   const delMut = useMutation({
-    mutationFn: (userId: string) => deleteUser({ data: { userId } }),
+    mutationFn: (userId: string) => deleteUserPermanently({ data: { userId } }),
     onSuccess: () => {
-      toast.success("Usuário excluído");
+      toast.success("Usuário excluído. Histórico preservado.");
+      setDeleting(null);
       invalidate();
     },
-    onError: (e: any) => toast.error(e.message ?? "Falha"),
+    onError: (e: any) => toast.error(e.message ?? "Falha ao excluir usuário"),
+  });
+
+  const activeMut = useMutation({
+    mutationFn: (p: { userId: string; ativo: boolean }) => setUserActive({ data: p }),
+    onSuccess: (_d, p) => {
+      toast.success(p.ativo ? "Usuário reativado" : "Usuário desativado");
+      invalidate();
+    },
+    onError: (e: any) => toast.error(e.message ?? "Falha ao alterar status"),
+  });
+
+  const resetLinkMut = useMutation({
+    mutationFn: (userId: string) =>
+      adminSendPasswordReset({
+        data: { userId, redirectTo: `${window.location.origin}/redefinir-senha` },
+      }),
+    onSuccess: () => {
+      toast.success("Link de recuperação enviado ao e-mail do usuário.");
+      setResetting(null);
+    },
+    onError: (e: any) => toast.error(e.message ?? "Falha ao enviar link"),
+  });
+
+  const tempPassMut = useMutation({
+    mutationFn: (p: { userId: string; password: string }) =>
+      adminSetTemporaryPassword({ data: p }),
+    onSuccess: () => {
+      toast.success("Senha temporária definida. O usuário deverá trocá-la no próximo acesso.");
+      setResetting(null);
+      setTempPass("");
+      invalidate();
+    },
+    onError: (e: any) => toast.error(e.message ?? "Falha ao definir senha temporária"),
+  });
+
+  const linkedQ = useQuery({
+    queryKey: ["user-linked", deleting?.id],
+    queryFn: () => getUserLinkedRecords({ data: { userId: deleting!.id } }),
+    enabled: !!deleting,
   });
 
   const saveEdit = useMutation({
