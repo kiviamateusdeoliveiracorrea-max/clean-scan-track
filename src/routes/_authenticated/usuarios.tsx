@@ -345,23 +345,34 @@ function UsuariosPage() {
                 return (
                   <div
                     key={u.id}
-                    className="grid gap-2 md:grid-cols-[1fr_auto_auto_auto] md:items-center border rounded-md p-3"
+                    className="grid gap-2 md:grid-cols-[1fr_auto_auto] md:items-center border rounded-md p-3"
                   >
                     <div className="min-w-0">
                       <p className="font-medium truncate">
                         {u.nome || "(sem nome)"}{" "}
-                        {!ativo && (
-                          <Badge variant="outline" className="ml-1 text-xs">Inativo</Badge>
+                        <Badge
+                          variant={ativo ? "secondary" : "outline"}
+                          className="ml-1 text-xs"
+                        >
+                          {ativo ? "Ativo" : "Inativo"}
+                        </Badge>
+                        {u.deve_alterar_senha && (
+                          <Badge variant="outline" className="ml-1 text-xs">
+                            Troca de senha pendente
+                          </Badge>
                         )}
                       </p>
                       <p className="text-xs text-muted-foreground truncate">{u.email}</p>
                       <p className="text-xs text-muted-foreground truncate">
                         {u.cargo || "—"} · {u.area_nome || "sem área"}
+                        {u.created_at
+                          ? ` · criado em ${new Date(u.created_at).toLocaleDateString("pt-BR")}`
+                          : ""}
                       </p>
                     </div>
                     <Badge variant="secondary">{ROLE_LABEL[currentRole]}</Badge>
-                    {canManageUsers ? (
-                      <>
+                    <div className="flex flex-wrap items-center gap-1.5 justify-end">
+                      {canManageUsers && (
                         <Button
                           variant="outline"
                           size="sm"
@@ -379,24 +390,53 @@ function UsuariosPage() {
                         >
                           <Pencil className="h-4 w-4 mr-1" /> Editar
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            if (confirm(`Excluir ${u.email ?? u.nome}?`)) delMut.mutate(u.id);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        <span className="text-xs text-muted-foreground">
-                          {ativo ? "Ativo" : "Inativo"}
-                        </span>
-                        <span />
-                      </>
-                    )}
+                      )}
+                      {isAdmin && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              setResetting({
+                                id: u.id,
+                                nome: u.nome ?? "",
+                                email: u.email ?? "",
+                              })
+                            }
+                          >
+                            <KeyRound className="h-4 w-4 mr-1" /> Redefinir senha
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={activeMut.isPending}
+                            onClick={() =>
+                              activeMut.mutate({ userId: u.id, ativo: !ativo })
+                            }
+                          >
+                            <UserX className="h-4 w-4 mr-1" />
+                            {ativo ? "Desativar" : "Reativar"}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Excluir usuário"
+                            onClick={() =>
+                              setDeleting({
+                                id: u.id,
+                                nome: u.nome ?? "",
+                                email: u.email ?? "",
+                              })
+                            }
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </>
+                      )}
+                      {!canManageUsers && !isAdmin && (
+                        <span className="text-xs text-muted-foreground">Somente leitura</span>
+                      )}
+                    </div>
                   </div>
                 );
               })}
