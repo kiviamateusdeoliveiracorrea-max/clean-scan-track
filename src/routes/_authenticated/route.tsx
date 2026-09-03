@@ -22,7 +22,7 @@ export const Route = createFileRoute("/_authenticated")({
       (profile as any).deve_alterar_senha === true &&
       location.pathname !== "/minha-conta"
     ) {
-      throw redirect({ to: "/minha-conta" });
+      throw redirect({ to: "/minha-conta", search: { trocar: "1" } });
     }
     return { user: data.user };
   },
