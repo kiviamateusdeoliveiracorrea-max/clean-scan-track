@@ -6,7 +6,11 @@ import {
   createUser,
   setUserRole,
   updateUserProfile,
-  deleteUser,
+  adminSendPasswordReset,
+  adminSetTemporaryPassword,
+  setUserActive,
+  getUserLinkedRecords,
+  deleteUserPermanently,
   type AppRole,
 } from "@/lib/users.functions";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,7 +40,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Trash2, UserPlus, Loader2, Lock, Pencil } from "lucide-react";
+import { Trash2, UserPlus, Loader2, Lock, Pencil, KeyRound, UserX } from "lucide-react";
 import { normalizeUserEmail } from "@/lib/email-normalization";
 import { useCurrentRole } from "@/hooks/use-current-role";
 
@@ -67,7 +71,7 @@ type EditingUser = {
 
 function UsuariosPage() {
   const qc = useQueryClient();
-  const { canManageUsers, isLoading: roleLoading } = useCurrentRole();
+  const { canManageUsers, isAdmin, isLoading: roleLoading } = useCurrentRole();
   const [status, setStatus] = useState<StatusFilter>("ativos");
 
   const { data: users, isLoading, error } = useQuery({
@@ -92,6 +96,13 @@ function UsuariosPage() {
   const [areaId, setAreaId] = useState<string>("");
 
   const [editing, setEditing] = useState<EditingUser | null>(null);
+  const [resetting, setResetting] = useState<{ id: string; nome: string; email: string } | null>(
+    null,
+  );
+  const [deleting, setDeleting] = useState<{ id: string; nome: string; email: string } | null>(
+    null,
+  );
+  const [tempPass, setTempPass] = useState("");
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["users"] });
 
@@ -120,12 +131,52 @@ function UsuariosPage() {
 
 
   const delMut = useMutation({
-    mutationFn: (userId: string) => deleteUser({ data: { userId } }),
+    mutationFn: (userId: string) => deleteUserPermanently({ data: { userId } }),
     onSuccess: () => {
-      toast.success("Usuário excluído");
+      toast.success("Usuário excluído. Histórico preservado.");
+      setDeleting(null);
       invalidate();
     },
-    onError: (e: any) => toast.error(e.message ?? "Falha"),
+    onError: (e: any) => toast.error(e.message ?? "Falha ao excluir usuário"),
+  });
+
+  const activeMut = useMutation({
+    mutationFn: (p: { userId: string; ativo: boolean }) => setUserActive({ data: p }),
+    onSuccess: (_d, p) => {
+      toast.success(p.ativo ? "Usuário reativado" : "Usuário desativado");
+      invalidate();
+    },
+    onError: (e: any) => toast.error(e.message ?? "Falha ao alterar status"),
+  });
+
+  const resetLinkMut = useMutation({
+    mutationFn: (userId: string) =>
+      adminSendPasswordReset({
+        data: { userId, redirectTo: `${window.location.origin}/redefinir-senha` },
+      }),
+    onSuccess: () => {
+      toast.success("Link de recuperação enviado ao e-mail do usuário.");
+      setResetting(null);
+    },
+    onError: (e: any) => toast.error(e.message ?? "Falha ao enviar link"),
+  });
+
+  const tempPassMut = useMutation({
+    mutationFn: (p: { userId: string; password: string }) =>
+      adminSetTemporaryPassword({ data: p }),
+    onSuccess: () => {
+      toast.success("Senha temporária definida. O usuário deverá trocá-la no próximo acesso.");
+      setResetting(null);
+      setTempPass("");
+      invalidate();
+    },
+    onError: (e: any) => toast.error(e.message ?? "Falha ao definir senha temporária"),
+  });
+
+  const linkedQ = useQuery({
+    queryKey: ["user-linked", deleting?.id],
+    queryFn: () => getUserLinkedRecords({ data: { userId: deleting!.id } }),
+    enabled: !!deleting,
   });
 
   const saveEdit = useMutation({
@@ -294,23 +345,34 @@ function UsuariosPage() {
                 return (
                   <div
                     key={u.id}
-                    className="grid gap-2 md:grid-cols-[1fr_auto_auto_auto] md:items-center border rounded-md p-3"
+                    className="grid gap-2 md:grid-cols-[1fr_auto_auto] md:items-center border rounded-md p-3"
                   >
                     <div className="min-w-0">
                       <p className="font-medium truncate">
                         {u.nome || "(sem nome)"}{" "}
-                        {!ativo && (
-                          <Badge variant="outline" className="ml-1 text-xs">Inativo</Badge>
+                        <Badge
+                          variant={ativo ? "secondary" : "outline"}
+                          className="ml-1 text-xs"
+                        >
+                          {ativo ? "Ativo" : "Inativo"}
+                        </Badge>
+                        {u.deve_alterar_senha && (
+                          <Badge variant="outline" className="ml-1 text-xs">
+                            Troca de senha pendente
+                          </Badge>
                         )}
                       </p>
                       <p className="text-xs text-muted-foreground truncate">{u.email}</p>
                       <p className="text-xs text-muted-foreground truncate">
                         {u.cargo || "—"} · {u.area_nome || "sem área"}
+                        {u.created_at
+                          ? ` · criado em ${new Date(u.created_at).toLocaleDateString("pt-BR")}`
+                          : ""}
                       </p>
                     </div>
                     <Badge variant="secondary">{ROLE_LABEL[currentRole]}</Badge>
-                    {canManageUsers ? (
-                      <>
+                    <div className="flex flex-wrap items-center gap-1.5 justify-end">
+                      {canManageUsers && (
                         <Button
                           variant="outline"
                           size="sm"
@@ -328,24 +390,53 @@ function UsuariosPage() {
                         >
                           <Pencil className="h-4 w-4 mr-1" /> Editar
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            if (confirm(`Excluir ${u.email ?? u.nome}?`)) delMut.mutate(u.id);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        <span className="text-xs text-muted-foreground">
-                          {ativo ? "Ativo" : "Inativo"}
-                        </span>
-                        <span />
-                      </>
-                    )}
+                      )}
+                      {isAdmin && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              setResetting({
+                                id: u.id,
+                                nome: u.nome ?? "",
+                                email: u.email ?? "",
+                              })
+                            }
+                          >
+                            <KeyRound className="h-4 w-4 mr-1" /> Redefinir senha
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={activeMut.isPending}
+                            onClick={() =>
+                              activeMut.mutate({ userId: u.id, ativo: !ativo })
+                            }
+                          >
+                            <UserX className="h-4 w-4 mr-1" />
+                            {ativo ? "Desativar" : "Reativar"}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Excluir usuário"
+                            onClick={() =>
+                              setDeleting({
+                                id: u.id,
+                                nome: u.nome ?? "",
+                                email: u.email ?? "",
+                              })
+                            }
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </>
+                      )}
+                      {!canManageUsers && !isAdmin && (
+                        <span className="text-xs text-muted-foreground">Somente leitura</span>
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -440,6 +531,122 @@ function UsuariosPage() {
                 </Button>
               </DialogFooter>
             </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Redefinição administrativa de senha */}
+      <Dialog
+        open={!!resetting}
+        onOpenChange={(o) => {
+          if (!o) {
+            setResetting(null);
+            setTempPass("");
+          }
+        }}
+      >
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Redefinir senha</DialogTitle>
+          </DialogHeader>
+          {resetting && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                {resetting.nome || resetting.email} — a senha atual nunca é exibida.
+              </p>
+              <Button
+                className="w-full"
+                variant="outline"
+                disabled={resetLinkMut.isPending || !resetting.email}
+                onClick={() => resetLinkMut.mutate(resetting.id)}
+              >
+                {resetLinkMut.isPending
+                  ? "Enviando..."
+                  : "Enviar link de recuperação por e-mail"}
+              </Button>
+              <div className="space-y-1.5 border-t pt-4">
+                <Label>Ou definir senha temporária</Label>
+                <Input
+                  type="password"
+                  value={tempPass}
+                  onChange={(e) => setTempPass(e.target.value)}
+                  placeholder="Mínimo 8 caracteres"
+                  minLength={8}
+                />
+                <p className="text-xs text-muted-foreground">
+                  O usuário será obrigado a criar uma nova senha no próximo acesso.
+                </p>
+                <Button
+                  className="w-full mt-2"
+                  disabled={tempPassMut.isPending}
+                  onClick={() => {
+                    if (tempPass.length < 8) {
+                      toast.error("A senha temporária deve ter ao menos 8 caracteres.");
+                      return;
+                    }
+                    tempPassMut.mutate({ userId: resetting.id, password: tempPass });
+                  }}
+                >
+                  {tempPassMut.isPending ? "Salvando..." : "Definir senha temporária"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Exclusão de usuário */}
+      <Dialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Excluir usuário</DialogTitle>
+          </DialogHeader>
+          {deleting && (
+            <div className="space-y-4">
+              <p className="text-sm">
+                Tem certeza de que deseja excluir este usuário? O acesso será removido.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {deleting.nome || "(sem nome)"} · {deleting.email || "sem e-mail"}
+              </p>
+              <div className="rounded-md border p-3 text-xs space-y-1">
+                {linkedQ.isLoading ? (
+                  <span className="text-muted-foreground">Verificando registros vinculados…</span>
+                ) : (
+                  <>
+                    <p className="font-medium">
+                      Registros vinculados: {linkedQ.data?.total ?? 0}
+                    </p>
+                    <p className="text-muted-foreground">
+                      O histórico de auditorias e tratativas é preservado. A referência passa a
+                      exibir “Usuário excluído”.
+                    </p>
+                  </>
+                )}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setDeleting(null)}>
+                  Cancelar
+                </Button>
+                <Button
+                  variant="outline"
+                  disabled={activeMut.isPending}
+                  onClick={() => {
+                    activeMut.mutate({ userId: deleting.id, ativo: false });
+                    setDeleting(null);
+                  }}
+                >
+                  Apenas desativar
+                </Button>
+                <Button
+                  variant="destructive"
+                  disabled={delMut.isPending}
+                  onClick={() => delMut.mutate(deleting.id)}
+                >
+                  {delMut.isPending ? "Excluindo..." : "Excluir definitivamente"}
+                </Button>
+              </DialogFooter>
+            </div>
           )}
         </DialogContent>
       </Dialog>

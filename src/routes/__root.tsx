@@ -25,6 +25,7 @@ import {
   Megaphone,
   ListChecks,
   LogOut,
+  UserCircle,
 } from "lucide-react";
 
 import appCss from "../styles.css?url";
@@ -164,6 +165,7 @@ const navItems: NavItem[] = [
   { to: "/areas", label: "Áreas", icon: MapPin },
   { to: "/auditores", label: "Auditores", icon: UserCog },
   { to: "/usuarios", label: "Usuários", icon: Users },
+  { to: "/minha-conta", label: "Minha conta", icon: UserCircle },
 ];
 
 function AppShell({ children }: { children: ReactNode }) {

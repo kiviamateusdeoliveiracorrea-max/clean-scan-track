@@ -19,6 +19,27 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [recuperando, setRecuperando] = useState(false);
+  const [enviandoRecuperacao, setEnviandoRecuperacao] = useState(false);
+
+  async function handleRecuperarSenha(e: React.FormEvent) {
+    e.preventDefault();
+    setEnviandoRecuperacao(true);
+    try {
+      const alvo = normalizeUserEmail(email);
+      if (alvo) {
+        await supabase.auth.resetPasswordForEmail(alvo, {
+          redirectTo: `${window.location.origin}/redefinir-senha`,
+        });
+      }
+      toast.success(
+        "Se o e-mail estiver cadastrado, enviamos as instruções de recuperação.",
+      );
+      setRecuperando(false);
+    } finally {
+      setEnviandoRecuperacao(false);
+    }
+  }
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -81,9 +102,39 @@ function AuthPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Entrar</CardTitle>
+            <CardTitle>{recuperando ? "Recuperar senha" : "Entrar"}</CardTitle>
           </CardHeader>
           <CardContent>
+            {recuperando ? (
+              <form onSubmit={handleRecuperarSenha} className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Informe o e-mail cadastrado para receber o link seguro de redefinição
+                  de senha.
+                </p>
+                <div className="space-y-2">
+                  <Label htmlFor="email-recuperacao">E-mail</Label>
+                  <Input
+                    id="email-recuperacao"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onBlur={() => setEmail((value) => normalizeUserEmail(value))}
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={enviandoRecuperacao}>
+                  {enviandoRecuperacao ? "Enviando..." : "Enviar instruções"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => setRecuperando(false)}
+                >
+                  Voltar ao login
+                </Button>
+              </form>
+            ) : (
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">E-mail</Label>
@@ -109,10 +160,19 @@ function AuthPage() {
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "Entrando..." : "Entrar"}
               </Button>
+              <Button
+                type="button"
+                variant="link"
+                className="w-full"
+                onClick={() => setRecuperando(true)}
+              >
+                Esqueci minha senha
+              </Button>
               <p className="text-xs text-muted-foreground text-center pt-2">
                 Novas contas são criadas por um administrador na tela de Usuários.
               </p>
             </form>
+            )}
           </CardContent>
         </Card>
       </div>
