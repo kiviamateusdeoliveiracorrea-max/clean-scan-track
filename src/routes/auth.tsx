@@ -19,6 +19,27 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [recuperando, setRecuperando] = useState(false);
+  const [enviandoRecuperacao, setEnviandoRecuperacao] = useState(false);
+
+  async function handleRecuperarSenha(e: React.FormEvent) {
+    e.preventDefault();
+    setEnviandoRecuperacao(true);
+    try {
+      const alvo = normalizeUserEmail(email);
+      if (alvo) {
+        await supabase.auth.resetPasswordForEmail(alvo, {
+          redirectTo: `${window.location.origin}/redefinir-senha`,
+        });
+      }
+      toast.success(
+        "Se o e-mail estiver cadastrado, enviamos as instruções de recuperação.",
+      );
+      setRecuperando(false);
+    } finally {
+      setEnviandoRecuperacao(false);
+    }
+  }
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
