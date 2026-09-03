@@ -102,9 +102,39 @@ function AuthPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Entrar</CardTitle>
+            <CardTitle>{recuperando ? "Recuperar senha" : "Entrar"}</CardTitle>
           </CardHeader>
           <CardContent>
+            {recuperando ? (
+              <form onSubmit={handleRecuperarSenha} className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Informe o e-mail cadastrado para receber o link seguro de redefinição
+                  de senha.
+                </p>
+                <div className="space-y-2">
+                  <Label htmlFor="email-recuperacao">E-mail</Label>
+                  <Input
+                    id="email-recuperacao"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onBlur={() => setEmail((value) => normalizeUserEmail(value))}
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={enviandoRecuperacao}>
+                  {enviandoRecuperacao ? "Enviando..." : "Enviar instruções"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => setRecuperando(false)}
+                >
+                  Voltar ao login
+                </Button>
+              </form>
+            ) : (
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">E-mail</Label>
