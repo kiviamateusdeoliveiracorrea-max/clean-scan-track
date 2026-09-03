@@ -164,6 +164,7 @@ const navItems: NavItem[] = [
   { to: "/areas", label: "Áreas", icon: MapPin },
   { to: "/auditores", label: "Auditores", icon: UserCog },
   { to: "/usuarios", label: "Usuários", icon: Users },
+  { to: "/minha-conta", label: "Minha conta", icon: UserCircle },
 ];
 
 function AppShell({ children }: { children: ReactNode }) {
