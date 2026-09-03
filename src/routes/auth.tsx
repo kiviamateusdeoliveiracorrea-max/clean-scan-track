@@ -160,10 +160,19 @@ function AuthPage() {
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "Entrando..." : "Entrar"}
               </Button>
+              <Button
+                type="button"
+                variant="link"
+                className="w-full"
+                onClick={() => setRecuperando(true)}
+              >
+                Esqueci minha senha
+              </Button>
               <p className="text-xs text-muted-foreground text-center pt-2">
                 Novas contas são criadas por um administrador na tela de Usuários.
               </p>
             </form>
+            )}
           </CardContent>
         </Card>
       </div>
