@@ -96,6 +96,13 @@ function UsuariosPage() {
   const [areaId, setAreaId] = useState<string>("");
 
   const [editing, setEditing] = useState<EditingUser | null>(null);
+  const [resetting, setResetting] = useState<{ id: string; nome: string; email: string } | null>(
+    null,
+  );
+  const [deleting, setDeleting] = useState<{ id: string; nome: string; email: string } | null>(
+    null,
+  );
+  const [tempPass, setTempPass] = useState("");
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["users"] });
 
