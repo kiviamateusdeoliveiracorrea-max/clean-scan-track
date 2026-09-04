@@ -17,13 +17,10 @@ export const Route = createFileRoute("/_authenticated")({
       await supabase.auth.signOut();
       throw redirect({ to: "/auth", search: { inactive: "1" } as any });
     }
-    if (
-      profile &&
-      (profile as any).deve_alterar_senha === true &&
-      location.pathname !== "/minha-conta"
-    ) {
-      throw redirect({ to: "/minha-conta", search: { trocar: "1" } });
+    if (profile && (profile as any).deve_alterar_senha === true) {
+      throw redirect({ to: "/alterar-senha-obrigatoria" });
     }
+
     return { user: data.user };
   },
   component: () => <Outlet />,

@@ -535,65 +535,132 @@ function UsuariosPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Redefinição administrativa de senha */}
+      {/* Geração administrativa de senha temporária */}
       <Dialog
         open={!!resetting}
         onOpenChange={(o) => {
           if (!o) {
             setResetting(null);
-            setTempPass("");
+            setJustificativa("");
+            setConfirmarAdmin(false);
+            setGerada(null);
           }
         }}
       >
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Redefinir senha</DialogTitle>
+            <DialogTitle>
+              {gerada ? "Senha temporária criada com sucesso" : "Gerar senha temporária"}
+            </DialogTitle>
           </DialogHeader>
-          {resetting && (
+          {resetting && !gerada && (
             <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                {resetting.nome || resetting.email} — a senha atual nunca é exibida.
-              </p>
-              <Button
-                className="w-full"
-                variant="outline"
-                disabled={resetLinkMut.isPending || !resetting.email}
-                onClick={() => resetLinkMut.mutate(resetting.id)}
-              >
-                {resetLinkMut.isPending
-                  ? "Enviando..."
-                  : "Enviar link de recuperação por e-mail"}
-              </Button>
-              <div className="space-y-1.5 border-t pt-4">
-                <Label>Ou definir senha temporária</Label>
-                <Input
-                  type="password"
-                  value={tempPass}
-                  onChange={(e) => setTempPass(e.target.value)}
-                  placeholder="Mínimo 8 caracteres"
-                  minLength={8}
-                />
-                <p className="text-xs text-muted-foreground">
-                  O usuário será obrigado a criar uma nova senha no próximo acesso.
+              <div className="rounded-md border p-3 text-sm space-y-1">
+                <p className="font-medium">{resetting.nome || "(sem nome)"}</p>
+                <p className="text-muted-foreground">{resetting.email || "sem e-mail"}</p>
+                <p className="text-muted-foreground">Perfil: {resetting.perfil}</p>
+                <p className="text-muted-foreground">
+                  Áreas autorizadas: {resetting.area || "sem área"}
                 </p>
+                <p className="text-muted-foreground">
+                  Status da conta: {resetting.ativo ? "Ativo" : "Inativo"}
+                </p>
+              </div>
+              <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+                A senha atual será substituída e todas as sessões do usuário serão encerradas.
+                A senha temporária deverá ser alterada no primeiro acesso.
+              </div>
+              <div className="space-y-1.5">
+                <Label>Justificativa (obrigatória)</Label>
+                <Input
+                  value={justificativa}
+                  onChange={(e) => setJustificativa(e.target.value)}
+                  placeholder="Ex.: usuário esqueceu a senha e solicitou apoio"
+                />
+                <p className="text-xs text-muted-foreground">Mínimo de 10 caracteres.</p>
+              </div>
+              {resetting.perfil === ROLE_LABEL.administrador && (
+                <label className="flex items-start gap-2 text-xs">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5"
+                    checked={confirmarAdmin}
+                    onChange={(e) => setConfirmarAdmin(e.target.checked)}
+                  />
+                  <span>
+                    Confirmo a redefinição de senha de outro administrador (pode ser o último
+                    administrador ativo).
+                  </span>
+                </label>
+              )}
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setResetting(null)}>
+                  Cancelar
+                </Button>
                 <Button
-                  className="w-full mt-2"
                   disabled={tempPassMut.isPending}
                   onClick={() => {
-                    if (tempPass.length < 8) {
-                      toast.error("A senha temporária deve ter ao menos 8 caracteres.");
+                    if (justificativa.trim().length < 10) {
+                      toast.error("Informe uma justificativa com ao menos 10 caracteres.");
                       return;
                     }
-                    tempPassMut.mutate({ userId: resetting.id, password: tempPass });
+                    tempPassMut.mutate({
+                      userId: resetting.id,
+                      justificativa: justificativa.trim(),
+                      confirmarAdmin,
+                    });
                   }}
                 >
-                  {tempPassMut.isPending ? "Salvando..." : "Definir senha temporária"}
+                  {tempPassMut.isPending ? "Gerando..." : "Gerar senha temporária"}
                 </Button>
+              </DialogFooter>
+            </div>
+          )}
+          {gerada && (
+            <div className="space-y-4">
+              <div className="rounded-md border p-3 text-sm space-y-1">
+                <p>
+                  <span className="text-muted-foreground">Login: </span>
+                  {gerada.login || "—"}
+                </p>
+                <p className="font-mono text-base break-all">{gerada.password}</p>
+                <p className="text-xs text-muted-foreground">
+                  Validade: {new Date(gerada.expiresAt).toLocaleString("pt-BR")}
+                </p>
               </div>
+              <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+                Copie a senha agora. Por segurança, ela não poderá ser consultada novamente.
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(gerada.password);
+                      toast.success("Senha copiada.");
+                    } catch {
+                      toast.error("Não foi possível copiar. Selecione e copie manualmente.");
+                    }
+                  }}
+                >
+                  Copiar senha
+                </Button>
+                <Button
+                  onClick={() => {
+                    setGerada(null);
+                    setResetting(null);
+                    setJustificativa("");
+                    setConfirmarAdmin(false);
+                  }}
+                >
+                  Concluir
+                </Button>
+              </DialogFooter>
             </div>
           )}
         </DialogContent>
       </Dialog>
+
 
       {/* Exclusão de usuário */}
       <Dialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
