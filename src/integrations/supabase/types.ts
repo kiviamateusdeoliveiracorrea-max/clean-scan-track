@@ -650,6 +650,10 @@ export type Database = {
           email: string | null
           id: string
           nome: string | null
+          password_changed_at: string | null
+          password_reset_required_by: string | null
+          temporary_password_created_at: string | null
+          temporary_password_expires_at: string | null
           updated_at: string
         }
         Insert: {
@@ -661,6 +665,10 @@ export type Database = {
           email?: string | null
           id: string
           nome?: string | null
+          password_changed_at?: string | null
+          password_reset_required_by?: string | null
+          temporary_password_created_at?: string | null
+          temporary_password_expires_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -672,6 +680,10 @@ export type Database = {
           email?: string | null
           id?: string
           nome?: string | null
+          password_changed_at?: string | null
+          password_reset_required_by?: string | null
+          temporary_password_created_at?: string | null
+          temporary_password_expires_at?: string | null
           updated_at?: string
         }
         Relationships: [
