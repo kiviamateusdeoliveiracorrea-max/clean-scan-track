@@ -346,11 +346,30 @@ export const clearMustChangePassword = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: prof } = await supabaseAdmin
+      .from("profiles")
+      .select("nome, email")
+      .eq("id", context.userId)
+      .maybeSingle();
     const { error } = await supabaseAdmin
       .from("profiles")
-      .update({ deve_alterar_senha: false })
+      .update({
+        deve_alterar_senha: false,
+        temporary_password_created_at: null,
+        temporary_password_expires_at: null,
+        password_reset_required_by: null,
+        password_changed_at: new Date().toISOString(),
+      } as any)
       .eq("id", context.userId);
     if (error) throw new Error(error.message);
+    await logAdminAction(supabaseAdmin, {
+      acao: "senha_alterada_pelo_usuario",
+      targetUserId: context.userId,
+      targetNome: (prof as any)?.nome,
+      targetEmail: (prof as any)?.email,
+      executadoPor: context.userId,
+      detalhes: "Alteração de senha concluída pelo próprio usuário.",
+    });
     return { ok: true };
   });
 
@@ -360,7 +379,9 @@ export const getMyAccount = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("profiles")
-      .select("id, nome, email, cargo, ativo, deve_alterar_senha, created_at, areas(nome)")
+      .select(
+        "id, nome, email, cargo, ativo, deve_alterar_senha, created_at, temporary_password_expires_at, password_changed_at, areas(nome)",
+      )
       .eq("id", context.userId)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -373,6 +394,175 @@ export const getMyAccount = createServerFn({ method: "GET" })
       roles: (roles ?? []).map((r: any) => r.role as AppRole),
     };
   });
+
+// ---------- Senha temporária gerada pelo servidor ----------
+
+const TEMP_UPPER = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+const TEMP_LOWER = "abcdefghijkmnopqrstuvwxyz";
+const TEMP_DIGIT = "23456789";
+const TEMP_SPECIAL = "!@#$%&*?+-=";
+
+function randomInt(max: number) {
+  const buf = new Uint32Array(1);
+  crypto.getRandomValues(buf);
+  return buf[0]! % max;
+}
+
+function pick(alphabet: string) {
+  return alphabet[randomInt(alphabet.length)]!;
+}
+
+function buildTemporaryPassword(nome: string | null, email: string | null): string {
+  const forbidden = [
+    ...(nome ? nome.toLowerCase().split(/\s+/).filter((p) => p.length >= 3) : []),
+    ...(email ? [email.toLowerCase().split("@")[0] ?? ""] : []),
+  ].filter(Boolean);
+
+  for (let attempt = 0; attempt < 50; attempt++) {
+    const all = TEMP_UPPER + TEMP_LOWER + TEMP_DIGIT + TEMP_SPECIAL;
+    const chars = [
+      pick(TEMP_UPPER),
+      pick(TEMP_LOWER),
+      pick(TEMP_DIGIT),
+      pick(TEMP_SPECIAL),
+    ];
+    while (chars.length < 14) chars.push(pick(all));
+    // embaralha
+    for (let i = chars.length - 1; i > 0; i--) {
+      const j = randomInt(i + 1);
+      [chars[i], chars[j]] = [chars[j]!, chars[i]!];
+    }
+    const pwd = chars.join("");
+    const lower = pwd.toLowerCase();
+    if (!forbidden.some((f) => lower.includes(f))) return pwd;
+  }
+  throw new Error("Não foi possível gerar a senha temporária. Tente novamente.");
+}
+
+async function revokeUserSessions(userId: string) {
+  // Encerra todas as sessões (refresh tokens) do usuário no servidor.
+  try {
+    await fetch(`${process.env.SUPABASE_URL}/auth/v1/admin/users/${userId}/logout`, {
+      method: "POST",
+      headers: {
+        apikey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY!}`,
+      },
+    });
+  } catch {
+    // silencioso: a troca de senha já invalida o acesso anterior
+  }
+}
+
+/**
+ * Gera senha temporária no servidor (somente administradores).
+ * A senha é retornada uma única vez e nunca é gravada ou registrada em log.
+ */
+export const adminGenerateTemporaryPassword = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        userId: z.string().uuid(),
+        justificativa: z.string().trim().min(10).max(500),
+        confirmarAdmin: z.boolean().optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const deny = async (motivo: string) => {
+      await logAdminAction(supabaseAdmin, {
+        acao: "senha_temporaria_negada",
+        targetUserId: data.userId,
+        executadoPor: context.userId,
+        detalhes: motivo,
+      });
+      throw new Error(motivo);
+    };
+
+    if (data.userId === context.userId) {
+      await deny('Use "Alterar minha senha" para redefinir a sua própria senha.');
+    }
+
+    const { data: target, error: tErr } = await supabaseAdmin
+      .from("profiles")
+      .select("id, nome, email, ativo")
+      .eq("id", data.userId)
+      .maybeSingle();
+    if (tErr) throw new Error(tErr.message);
+    if (!target) await deny("Usuário não encontrado.");
+
+    const { data: targetRoles } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", data.userId);
+    const targetIsAdmin = (targetRoles ?? []).some((r: any) => r.role === "administrador");
+    if (targetIsAdmin && !data.confirmarAdmin) {
+      await deny(
+        "Confirmação adicional necessária: o usuário selecionado é administrador.",
+      );
+    }
+    if (targetIsAdmin && (await countActiveAdmins(supabaseAdmin)) <= 1 && !data.confirmarAdmin) {
+      await deny("Este é o último administrador ativo. Confirme para prosseguir.");
+    }
+
+    // Limite de redefinições: máximo 3 por usuário nas últimas 24h
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { count } = await supabaseAdmin
+      .from("admin_logs")
+      .select("*", { count: "exact", head: true })
+      .eq("acao", "senha_temporaria_gerada")
+      .eq("target_user_id", data.userId)
+      .gte("created_at", since);
+    if ((count ?? 0) >= 3) {
+      await deny("Limite de redefinições atingido para este usuário nas últimas 24 horas.");
+    }
+
+    const password = buildTemporaryPassword(
+      (target as any)?.nome ?? null,
+      (target as any)?.email ?? null,
+    );
+
+    const { error: authErr } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
+      password,
+    });
+    if (authErr) throw new Error(authErr.message);
+
+    const criadoEm = new Date();
+    const expiraEm = new Date(criadoEm.getTime() + 24 * 60 * 60 * 1000);
+    const { error: pErr } = await supabaseAdmin
+      .from("profiles")
+      .update({
+        deve_alterar_senha: true,
+        temporary_password_created_at: criadoEm.toISOString(),
+        temporary_password_expires_at: expiraEm.toISOString(),
+        password_reset_required_by: context.userId,
+      } as any)
+      .eq("id", data.userId);
+    if (pErr) throw new Error(pErr.message);
+
+    await revokeUserSessions(data.userId);
+
+    await logAdminAction(supabaseAdmin, {
+      acao: "senha_temporaria_gerada",
+      targetUserId: data.userId,
+      targetNome: (target as any)?.nome,
+      targetEmail: (target as any)?.email,
+      executadoPor: context.userId,
+      detalhes: `Justificativa: ${data.justificativa} | Validade: ${expiraEm.toISOString()} | Sessões encerradas | Troca obrigatória no primeiro acesso`,
+    });
+
+    return {
+      ok: true,
+      login: (target as any)?.email ?? null,
+      password,
+      expiresAt: expiraEm.toISOString(),
+    };
+  });
+
 
 /** Envia link de recuperação de senha (admin). */
 export const adminSendPasswordReset = createServerFn({ method: "POST" })
