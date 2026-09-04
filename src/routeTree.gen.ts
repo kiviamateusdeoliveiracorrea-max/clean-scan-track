@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AlterarSenhaObrigatoriaRouteImport } from './routes/alterar-senha-obrigatoria'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
@@ -35,6 +36,11 @@ const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AlterarSenhaObrigatoriaRoute = AlterarSenhaObrigatoriaRouteImport.update({
+  id: '/alterar-senha-obrigatoria',
+  path: '/alterar-senha-obrigatoria',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -118,6 +124,7 @@ const AuthenticatedAuditoriasIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
+  '/alterar-senha-obrigatoria': typeof AlterarSenhaObrigatoriaRoute
   '/auth': typeof AuthRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/alertas': typeof AuthenticatedAlertasRoute
@@ -135,6 +142,7 @@ export interface FileRoutesByFullPath {
   '/auditorias/': typeof AuthenticatedAuditoriasIndexRoute
 }
 export interface FileRoutesByTo {
+  '/alterar-senha-obrigatoria': typeof AlterarSenhaObrigatoriaRoute
   '/auth': typeof AuthRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/alertas': typeof AuthenticatedAlertasRoute
@@ -155,6 +163,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/alterar-senha-obrigatoria': typeof AlterarSenhaObrigatoriaRoute
   '/auth': typeof AuthRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/_authenticated/alertas': typeof AuthenticatedAlertasRoute
@@ -176,6 +185,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/alterar-senha-obrigatoria'
     | '/auth'
     | '/redefinir-senha'
     | '/alertas'
@@ -193,6 +203,7 @@ export interface FileRouteTypes {
     | '/auditorias/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/alterar-senha-obrigatoria'
     | '/auth'
     | '/redefinir-senha'
     | '/alertas'
@@ -212,6 +223,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_authenticated'
+    | '/alterar-senha-obrigatoria'
     | '/auth'
     | '/redefinir-senha'
     | '/_authenticated/alertas'
@@ -232,6 +244,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AlterarSenhaObrigatoriaRoute: typeof AlterarSenhaObrigatoriaRoute
   AuthRoute: typeof AuthRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
 }
@@ -250,6 +263,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/alterar-senha-obrigatoria': {
+      id: '/alterar-senha-obrigatoria'
+      path: '/alterar-senha-obrigatoria'
+      fullPath: '/alterar-senha-obrigatoria'
+      preLoaderRoute: typeof AlterarSenhaObrigatoriaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -399,6 +419,7 @@ const AuthenticatedRouteRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AlterarSenhaObrigatoriaRoute: AlterarSenhaObrigatoriaRoute,
   AuthRoute: AuthRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
 }
