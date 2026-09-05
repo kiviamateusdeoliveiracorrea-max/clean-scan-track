@@ -6,7 +6,6 @@ import {
   createUser,
   setUserRole,
   updateUserProfile,
-  adminSendPasswordReset,
   adminGenerateTemporaryPassword,
   setUserActive,
   getUserLinkedRecords,
@@ -159,18 +158,6 @@ function UsuariosPage() {
       invalidate();
     },
     onError: (e: any) => toast.error(e.message ?? "Falha ao alterar status"),
-  });
-
-  const resetLinkMut = useMutation({
-    mutationFn: (userId: string) =>
-      adminSendPasswordReset({
-        data: { userId, redirectTo: `${window.location.origin}/redefinir-senha` },
-      }),
-    onSuccess: () => {
-      toast.success("Link de recuperação enviado ao e-mail do usuário.");
-      setResetting(null);
-    },
-    onError: (e: any) => toast.error(e.message ?? "Falha ao enviar link"),
   });
 
   const tempPassMut = useMutation({
