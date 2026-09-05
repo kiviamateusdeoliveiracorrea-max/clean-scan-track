@@ -26,49 +26,59 @@ function MinhaContaPage() {
   const [novaSenha, setNovaSenha] = useState("");
   const [confirmacao, setConfirmacao] = useState("");
   const [senhaAtual, setSenhaAtual] = useState("");
-  const [pedirSenhaAtual, setPedirSenhaAtual] = useState(false);
+  const [mostrar, setMostrar] = useState(false);
   const [salvando, setSalvando] = useState(false);
 
   const profile = accountQ.data?.profile as any;
   const roles = accountQ.data?.roles ?? [];
   const deveTrocar = profile?.deve_alterar_senha === true || search.trocar === "1";
+  const regras = passwordRules(novaSenha, profile?.email ?? null);
+  const todasOk = regras.every((r) => r.ok);
 
   async function handleChangePassword(e: React.FormEvent) {
     e.preventDefault();
-    if (novaSenha.length < 8) {
-      toast.error("A nova senha deve ter no mínimo 8 caracteres.");
+    if (!todasOk) {
+      toast.error("A nova senha não atende aos requisitos.");
       return;
     }
     if (novaSenha !== confirmacao) {
       toast.error("A confirmação não é igual à nova senha.");
       return;
     }
+    if (novaSenha === senhaAtual) {
+      toast.error("A nova senha deve ser diferente da senha atual.");
+      return;
+    }
     setSalvando(true);
     try {
-      const payload: any = { password: novaSenha };
-      if (pedirSenhaAtual) payload.current_password = senhaAtual;
-      const { error } = await supabase.auth.updateUser(payload);
-      if (error) {
-        if (/current password/i.test(error.message) && !pedirSenhaAtual) {
-          setPedirSenhaAtual(true);
-          toast.error("Informe a senha atual para concluir a alteração.");
+      const email = profile?.email;
+      if (email) {
+        const { error: authError } = await supabase.auth.signInWithPassword({
+          email,
+          password: senhaAtual,
+        });
+        if (authError) {
+          toast.error("Senha atual incorreta.");
           return;
         }
-        throw error;
       }
+      const { error } = await supabase.auth.updateUser({
+        password: novaSenha,
+      } as any);
+      if (error) throw error;
       await clearMustChangePassword();
       setNovaSenha("");
       setConfirmacao("");
       setSenhaAtual("");
-      setPedirSenhaAtual(false);
       await accountQ.refetch();
-      toast.success("Senha alterada com sucesso. Você continua conectado.");
+      toast.success("Senha alterada com sucesso. As outras sessões foram encerradas.");
     } catch (err: any) {
       toast.error(err?.message ?? "Não foi possível alterar a senha.");
     } finally {
       setSalvando(false);
     }
   }
+
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-2xl mx-auto">
