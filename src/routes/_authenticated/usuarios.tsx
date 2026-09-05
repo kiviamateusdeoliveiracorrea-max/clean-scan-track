@@ -7,7 +7,7 @@ import {
   setUserRole,
   updateUserProfile,
   adminSendPasswordReset,
-  adminSetTemporaryPassword,
+  adminGenerateTemporaryPassword,
   setUserActive,
   getUserLinkedRecords,
   deleteUserPermanently,
