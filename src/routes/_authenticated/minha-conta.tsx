@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { passwordRules } from "@/lib/password-rules";
 import { KeyRound, ShieldAlert, UserCircle2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/minha-conta")({
@@ -26,49 +27,59 @@ function MinhaContaPage() {
   const [novaSenha, setNovaSenha] = useState("");
   const [confirmacao, setConfirmacao] = useState("");
   const [senhaAtual, setSenhaAtual] = useState("");
-  const [pedirSenhaAtual, setPedirSenhaAtual] = useState(false);
+  const [mostrar, setMostrar] = useState(false);
   const [salvando, setSalvando] = useState(false);
 
   const profile = accountQ.data?.profile as any;
   const roles = accountQ.data?.roles ?? [];
   const deveTrocar = profile?.deve_alterar_senha === true || search.trocar === "1";
+  const regras = passwordRules(novaSenha, profile?.email ?? null);
+  const todasOk = regras.every((r) => r.ok);
 
   async function handleChangePassword(e: React.FormEvent) {
     e.preventDefault();
-    if (novaSenha.length < 8) {
-      toast.error("A nova senha deve ter no mínimo 8 caracteres.");
+    if (!todasOk) {
+      toast.error("A nova senha não atende aos requisitos.");
       return;
     }
     if (novaSenha !== confirmacao) {
       toast.error("A confirmação não é igual à nova senha.");
       return;
     }
+    if (novaSenha === senhaAtual) {
+      toast.error("A nova senha deve ser diferente da senha atual.");
+      return;
+    }
     setSalvando(true);
     try {
-      const payload: any = { password: novaSenha };
-      if (pedirSenhaAtual) payload.current_password = senhaAtual;
-      const { error } = await supabase.auth.updateUser(payload);
-      if (error) {
-        if (/current password/i.test(error.message) && !pedirSenhaAtual) {
-          setPedirSenhaAtual(true);
-          toast.error("Informe a senha atual para concluir a alteração.");
+      const email = profile?.email;
+      if (email) {
+        const { error: authError } = await supabase.auth.signInWithPassword({
+          email,
+          password: senhaAtual,
+        });
+        if (authError) {
+          toast.error("Senha atual incorreta.");
           return;
         }
-        throw error;
       }
+      const { error } = await supabase.auth.updateUser({
+        password: novaSenha,
+      } as any);
+      if (error) throw error;
       await clearMustChangePassword();
       setNovaSenha("");
       setConfirmacao("");
       setSenhaAtual("");
-      setPedirSenhaAtual(false);
       await accountQ.refetch();
-      toast.success("Senha alterada com sucesso. Você continua conectado.");
+      toast.success("Senha alterada com sucesso. As outras sessões foram encerradas.");
     } catch (err: any) {
       toast.error(err?.message ?? "Não foi possível alterar a senha.");
     } finally {
       setSalvando(false);
     }
   }
+
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-2xl mx-auto">
@@ -133,47 +144,56 @@ function MinhaContaPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <KeyRound className="h-4 w-4" /> Alterar senha
+            <KeyRound className="h-4 w-4" /> Alterar minha senha
           </CardTitle>
         </CardHeader>
         <CardContent>
           <form className="space-y-3" onSubmit={handleChangePassword}>
-            {pedirSenhaAtual && (
-              <div className="space-y-1.5">
-                <Label>Senha atual</Label>
-                <Input
-                  type="password"
-                  value={senhaAtual}
-                  onChange={(e) => setSenhaAtual(e.target.value)}
-                  required
-                />
-              </div>
-            )}
+            <div className="space-y-1.5">
+              <Label>Senha atual</Label>
+              <Input
+                type={mostrar ? "text" : "password"}
+                value={senhaAtual}
+                onChange={(e) => setSenhaAtual(e.target.value)}
+                required
+              />
+            </div>
             <div className="space-y-1.5">
               <Label>Nova senha</Label>
               <Input
-                type="password"
+                type={mostrar ? "text" : "password"}
                 value={novaSenha}
                 onChange={(e) => setNovaSenha(e.target.value)}
-                minLength={8}
                 required
               />
-              <p className="text-xs text-muted-foreground">Mínimo de 8 caracteres.</p>
             </div>
             <div className="space-y-1.5">
               <Label>Confirmar nova senha</Label>
               <Input
-                type="password"
+                type={mostrar ? "text" : "password"}
                 value={confirmacao}
                 onChange={(e) => setConfirmacao(e.target.value)}
-                minLength={8}
                 required
               />
             </div>
-            <Button type="submit" disabled={salvando}>
+            <Button type="button" variant="ghost" size="sm" onClick={() => setMostrar((v) => !v)}>
+              {mostrar ? "Ocultar senhas" : "Mostrar senhas"}
+            </Button>
+            <ul className="space-y-1 text-xs">
+              {regras.map((r) => (
+                <li
+                  key={r.label}
+                  className={r.ok ? "text-emerald-600" : "text-muted-foreground"}
+                >
+                  {r.ok ? "✓" : "•"} {r.label}
+                </li>
+              ))}
+            </ul>
+            <Button type="submit" disabled={salvando || !todasOk}>
               {salvando ? "Salvando..." : "Alterar senha"}
             </Button>
           </form>
+
         </CardContent>
       </Card>
     </div>

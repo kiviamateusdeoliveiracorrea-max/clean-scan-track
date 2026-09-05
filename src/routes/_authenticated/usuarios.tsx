@@ -6,8 +6,7 @@ import {
   createUser,
   setUserRole,
   updateUserProfile,
-  adminSendPasswordReset,
-  adminSetTemporaryPassword,
+  adminGenerateTemporaryPassword,
   setUserActive,
   getUserLinkedRecords,
   deleteUserPermanently,
@@ -96,13 +95,25 @@ function UsuariosPage() {
   const [areaId, setAreaId] = useState<string>("");
 
   const [editing, setEditing] = useState<EditingUser | null>(null);
-  const [resetting, setResetting] = useState<{ id: string; nome: string; email: string } | null>(
-    null,
-  );
+  const [resetting, setResetting] = useState<{
+    id: string;
+    nome: string;
+    email: string;
+    perfil: string;
+    area: string;
+    ativo: boolean;
+  } | null>(null);
   const [deleting, setDeleting] = useState<{ id: string; nome: string; email: string } | null>(
     null,
   );
-  const [tempPass, setTempPass] = useState("");
+  const [justificativa, setJustificativa] = useState("");
+  const [confirmarAdmin, setConfirmarAdmin] = useState(false);
+  const [gerada, setGerada] = useState<{
+    login: string | null;
+    password: string;
+    expiresAt: string;
+  } | null>(null);
+
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["users"] });
 
@@ -149,29 +160,16 @@ function UsuariosPage() {
     onError: (e: any) => toast.error(e.message ?? "Falha ao alterar status"),
   });
 
-  const resetLinkMut = useMutation({
-    mutationFn: (userId: string) =>
-      adminSendPasswordReset({
-        data: { userId, redirectTo: `${window.location.origin}/redefinir-senha` },
-      }),
-    onSuccess: () => {
-      toast.success("Link de recuperação enviado ao e-mail do usuário.");
-      setResetting(null);
-    },
-    onError: (e: any) => toast.error(e.message ?? "Falha ao enviar link"),
-  });
-
   const tempPassMut = useMutation({
-    mutationFn: (p: { userId: string; password: string }) =>
-      adminSetTemporaryPassword({ data: p }),
-    onSuccess: () => {
-      toast.success("Senha temporária definida. O usuário deverá trocá-la no próximo acesso.");
-      setResetting(null);
-      setTempPass("");
+    mutationFn: (p: { userId: string; justificativa: string; confirmarAdmin: boolean }) =>
+      adminGenerateTemporaryPassword({ data: p }),
+    onSuccess: (res: any) => {
+      setGerada({ login: res.login, password: res.password, expiresAt: res.expiresAt });
       invalidate();
     },
-    onError: (e: any) => toast.error(e.message ?? "Falha ao definir senha temporária"),
+    onError: (e: any) => toast.error(e.message ?? "Falha ao gerar senha temporária"),
   });
+
 
   const linkedQ = useQuery({
     queryKey: ["user-linked", deleting?.id],
@@ -401,11 +399,15 @@ function UsuariosPage() {
                                 id: u.id,
                                 nome: u.nome ?? "",
                                 email: u.email ?? "",
+                                perfil: ROLE_LABEL[currentRole],
+                                area: u.area_nome ?? "",
+                                ativo,
                               })
                             }
                           >
-                            <KeyRound className="h-4 w-4 mr-1" /> Redefinir senha
+                            <KeyRound className="h-4 w-4 mr-1" /> Gerar senha temporária
                           </Button>
+
                           <Button
                             variant="outline"
                             size="sm"
