@@ -96,13 +96,25 @@ function UsuariosPage() {
   const [areaId, setAreaId] = useState<string>("");
 
   const [editing, setEditing] = useState<EditingUser | null>(null);
-  const [resetting, setResetting] = useState<{ id: string; nome: string; email: string } | null>(
-    null,
-  );
+  const [resetting, setResetting] = useState<{
+    id: string;
+    nome: string;
+    email: string;
+    perfil: string;
+    area: string;
+    ativo: boolean;
+  } | null>(null);
   const [deleting, setDeleting] = useState<{ id: string; nome: string; email: string } | null>(
     null,
   );
-  const [tempPass, setTempPass] = useState("");
+  const [justificativa, setJustificativa] = useState("");
+  const [confirmarAdmin, setConfirmarAdmin] = useState(false);
+  const [gerada, setGerada] = useState<{
+    login: string | null;
+    password: string;
+    expiresAt: string;
+  } | null>(null);
+
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["users"] });
 
