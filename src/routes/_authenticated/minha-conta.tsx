@@ -143,47 +143,56 @@ function MinhaContaPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <KeyRound className="h-4 w-4" /> Alterar senha
+            <KeyRound className="h-4 w-4" /> Alterar minha senha
           </CardTitle>
         </CardHeader>
         <CardContent>
           <form className="space-y-3" onSubmit={handleChangePassword}>
-            {pedirSenhaAtual && (
-              <div className="space-y-1.5">
-                <Label>Senha atual</Label>
-                <Input
-                  type="password"
-                  value={senhaAtual}
-                  onChange={(e) => setSenhaAtual(e.target.value)}
-                  required
-                />
-              </div>
-            )}
+            <div className="space-y-1.5">
+              <Label>Senha atual</Label>
+              <Input
+                type={mostrar ? "text" : "password"}
+                value={senhaAtual}
+                onChange={(e) => setSenhaAtual(e.target.value)}
+                required
+              />
+            </div>
             <div className="space-y-1.5">
               <Label>Nova senha</Label>
               <Input
-                type="password"
+                type={mostrar ? "text" : "password"}
                 value={novaSenha}
                 onChange={(e) => setNovaSenha(e.target.value)}
-                minLength={8}
                 required
               />
-              <p className="text-xs text-muted-foreground">Mínimo de 8 caracteres.</p>
             </div>
             <div className="space-y-1.5">
               <Label>Confirmar nova senha</Label>
               <Input
-                type="password"
+                type={mostrar ? "text" : "password"}
                 value={confirmacao}
                 onChange={(e) => setConfirmacao(e.target.value)}
-                minLength={8}
                 required
               />
             </div>
-            <Button type="submit" disabled={salvando}>
+            <Button type="button" variant="ghost" size="sm" onClick={() => setMostrar((v) => !v)}>
+              {mostrar ? "Ocultar senhas" : "Mostrar senhas"}
+            </Button>
+            <ul className="space-y-1 text-xs">
+              {regras.map((r) => (
+                <li
+                  key={r.label}
+                  className={r.ok ? "text-emerald-600" : "text-muted-foreground"}
+                >
+                  {r.ok ? "✓" : "•"} {r.label}
+                </li>
+              ))}
+            </ul>
+            <Button type="submit" disabled={salvando || !todasOk}>
               {salvando ? "Salvando..." : "Alterar senha"}
             </Button>
           </form>
+
         </CardContent>
       </Card>
     </div>
