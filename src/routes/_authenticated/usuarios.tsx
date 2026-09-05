@@ -174,16 +174,15 @@ function UsuariosPage() {
   });
 
   const tempPassMut = useMutation({
-    mutationFn: (p: { userId: string; password: string }) =>
-      adminSetTemporaryPassword({ data: p }),
-    onSuccess: () => {
-      toast.success("Senha temporária definida. O usuário deverá trocá-la no próximo acesso.");
-      setResetting(null);
-      setTempPass("");
+    mutationFn: (p: { userId: string; justificativa: string; confirmarAdmin: boolean }) =>
+      adminGenerateTemporaryPassword({ data: p }),
+    onSuccess: (res: any) => {
+      setGerada({ login: res.login, password: res.password, expiresAt: res.expiresAt });
       invalidate();
     },
-    onError: (e: any) => toast.error(e.message ?? "Falha ao definir senha temporária"),
+    onError: (e: any) => toast.error(e.message ?? "Falha ao gerar senha temporária"),
   });
+
 
   const linkedQ = useQuery({
     queryKey: ["user-linked", deleting?.id],
