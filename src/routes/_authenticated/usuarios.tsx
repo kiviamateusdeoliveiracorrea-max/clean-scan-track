@@ -412,11 +412,15 @@ function UsuariosPage() {
                                 id: u.id,
                                 nome: u.nome ?? "",
                                 email: u.email ?? "",
+                                perfil: ROLE_LABEL[currentRole],
+                                area: u.area_nome ?? "",
+                                ativo,
                               })
                             }
                           >
-                            <KeyRound className="h-4 w-4 mr-1" /> Redefinir senha
+                            <KeyRound className="h-4 w-4 mr-1" /> Gerar senha temporária
                           </Button>
+
                           <Button
                             variant="outline"
                             size="sm"
