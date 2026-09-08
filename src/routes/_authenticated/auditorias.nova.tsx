@@ -234,7 +234,7 @@ function NovaAuditoria() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, nome, email, cargo, areas(nome)")
+        .select("id, nome, cargo, areas(nome)")
         .eq("ativo", true)
         .order("nome");
       if (error) throw error;
