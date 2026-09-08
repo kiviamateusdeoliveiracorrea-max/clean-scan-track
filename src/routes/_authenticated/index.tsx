@@ -25,7 +25,7 @@ import {
   Line,
   CartesianGrid,
 } from "recharts";
-import { classificaPontuacao } from "@/lib/audit-constants";
+import { classificaPontuacao, NC_STATUS_PENDENTES, NC_STATUS_FECHADOS } from "@/lib/audit-constants";
 
 export const Route = createFileRoute("/_authenticated/")({
   component: Dashboard,
@@ -79,16 +79,11 @@ function Dashboard() {
       ? auditorias.reduce((s, a: any) => s + Number(a.percentual || 0), 0) / total
       : 0;
   const hoje = new Date().toISOString().slice(0, 10);
-  const ncAbertasList = ncs.filter(
-    (n: any) => n.status === "aberta" || n.status === "em_andamento",
-  );
+  const ncAbertasList = ncs.filter((n: any) => NC_STATUS_PENDENTES.includes(n.status));
   const ncAbertas = ncAbertasList.length;
-  const ncConcluidas = ncs.filter((n: any) => n.status === "concluida").length;
+  const ncConcluidas = ncs.filter((n: any) => NC_STATUS_FECHADOS.includes(n.status)).length;
   const ncVencidas = ncs.filter(
-    (n: any) =>
-      (n.status === "aberta" || n.status === "em_andamento") &&
-      n.prazo &&
-      n.prazo < hoje,
+    (n: any) => NC_STATUS_PENDENTES.includes(n.status) && n.prazo && n.prazo < hoje,
   ).length;
   const bySev = {
     critica: ncAbertasList.filter((n: any) => n.severidade === "critica").length,
