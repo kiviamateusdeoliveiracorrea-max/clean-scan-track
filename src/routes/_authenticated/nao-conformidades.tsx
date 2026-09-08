@@ -187,7 +187,7 @@ function NCList() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, nome, email, cargo, ativo, areas(nome)")
+        .select("id, nome, cargo, ativo, areas(nome)")
         .eq("ativo", true)
         .order("nome");
       if (error) throw error;

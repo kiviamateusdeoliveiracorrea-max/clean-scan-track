@@ -111,7 +111,9 @@ export const listUsers = createServerFn({ method: "POST" })
       r.role === "administrador" || r.role === "gestor",
     );
 
-    let query = context.supabase
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    let query = supabaseAdmin
       .from("profiles")
       .select("id, nome, email, cargo, area_id, ativo, deve_alterar_senha, created_at, areas(nome)")
       .order("created_at", { ascending: false });
@@ -124,7 +126,7 @@ export const listUsers = createServerFn({ method: "POST" })
       throw new Error(pErr.message);
     }
 
-    const { data: roles, error: rErr } = await context.supabase
+    const { data: roles, error: rErr } = await supabaseAdmin
       .from("user_roles")
       .select("user_id, role");
     if (rErr) {
@@ -377,7 +379,8 @@ export const clearMustChangePassword = createServerFn({ method: "POST" })
 export const getMyAccount = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await context.supabase
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin
       .from("profiles")
       .select(
         "id, nome, email, cargo, ativo, deve_alterar_senha, created_at, temporary_password_expires_at, password_changed_at, areas(nome)",
