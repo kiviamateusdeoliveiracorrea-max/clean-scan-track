@@ -103,6 +103,9 @@ export const STATUS_NC = [
   { value: "cancelada", label: "Cancelada" },
 ] as const;
 
+export const NC_STATUS_PENDENTES = ["aberta", "em_andamento", "aguardando_aprovacao", "reprovada"] as const;
+export const NC_STATUS_FECHADOS = ["encerrada", "aprovada", "concluida"] as const;
+
 export function classificaPontuacao(percentual: number): {
   label: string;
   color: string;

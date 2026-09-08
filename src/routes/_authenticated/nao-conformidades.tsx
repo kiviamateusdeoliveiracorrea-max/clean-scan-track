@@ -36,7 +36,7 @@ import {
   Trash2,
   RotateCcw,
 } from "lucide-react";
-import { STATUS_NC, SEVERIDADES } from "@/lib/audit-constants";
+import { STATUS_NC, SEVERIDADES, NC_STATUS_PENDENTES, NC_STATUS_FECHADOS } from "@/lib/audit-constants";
 import { EvidenceThumbs } from "@/components/EvidenceThumbs";
 
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
@@ -487,8 +487,8 @@ function NCList() {
   // Fotos são carregadas via URLs assinadas no componente <EvidenceThumbs />
   // porque o bucket audit-photos é privado (getPublicUrl retornaria 400/403).
 
-  const PENDING_STATUS = ["aberta", "em_andamento", "aguardando_aprovacao", "reprovada"];
-  const CLOSED_STATUS = ["encerrada", "aprovada", "concluida"];
+  const PENDING_STATUS = NC_STATUS_PENDENTES as unknown as string[];
+  const CLOSED_STATUS = NC_STATUS_FECHADOS as unknown as string[];
   const ativas = data.filter((n: any) => !n.excluida);
   const excluidas = data.filter((n: any) => n.excluida);
   const pendentes = ativas.filter((n: any) => PENDING_STATUS.includes(n.status));
