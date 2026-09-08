@@ -379,7 +379,8 @@ export const clearMustChangePassword = createServerFn({ method: "POST" })
 export const getMyAccount = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await context.supabase
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin
       .from("profiles")
       .select(
         "id, nome, email, cargo, ativo, deve_alterar_senha, created_at, temporary_password_expires_at, password_changed_at, areas(nome)",
