@@ -648,12 +648,22 @@ export const adminSetTemporaryPassword = createServerFn({ method: "POST" })
   });
 
 async function countActiveAdmins(admin: any) {
-  const { data, error } = await admin
+  const { data: adminRoles, error: rErr } = await admin
     .from("user_roles")
-    .select("user_id, profiles:user_id(ativo)")
+    .select("user_id")
     .eq("role", "administrador");
-  if (error) throw new Error(error.message);
-  return (data ?? []).filter((r: any) => r.profiles?.ativo !== false).length;
+  if (rErr) throw new Error(rErr.message);
+
+  const ids = (adminRoles ?? []).map((r: any) => r.user_id);
+  if (ids.length === 0) return 0;
+
+  const { data: profiles, error: pErr } = await admin
+    .from("profiles")
+    .select("id, ativo")
+    .in("id", ids);
+  if (pErr) throw new Error(pErr.message);
+
+  return (profiles ?? []).filter((p: any) => p.ativo !== false).length;
 }
 
 /** Ativa ou desativa um usuário (admin). */
