@@ -116,6 +116,7 @@ export const listUsers = createServerFn({ method: "POST" })
     let query = supabaseAdmin
       .from("profiles")
       .select("id, nome, email, cargo, area_id, ativo, deve_alterar_senha, created_at, areas(nome)")
+      .eq("excluido", false)
       .order("created_at", { ascending: false });
     if (status === "ativos") query = query.eq("ativo", true);
     else if (status === "inativos") query = query.eq("ativo", false);
@@ -187,7 +188,12 @@ export const createUser = createServerFn({ method: "POST" })
         },
       },
     });
-    if (error) throw new Error(error.message);
+    if (error) {
+      const msg = /already registered|already in use|duplicate/i.test(error.message)
+        ? "Este e-mail já está em uso por um usuário ativo. Verifique a lista de usuários antes de tentar novamente."
+        : error.message;
+      throw new Error(msg);
+    }
 
 
     if (created.user?.id) {
@@ -660,7 +666,8 @@ async function countActiveAdmins(admin: any) {
   const { data: profiles, error: pErr } = await admin
     .from("profiles")
     .select("id, ativo")
-    .in("id", ids);
+    .in("id", ids)
+    .eq("excluido", false);
   if (pErr) throw new Error(pErr.message);
 
   return (profiles ?? []).filter((p: any) => p.ativo !== false).length;
@@ -789,6 +796,7 @@ export const deleteUserPermanently = createServerFn({ method: "POST" })
         email: null,
         ativo: false,
         deve_alterar_senha: false,
+        excluido: true,
       })
       .eq("id", data.userId);
     if (pErr) throw new Error(pErr.message);
