@@ -648,6 +648,7 @@ export type Database = {
           created_at: string
           deve_alterar_senha: boolean
           email: string | null
+          excluido: boolean
           id: string
           nome: string | null
           password_changed_at: string | null
@@ -663,6 +664,7 @@ export type Database = {
           created_at?: string
           deve_alterar_senha?: boolean
           email?: string | null
+          excluido?: boolean
           id: string
           nome?: string | null
           password_changed_at?: string | null
@@ -678,6 +680,7 @@ export type Database = {
           created_at?: string
           deve_alterar_senha?: boolean
           email?: string | null
+          excluido?: boolean
           id?: string
           nome?: string | null
           password_changed_at?: string | null
