@@ -171,11 +171,40 @@ export const createUser = createServerFn({ method: "POST" })
     const email = normalizeUserEmail(data.email);
 
     const { createClient } = await import("@supabase/supabase-js");
+
+    // Auto-limpeza: remove login órfão (sem perfil ativo correspondente) que esteja
+    // travando este e-mail por causa de uma exclusão antiga incompleta.
+    try {
+      const authSchemaClient = createClient(
+        process.env.SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { db: { schema: "auth" }, auth: { persistSession: false, autoRefreshToken: false } },
+      );
+      const { data: orphanUser } = await (authSchemaClient as any)
+        .from("users")
+        .select("id")
+        .eq("email", email)
+        .maybeSingle();
+      if (orphanUser?.id) {
+        const { data: orphanProfile } = await supabaseAdmin
+          .from("profiles")
+          .select("id, excluido")
+          .eq("id", orphanUser.id)
+          .maybeSingle();
+        if (!orphanProfile || (orphanProfile as any).excluido) {
+          await supabaseAdmin.auth.admin.deleteUser(orphanUser.id);
+        }
+      }
+    } catch {
+      // limpeza best-effort: segue para o cadastro normal
+    }
+
     const signupClient = createClient(
       process.env.SUPABASE_URL!,
       process.env.SUPABASE_PUBLISHABLE_KEY!,
       { auth: { persistSession: false, autoRefreshToken: false } },
     );
+
     const { data: created, error } = await signupClient.auth.signUp({
       email,
       password: data.password,
@@ -190,7 +219,7 @@ export const createUser = createServerFn({ method: "POST" })
     });
     if (error) {
       const msg = /already registered|already in use|duplicate/i.test(error.message)
-        ? "Este e-mail já está em uso por um usuário ativo. Verifique a lista de usuários antes de tentar novamente."
+        ? "Este e-mail já está em uso por um usuário ativo. Verifique a lista de usuários (aba Todos) antes de tentar novamente."
         : error.message;
       throw new Error(msg);
     }
@@ -781,14 +810,18 @@ export const deleteUserPermanently = createServerFn({ method: "POST" })
       throw new Error("Não é possível excluir o último administrador ativo.");
     }
 
-    // 1) remove permissões
+    // 1) remove o login PRIMEIRO — se falhar, nada mais é alterado
+    const { error: aErr } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
+    if (aErr) throw new Error(aErr.message);
+
+    // 2) remove permissões
     const { error: rErr } = await supabaseAdmin
       .from("user_roles")
       .delete()
       .eq("user_id", data.userId);
     if (rErr) throw new Error(rErr.message);
 
-    // 2) mantém o cadastro como referência histórica anonimizada
+    // 3) mantém o cadastro como referência histórica anonimizada
     const { error: pErr } = await supabaseAdmin
       .from("profiles")
       .update({
@@ -801,9 +834,6 @@ export const deleteUserPermanently = createServerFn({ method: "POST" })
       .eq("id", data.userId);
     if (pErr) throw new Error(pErr.message);
 
-    // 3) remove o login (somente no servidor)
-    const { error: aErr } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
-    if (aErr) throw new Error(aErr.message);
 
     await logAdminAction(supabaseAdmin, {
       acao: "usuario_excluido",
