@@ -171,11 +171,40 @@ export const createUser = createServerFn({ method: "POST" })
     const email = normalizeUserEmail(data.email);
 
     const { createClient } = await import("@supabase/supabase-js");
+
+    // Auto-limpeza: remove login órfão (sem perfil ativo correspondente) que esteja
+    // travando este e-mail por causa de uma exclusão antiga incompleta.
+    try {
+      const authSchemaClient = createClient(
+        process.env.SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { db: { schema: "auth" }, auth: { persistSession: false, autoRefreshToken: false } },
+      );
+      const { data: orphanUser } = await (authSchemaClient as any)
+        .from("users")
+        .select("id")
+        .eq("email", email)
+        .maybeSingle();
+      if (orphanUser?.id) {
+        const { data: orphanProfile } = await supabaseAdmin
+          .from("profiles")
+          .select("id, excluido")
+          .eq("id", orphanUser.id)
+          .maybeSingle();
+        if (!orphanProfile || (orphanProfile as any).excluido) {
+          await supabaseAdmin.auth.admin.deleteUser(orphanUser.id);
+        }
+      }
+    } catch {
+      // limpeza best-effort: segue para o cadastro normal
+    }
+
     const signupClient = createClient(
       process.env.SUPABASE_URL!,
       process.env.SUPABASE_PUBLISHABLE_KEY!,
       { auth: { persistSession: false, autoRefreshToken: false } },
     );
+
     const { data: created, error } = await signupClient.auth.signUp({
       email,
       password: data.password,
