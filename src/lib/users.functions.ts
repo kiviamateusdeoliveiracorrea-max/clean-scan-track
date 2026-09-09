@@ -781,14 +781,18 @@ export const deleteUserPermanently = createServerFn({ method: "POST" })
       throw new Error("Não é possível excluir o último administrador ativo.");
     }
 
-    // 1) remove permissões
+    // 1) remove o login PRIMEIRO — se falhar, nada mais é alterado
+    const { error: aErr } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
+    if (aErr) throw new Error(aErr.message);
+
+    // 2) remove permissões
     const { error: rErr } = await supabaseAdmin
       .from("user_roles")
       .delete()
       .eq("user_id", data.userId);
     if (rErr) throw new Error(rErr.message);
 
-    // 2) mantém o cadastro como referência histórica anonimizada
+    // 3) mantém o cadastro como referência histórica anonimizada
     const { error: pErr } = await supabaseAdmin
       .from("profiles")
       .update({
@@ -801,9 +805,6 @@ export const deleteUserPermanently = createServerFn({ method: "POST" })
       .eq("id", data.userId);
     if (pErr) throw new Error(pErr.message);
 
-    // 3) remove o login (somente no servidor)
-    const { error: aErr } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
-    if (aErr) throw new Error(aErr.message);
 
     await logAdminAction(supabaseAdmin, {
       acao: "usuario_excluido",
