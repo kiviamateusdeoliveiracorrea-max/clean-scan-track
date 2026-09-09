@@ -219,7 +219,7 @@ export const createUser = createServerFn({ method: "POST" })
     });
     if (error) {
       const msg = /already registered|already in use|duplicate/i.test(error.message)
-        ? "Este e-mail já está em uso por um usuário ativo. Verifique a lista de usuários antes de tentar novamente."
+        ? "Este e-mail já está em uso por um usuário ativo. Verifique a lista de usuários (aba Todos) antes de tentar novamente."
         : error.message;
       throw new Error(msg);
     }
