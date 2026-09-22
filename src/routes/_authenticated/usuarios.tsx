@@ -644,12 +644,36 @@ function UsuariosPage() {
                 <Button
                   variant="outline"
                   onClick={async () => {
+                    const valor = gerada.password;
                     try {
-                      await navigator.clipboard.writeText(gerada.password);
-                      toast.success("Senha copiada.");
+                      await navigator.clipboard.writeText(valor);
+                      toast.success("Senha copiada exatamente como exibida.");
+                      return;
                     } catch {
-                      toast.error("Não foi possível copiar. Selecione e copie manualmente.");
+                      // A área de transferência pode ser bloqueada (janela incorporada
+                      // ou contexto sem HTTPS). Usa alternativa por seleção.
                     }
+                    try {
+                      const ta = document.createElement("textarea");
+                      ta.value = valor;
+                      ta.setAttribute("readonly", "");
+                      ta.style.position = "fixed";
+                      ta.style.opacity = "0";
+                      document.body.appendChild(ta);
+                      ta.select();
+                      ta.setSelectionRange(0, valor.length);
+                      const ok = document.execCommand("copy");
+                      document.body.removeChild(ta);
+                      if (ok) {
+                        toast.success("Senha copiada exatamente como exibida.");
+                        return;
+                      }
+                    } catch {
+                      // ignora e orienta a cópia manual
+                    }
+                    toast.error(
+                      "Não foi possível copiar automaticamente. Clique no campo da senha para selecioná-la e copie com Ctrl+C.",
+                    );
                   }}
                 >
                   Copiar senha
