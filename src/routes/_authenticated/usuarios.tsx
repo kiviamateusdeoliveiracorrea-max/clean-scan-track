@@ -625,7 +625,14 @@ function UsuariosPage() {
                   <span className="text-muted-foreground">Login: </span>
                   {gerada.login || "—"}
                 </p>
-                <p className="font-mono text-base break-all">{gerada.password}</p>
+                <Input
+                  readOnly
+                  value={gerada.password}
+                  aria-label="Senha temporária"
+                  className="font-mono text-base"
+                  onFocus={(e) => e.currentTarget.select()}
+                  onClick={(e) => e.currentTarget.select()}
+                />
                 <p className="text-xs text-muted-foreground">
                   Validade: {new Date(gerada.expiresAt).toLocaleString("pt-BR")}
                 </p>
