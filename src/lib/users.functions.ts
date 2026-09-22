@@ -438,7 +438,9 @@ export const getMyAccount = createServerFn({ method: "GET" })
 const TEMP_UPPER = "ABCDEFGHJKLMNPQRSTUVWXYZ";
 const TEMP_LOWER = "abcdefghijkmnopqrstuvwxyz";
 const TEMP_DIGIT = "23456789";
-const TEMP_SPECIAL = "!@#$%&*?+-=";
+// Apenas símbolos sem ambiguidade visual e sem efeitos ao colar em planilhas
+// ou editores (evita "+", "-", "=" no início e caracteres confundíveis).
+const TEMP_SPECIAL = "!@#$%&*?";
 
 function randomInt(max: number) {
   const buf = new Uint32Array(1);
