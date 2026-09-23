@@ -1,78 +1,78 @@
-# Perfil LIDER, tratativas, evidências e aprovação
+# Fase 1 — Estrutura multiunidade (somente estrutura)
 
-## 1. Diagnóstico (lido agora no banco)
+Nada muda para os usuários nesta fase: as regras de acesso atuais, os papéis atuais e as telas continuam iguais. Nenhuma unidade extra é criada. Sem publicação.
 
-Tabelas usadas hoje:
-- Ocorrências + tratativas + aprovação: tudo em `nao_conformidades` (causa_raiz, acao_corretiva, acao_preventiva, responsavel_acao_id, prazo, aprovador_id, parecer_aprovador, data_aprovacao, aprovado_por, status).
-- Evidências: listas de endereços `foto_urls` / `documento_urls` dentro da própria NC; arquivos no armazenamento privado `audit-photos`. Não há registro de quem anexou, quando, nem versões.
-- Histórico/auditoria: `nc_historico` (por NC), `admin_logs`, `auditorias_log`.
-- Perfis: `user_roles` (papéis: administrador, gestor, auditor, consulta). **Não existe papel LIDER.**
-- Áreas autorizadas: apenas `profiles.area_id` (uma área por usuário). Não há tabela de áreas autorizadas.
+## 1. Validação antes da execução
 
-Regras atuais (RLS):
-- NC: leitura para qualquer usuário logado (todas as áreas); criar/alterar só administrador, auditor ou gestor; excluir administrador ou gestor. Não há controle de status nem de campos.
-- Histórico: leitura por todos; inclusão só administrador/auditor/gestor.
-- Arquivos: qualquer usuário logado lê, envia, substitui e **apaga** qualquer arquivo do armazenamento.
+**Unidade que será criada (única)**
 
-O que bloqueia o líder: como não existe papel LIDER, o líder fica como "consulta", que não pode alterar NC nem gravar histórico. Por isso foi promovido a administrador.
+| Nome | Código | Empresa | Cidade | Estado | Status |
+|---|---|---|---|---|---|
+| Cummins Motores | MOT | Cummins | Guarulhos | SP | ATIVA |
 
-Hoje há 12 administradores e 2 gestores. Pelo cargo cadastrado, **9 administradores parecem temporários** (cargo "Líder"): Claudio Trindade, Ícaro Vasconcellos, Ícaro Camilo, Paulo Roberto, Anderson Souza, Leandro Alencar, Jorge M Lima, Claudete G de Moura. Os demais (Jefferson Leandro – Coordenador; Lucas N. Santana, Gleisson Nogueira, Kivia Correa – Qualidade) serão apenas listados para você decidir. Nada será rebaixado automaticamente.
+**13 áreas atuais (todas ligadas à Cummins Motores; código fica vazio, pendente de preenchimento pelo admin)**
+Almoxarifado (EBU), Ativação (EBU), Blocado, CEM (CEM), CTT (CTT), Embalagem (ADM), Estocagem, Expedição, Oleamento (Expedição), PSBU (PSBU), Qualidade (Qualidade), Recebimento (EBU), Usinagem.
 
-Status atuais das NCs: aberta 5, em_andamento 1, aprovada 1, encerrada 11, cancelada 16.
+**Usuários: 23 cadastros**
+- 14 ativos com papel · 4 inativos sem papel · 5 excluídos (vinculados como inativos, conforme sua escolha).
 
-## 2. O que será feito
+**Administradores atuais (12)** e papel novo proposto:
 
-**Papéis (sem apagar nada)**
-- Adicionar o papel `lider` ao cadastro de perfis. Gestor = aprovador. Administrador segue igual. Auditor e consulta mantidos.
-- Criar "áreas autorizadas" por usuário (várias áreas), preenchida inicialmente com a área atual de cada perfil. Admin/gestor editam; ninguém edita a si próprio.
+| Nome | E-mail | Área | Papel atual | Papel novo | Situação |
+|---|---|---|---|---|---|
+| Kivia Mateus de Oliveira Correa | as73i@cummins.com | Qualidade | administrador | ADMIN_GLOBAL | VALIDADO |
+| Gleisson Nogueira | bc98w@cummins.com | Qualidade | administrador | ADMIN_UNIDADE | PENDENTE_DE_VALIDACAO |
+| Lucas N. Santana | ua228@cummins.com | Qualidade | administrador | ADMIN_UNIDADE | PENDENTE_DE_VALIDACAO |
+| Jefferson Leandro | ax14n@cummins.com | Almoxarifado | administrador | ADMIN_UNIDADE | PENDENTE_DE_VALIDACAO |
+| Jorge M Lima | xf113@cummins.com | Almoxarifado | administrador | ADMIN_UNIDADE | PENDENTE_DE_VALIDACAO |
+| Anderson Souza | st541@cummins.com | Embalagem | administrador | ADMIN_UNIDADE | PENDENTE_DE_VALIDACAO |
+| Claudete G de Moura | be25a@cummins.com | Recebimento | administrador | ADMIN_UNIDADE | PENDENTE_DE_VALIDACAO |
+| Claudio Trindade | kj810@cummins.com | PSBU | administrador | ADMIN_UNIDADE | PENDENTE_DE_VALIDACAO |
+| Ícaro Camilo | rz024@cummins.com | Ativação | administrador | ADMIN_UNIDADE | PENDENTE_DE_VALIDACAO |
+| Ícaro Vasconcellos | qw887@cummins.com | Ativação | administrador | ADMIN_UNIDADE | PENDENTE_DE_VALIDACAO |
+| Leandro Alencar | bd58d@cummins.com | Ativação | administrador | ADMIN_UNIDADE | PENDENTE_DE_VALIDACAO |
+| Paulo Roberto | bc50u@cummins.com | CTT | administrador | ADMIN_UNIDADE | PENDENTE_DE_VALIDACAO |
 
-**Status padronizados**
-- Novos: ABERTA, ATRIBUIDA, EM_TRATATIVA, AGUARDANDO_EVIDENCIA, ENVIADA_PARA_APROVACAO, DEVOLVIDA_PARA_CORRECAO, APROVADA, REPROVADA, CONCLUIDA, CANCELADA, VENCIDA.
-- Conversão dos existentes (sem perder histórico): aberta→ABERTA, em_andamento→EM_TRATATIVA, aguardando_aprovacao→ENVIADA_PARA_APROVACAO, aprovada→APROVADA, reprovada→DEVOLVIDA_PARA_CORRECAO, encerrada→CONCLUIDA, cancelada→CANCELADA. VENCIDA é calculada pelo prazo (não sobrescreve o status).
+Obs.: vários administradores têm cargo "Líder" — ficam pendentes para decisão (provavelmente LIDER). Nada é alterado no papel atual.
 
-**Regras no banco (valem mesmo fora da tela)**
-- Líder: vê só NCs das áreas autorizadas; assume se a NC for da sua área e sem responsável ou atribuída a ele; edita só causa, ação imediata, corretiva, responsável da execução, prazo proposto, comentário e status operacional, e só em ABERTA/ATRIBUIDA/EM_TRATATIVA/AGUARDANDO_EVIDENCIA/DEVOLVIDA; não mexe em área, criticidade, descrição, autor nem aprovação; nunca define APROVADA/REPROVADA/CONCLUIDA; não exclui.
-- Gestor: vê áreas autorizadas; altera só campos de aprovação e as transições ENVIADA→APROVADA/REPROVADA/DEVOLVIDA, APROVADA→CONCLUIDA; parecer obrigatório; novo prazo ao devolver; não aprova tratativa em que foi o executor.
-- Admin: tudo acima, mais reabrir/cancelar com justificativa.
-- Exclusão de NC bloqueada após envio para aprovação (usar CANCELADA).
-- Toda mudança grava automaticamente no histórico: usuário, data/hora, valor anterior, novo, justificativa, origem. Histórico não pode ser editado nem apagado.
+**Gestores atuais (2)**
 
-**Evidências**
-- Nova tabela de evidências ligada à NC: arquivo, tipo, tamanho, descrição, quem anexou, quando, versão e "substituída por".
-- Tipos: JPG, JPEG, PNG, WEBP, PDF, XLSX, DOCX; limite 10 MB (ajustável).
-- Arquivos em `nc/{nc_id}/...`; acesso só com link temporário e permissão de área.
-- Antes do envio: líder anexa, substitui (nova versão, original preservado) e exclui o que anexou por engano. Após envio: sem exclusão; complemento só quando devolvida.
-- Evidências antigas (fotos já anexadas) continuam visíveis; ficam registradas como versão 1.
-- Regras de armazenamento restringidas: só envia/lê quem tem acesso à área da NC; ninguém apaga arquivo após envio.
+| Nome | E-mail | Área | Papel novo | Situação |
+|---|---|---|---|---|
+| Alessandro Ventura | ba93n@cummins.com | Ativação | GERENTE | PENDENTE_DE_VALIDACAO |
+| Caroline Clemente | yd669@cummins.com | sem área | GERENTE | PENDENTE_AREA |
 
-**Envio para aprovação**
-- Valida campos obrigatórios e pelo menos uma evidência; muda para ENVIADA_PARA_APROVACAO; bloqueia edição; registra data/usuário; gera aviso no aplicativo para gestores e admins da área (sino no topo).
+**Auditores atuais:** nenhum. **Consulta atuais:** nenhum.
 
-**Telas**
-- Detalhe da tratativa com todos os campos pedidos, bloco de evidências (miniaturas, nome, data, autor, descrição, baixar, substituir), histórico e parecer.
-- Botões do aprovador: Aprovar, Devolver para correção, Reprovar, com campos obrigatórios.
-- "Minhas Tratativas" (líder): contadores por situação, filtros (período, área, criticidade, status, prazo, responsável) e ações rápidas.
-- "Tratativas para Aprovação" (gestor/admin): aguardando, vencidas, críticas, devolvidas, aprovadas no período, tempo médio; filtros.
-- Menu: líder não vê Usuários, Perguntas, Áreas, Auditores, Configurações.
-- Usuários e Acessos: opção LIDER no perfil e lista "possíveis admins temporários" com botão para trocar para LIDER, preservando áreas e histórico.
+**Sem papel (9) — ficam inativos, papel novo em branco, PENDENTE_DE_VALIDACAO**
+Lucas Nunes (Qualidade, inativo), Lucas Santana (Qualidade, inativo), Wesley Ferrarezi (Recebimento, inativo), Test (sem área, inativo), TESTE - SENHA TEMPORARIA (excluído), teste.senhatemp+... (excluído), 3 × "Usuário excluído" (Almoxarifado, Almoxarifado, Recebimento).
 
-**Funções do servidor**
-- As funções administrativas continuam exigindo administrador; líder recebe erro ao tentar usá-las.
+**Usuários sem área (4) — PENDENTE_AREA, nenhuma área inventada**
+Caroline Clemente, Test, TESTE - SENHA TEMPORARIA, teste.senhatemp+1790120934.
 
-## 3. Testes
-- Criar dados "TESTE - FLUXO TRATATIVA" (área, líder, gestor, gestor de outra área, NC) e rodar os 20 cenários com sessões reais de cada usuário, chamando o banco diretamente (não só a tela). Tabela: perfil, cenário, ação, esperado, obtido, regra aplicada, evidência, APROVADO/REPROVADO. Falhas corrigidas e retestadas sem desligar a segurança. Dados de teste removidos no final.
-- Regressão: login, usuários, auditorias, NCs existentes, dashboard, senha.
+**Registros que serão criados**
+- units: 1
+- user_unit_permissions: 23 (todos com unidade padrão = Cummins Motores; ativo = situação atual; excluídos inativos)
+- user_area_permissions: 19 (somente a área atual de cada um; 4 sem área não recebem)
+- unit_audit_log: 1 (criação da unidade) + 1 por vínculo de área/usuário
 
-## 4. Entrega (sem publicar)
-Permissões antes x depois, telas e regras alteradas, lista de admins possivelmente temporários, resultados, contagem de NCs/histórico antes e depois comprovando que nada foi perdido.
+## 2. O que a migração faz
+- Cria `units`, papéis novos (lista separada, não substitui a atual), `user_unit_permissions` (com situação de validação), `user_area_permissions` e `unit_audit_log`.
+- `areas`: adiciona unidade (ainda opcional), código, ativo e data de atualização; regra de código único por unidade (códigos vazios permitidos).
+- Liga as 13 áreas à Cummins Motores e cria os vínculos acima.
+- Novas tabelas com leitura restrita: cada usuário vê só os próprios vínculos; administradores atuais veem tudo; gravação só pelo servidor. Isso não muda o acesso a nenhum dado existente.
+- Não toca em: user_roles, regras de acesso atuais, auditorias, NCs, histórico, perfis.
 
-## Próximo projeto (fora deste plano): várias unidades
-Dados confirmados para quando for feito:
-- Cummins Motores — código MOT — empresa Cummins — Guarulhos/SP — Ativa (recebe os dados atuais).
-- Cummins BLC — código BLC — empresa Intralogistica — Guarulhos/SP — Ativa (confirmar se a empresa também é Cummins).
+## 3. Testes após execução
+1 unidade única · 2 código de unidade duplicado rejeitado · 3 todas as áreas com unidade · 4 código de área repetido na mesma unidade rejeitado · 5 23 vínculos de unidade · 6 os 4 sem área pendentes · 7 nenhuma área extra (cada usuário ≤ 1 área, igual à atual) · 8 user_roles com 14 registros idênticos · 9 login continua · 10 auditorias (21) e NCs (34) acessíveis com mesmas contagens. Mais: comparação das regras de acesso antigas antes/depois (mesma lista).
+
+## 4. Rollback
+Script pronto que remove somente o que foi adicionado: apaga as tabelas novas, remove as colunas novas de `areas`, remove a lista de papéis nova e a tabela `units`. Nenhum dado antigo depende delas, então a volta é completa. Versão anterior do projeto também fica restaurável pelo histórico.
 
 ## Detalhes técnicos
-- `ALTER TYPE app_role ADD VALUE 'lider'` em migração separada.
-- Tabelas novas: `user_area_permissions`, `nc_evidencias`, `notificacoes` (com GRANT + RLS). Funções security definer: `user_has_area_access`, `nc_transition_guard` (gatilho BEFORE UPDATE validando papel × transição × campos), gatilho de histórico em `nao_conformidades`.
-- `NC_STATUS_*` em `audit-constants.ts` atualizados para os novos códigos; dashboard ajustado.
-- Mudanças de status via função do servidor (`requireSupabaseAuth`) + gatilho no banco como barreira final.
+- Enum `unit_role` (ADMIN_GLOBAL, ADMIN_UNIDADE, ANALISTA, LIDER, COORDENADOR, GERENTE, CONSULTOR); `user_unit_permissions.role` nulável; `validation_status` text (VALIDADO, PENDENTE_DE_VALIDACAO, PENDENTE_AREA) validado por trigger.
+- `areas.unit_id` FK nulável, `code` text nulo, `active` bool default true, `updated_at` + trigger `set_updated_at`; `UNIQUE (unit_id, code)`; `areas.created_at` já existe.
+- Unique `units.code`; unique `(user_id, unit_id)` e `(user_id, area_id)`; índices em user_id, unit_id, area_id.
+- GRANTs para authenticated/service_role; RLS com `has_role(auth.uid(),'administrador')` ou `user_id = auth.uid()` para SELECT; sem INSERT/UPDATE/DELETE para authenticated.
+- Dados inseridos na mesma migração (INSERT ... SELECT a partir de profiles/user_roles), com mapeamento nominal acima.
+- Após executar: consultas de verificação e relatório; Fase 2 não iniciada.
