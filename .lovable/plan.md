@@ -1,78 +1,73 @@
-# Multiunidade — Diagnóstico e Plano de Migração
+# Perfil LIDER, tratativas, evidências e aprovação
 
-## 1. Diagnóstico inicial (levantado agora no banco)
+## 1. Diagnóstico (lido agora no banco)
 
-Checkpoint: cada alteração gera uma versão restaurável no histórico do projeto; a versão atual (antes de qualquer mudança) fica como ponto de retorno.
+Tabelas usadas hoje:
+- Ocorrências + tratativas + aprovação: tudo em `nao_conformidades` (causa_raiz, acao_corretiva, acao_preventiva, responsavel_acao_id, prazo, aprovador_id, parecer_aprovador, data_aprovacao, aprovado_por, status).
+- Evidências: listas de endereços `foto_urls` / `documento_urls` dentro da própria NC; arquivos no armazenamento privado `audit-photos`. Não há registro de quem anexou, quando, nem versões.
+- Histórico/auditoria: `nc_historico` (por NC), `admin_logs`, `auditorias_log`.
+- Perfis: `user_roles` (papéis: administrador, gestor, auditor, consulta). **Não existe papel LIDER.**
+- Áreas autorizadas: apenas `profiles.area_id` (uma área por usuário). Não há tabela de áreas autorizadas.
 
-Tabelas existentes e vínculo com unidade:
+Regras atuais (RLS):
+- NC: leitura para qualquer usuário logado (todas as áreas); criar/alterar só administrador, auditor ou gestor; excluir administrador ou gestor. Não há controle de status nem de campos.
+- Histórico: leitura por todos; inclusão só administrador/auditor/gestor.
+- Arquivos: qualquer usuário logado lê, envia, substitui e **apaga** qualquer arquivo do armazenamento.
 
-| Tabela | Registros | unit_id | area_id | Sem área | Como a unidade será determinada |
-|---|---|---|---|---|---|
-| areas | 13 | não | — | — | receberá unit_id direto |
-| auditorias | 21 | não | sim | 0 | unit_id direto (derivado da área) |
-| respostas_auditoria | 0 | não | não | — | indireto via auditoria_id |
-| nao_conformidades | 34 | não | sim | 0 | unit_id direto (derivado da área/auditoria) |
-| nc_historico | 68 | não | não | — | indireto via nc_id |
-| melhorias | 0 | não | sim | 0 | unit_id direto |
-| gemba_visitas | 0 | não | sim | 0 | unit_id direto |
-| alertas_processo | 0 | não | sim | 0 | unit_id direto |
-| auditorias_log | 8 | não | sim (texto) | — | unit_id direto (log imutável) |
-| auditores | 8 | não | não | — | unit_id direto |
-| perguntas_auditoria | 7 | não | area_nome (texto) | — | modelo global + cópia por unidade |
-| profiles | 23 | não | sim | 4 | permissão via user_unit_permissions |
-| user_roles | 14 | não | não | — | vira papel global; papel local vai para user_unit_permissions |
-| admin_logs | 15 | não | não | — | unit_id opcional (ação global = nulo) |
+O que bloqueia o líder: como não existe papel LIDER, o líder fica como "consulta", que não pode alterar NC nem gravar histórico. Por isso foi promovido a administrador.
 
-- Não existe tabela `units`, nem `user_unit_permissions`, nem `user_area_permissions` (será criada).
-- Tabelas citadas no pedido que **não existem** no app (inspections, checklists, schedules, reports, notifications, import_batches/rows, approvals, evidences, treatments): não serão criadas vazias. Aprovações, tratativas e evidências já vivem dentro de `nao_conformidades` (campos de aprovação, `foto_urls`, `documento_urls`) e herdam o unit_id dela.
-- Registros sem unidade: 100% (nenhuma tabela possui unit_id). Registros sem área identificável: 0 em auditorias/NC; 4 perfis sem área (ficam só com a unidade, pendentes de validação).
-- RLS atual: todas as tabelas operacionais leem com "qualquer usuário autenticado" e escrevem por papel global (`has_role`). Armazenamento `audit-photos` é privado mas qualquer autenticado lê/grava qualquer arquivo. Não há isolamento por unidade hoje.
+Hoje há 12 administradores e 2 gestores. Pelo cargo cadastrado, **9 administradores parecem temporários** (cargo "Líder"): Claudio Trindade, Ícaro Vasconcellos, Ícaro Camilo, Paulo Roberto, Anderson Souza, Leandro Alencar, Jorge M Lima, Claudete G de Moura. Os demais (Jefferson Leandro – Coordenador; Lucas N. Santana, Gleisson Nogueira, Kivia Correa – Qualidade) serão apenas listados para você decidir. Nada será rebaixado automaticamente.
 
-## 2. Unidades reais (dados confirmados)
+Status atuais das NCs: aberta 5, em_andamento 1, aprovada 1, encerrada 11, cancelada 16.
 
-| Nome | Código | Empresa | Cidade/UF | Status | Dados atuais |
-|---|---|---|---|---|---|
-| Cummins Motores | CBL | Intralogistica | Guarulhos / SP | Ativa | recebe todos os registros existentes |
-| Cummins BLC | BLC | Intralogistica | Guarulhos / SP | Ativa | começa vazia (áreas e usuários cadastrados depois) |
+## 2. O que será feito
 
-## 3. Plano (executado em fases, cada uma testada antes da próxima)
+**Papéis (sem apagar nada)**
+- Adicionar o papel `lider` ao cadastro de perfis. Gestor = aprovador. Administrador segue igual. Auditor e consulta mantidos.
+- Criar "áreas autorizadas" por usuário (várias áreas), preenchida inicialmente com a área atual de cada perfil. Admin/gestor editam; ninguém edita a si próprio.
 
-**Fase 1 — Estrutura (sem mudar comportamento)**
-- Criar `units` com os campos pedidos e inserir somente a unidade atual.
-- `areas`: adicionar unit_id, codigo, ativo; único (unit_id, codigo).
-- Adicionar unit_id em auditorias, nao_conformidades, melhorias, gemba_visitas, alertas_processo, auditores, auditorias_log, admin_logs; preencher todos com a unidade atual; só depois tornar obrigatório. IDs, datas, responsáveis, fotos e vínculos intactos.
-- Criar `user_unit_permissions` e `user_area_permissions`; todos os 23 usuários recebem acesso à unidade atual com papel mapeado do atual.
-- Novo enum de papéis: ADMIN_GLOBAL, ADMIN_UNIDADE, ANALISTA, LIDER, COORDENADOR, GERENTE, CONSULTOR. Mapeamento proposto: administrador → ADMIN_GLOBAL; gestor → GERENTE; auditor → LIDER; consulta → CONSULTOR. `user_roles` mantido (não apagado) para rollback.
-- Tabela `unit_audit_log` (unit_id, usuário, ação, registro, valor anterior/novo, justificativa).
-- Índices: unit_id, (unit_id, area_id), (unit_id, status), created_at, user_id — sem duplicar existentes.
+**Status padronizados**
+- Novos: ABERTA, ATRIBUIDA, EM_TRATATIVA, AGUARDANDO_EVIDENCIA, ENVIADA_PARA_APROVACAO, DEVOLVIDA_PARA_CORRECAO, APROVADA, REPROVADA, CONCLUIDA, CANCELADA, VENCIDA.
+- Conversão dos existentes (sem perder histórico): aberta→ABERTA, em_andamento→EM_TRATATIVA, aguardando_aprovacao→ENVIADA_PARA_APROVACAO, aprovada→APROVADA, reprovada→DEVOLVIDA_PARA_CORRECAO, encerrada→CONCLUIDA, cancelada→CANCELADA. VENCIDA é calculada pelo prazo (não sobrescreve o status).
 
-**Fase 2 — Segurança no banco**
-- Funções: is_global_admin(), user_has_unit_access(unit), user_has_area_access(area), user_has_unit_role(unit, role), is_unit_admin(unit).
-- Gatilhos que definem unit_id a partir da área/registro de origem (ignoram valor do navegador) e bloqueiam troca de unit_id.
-- Substituir as políticas atuais por SELECT/INSERT/UPDATE/DELETE separadas por unidade e papel; exclusão física bloqueada em auditorias/NC (cancelamento já existente).
-- Líder não aprova a própria tratativa (gatilho).
-- Evidências: novo caminho `unidades/{unit_id}/...`; política de armazenamento valida unidade pelo caminho + acesso; arquivos antigos continuam acessíveis pela unidade atual; links só assinados temporários.
+**Regras no banco (valem mesmo fora da tela)**
+- Líder: vê só NCs das áreas autorizadas; assume se a NC for da sua área e sem responsável ou atribuída a ele; edita só causa, ação imediata, corretiva, responsável da execução, prazo proposto, comentário e status operacional, e só em ABERTA/ATRIBUIDA/EM_TRATATIVA/AGUARDANDO_EVIDENCIA/DEVOLVIDA; não mexe em área, criticidade, descrição, autor nem aprovação; nunca define APROVADA/REPROVADA/CONCLUIDA; não exclui.
+- Gestor: vê áreas autorizadas; altera só campos de aprovação e as transições ENVIADA→APROVADA/REPROVADA/DEVOLVIDA, APROVADA→CONCLUIDA; parecer obrigatório; novo prazo ao devolver; não aprova tratativa em que foi o executor.
+- Admin: tudo acima, mais reabrir/cancelar com justificativa.
+- Exclusão de NC bloqueada após envio para aprovação (usar CANCELADA).
+- Toda mudança grava automaticamente no histórico: usuário, data/hora, valor anterior, novo, justificativa, origem. Histórico não pode ser editado nem apagado.
 
-**Fase 3 — Interface**
-- Seletor "Unidade selecionada: X" no cabeçalho (nome fixo se só uma), lembra a última, revalida, limpa cache e filtros na troca e registra no log.
-- Todas as consultas filtradas pela unidade selecionada (além da RLS); páginas aguardam unidade definida.
-- Página "Unidades" (só ADMIN_GLOBAL): cadastrar, editar, inativar (sem exclusão se houver registros), áreas, admins locais, logo, cores, contagens.
-- Usuários e Acessos: gestão de unidades/áreas por usuário; admin local restrito à sua unidade; ninguém se autoatribui.
-- Dashboard: local por padrão; visão consolidada explícita para ADMIN_GLOBAL, com unidade identificada.
-- Perguntas: modelo global + "copiar para unidade"; respostas preservam o texto/peso usados na data da auditoria.
-- Unidade visível em auditorias, NCs, aprovações, usuários, histórico.
-- Exportação/importação: hoje não existem no app; ficam fora deste escopo (posso criar depois seguindo as mesmas regras).
+**Evidências**
+- Nova tabela de evidências ligada à NC: arquivo, tipo, tamanho, descrição, quem anexou, quando, versão e "substituída por".
+- Tipos: JPG, JPEG, PNG, WEBP, PDF, XLSX, DOCX; limite 10 MB (ajustável).
+- Arquivos em `nc/{nc_id}/...`; acesso só com link temporário e permissão de área.
+- Antes do envio: líder anexa, substitui (nova versão, original preservado) e exclui o que anexou por engano. Após envio: sem exclusão; complemento só quando devolvida.
+- Evidências antigas (fotos já anexadas) continuam visíveis; ficam registradas como versão 1.
+- Regras de armazenamento restringidas: só envia/lê quem tem acesso à área da NC; ninguém apaga arquivo após envio.
 
-**Fase 4 — Testes**
-- Criar TESTE - UNIDADE A e B com áreas, usuários, auditorias, NCs e evidências de teste; executar os 15 testes de isolamento aplicáveis (via chamadas reais ao banco com sessão de cada usuário) e a regressão; tabela com usuário, papel, unidade, ação, esperado, obtido, política, APROVADO/REPROVADO. Os testes de exportação/importação/notificações serão marcados "não aplicável" pois o recurso não existe.
-- Remover os dados de teste ao final (ou manter, se você preferir).
+**Envio para aprovação**
+- Valida campos obrigatórios e pelo menos uma evidência; muda para ENVIADA_PARA_APROVACAO; bloqueia edição; registra data/usuário; gera aviso no aplicativo para gestores e admins da área (sino no topo).
 
-**Fase 5 — Entrega**
-- Relatório com tabelas/colunas/políticas/índices, contagem antes x depois (prova de nenhum registro perdido), permissões por perfil e resultados. Sem publicar.
+**Telas**
+- Detalhe da tratativa com todos os campos pedidos, bloco de evidências (miniaturas, nome, data, autor, descrição, baixar, substituir), histórico e parecer.
+- Botões do aprovador: Aprovar, Devolver para correção, Reprovar, com campos obrigatórios.
+- "Minhas Tratativas" (líder): contadores por situação, filtros (período, área, criticidade, status, prazo, responsável) e ações rápidas.
+- "Tratativas para Aprovação" (gestor/admin): aguardando, vencidas, críticas, devolvidas, aprovadas no período, tempo médio; filtros.
+- Menu: líder não vê Usuários, Perguntas, Áreas, Auditores, Configurações.
+- Usuários e Acessos: opção LIDER no perfil e lista "possíveis admins temporários" com botão para trocar para LIDER, preservando áreas e histórico.
 
-## Rollback
-- Colunas novas são aditivas; `user_roles` e políticas antigas guardadas em script de reversão (recria políticas antigas, remove colunas/tabelas novas). Snapshot das contagens e dos IDs antes da migração. Versão do projeto restaurável pelo histórico.
+**Funções do servidor**
+- As funções administrativas continuam exigindo administrador; líder recebe erro ao tentar usá-las.
+
+## 3. Testes
+- Criar dados "TESTE - FLUXO TRATATIVA" (área, líder, gestor, gestor de outra área, NC) e rodar os 20 cenários com sessões reais de cada usuário, chamando o banco diretamente (não só a tela). Tabela: perfil, cenário, ação, esperado, obtido, regra aplicada, evidência, APROVADO/REPROVADO. Falhas corrigidas e retestadas sem desligar a segurança. Dados de teste removidos no final.
+- Regressão: login, usuários, auditorias, NCs existentes, dashboard, senha.
+
+## 4. Entrega (sem publicar)
+Permissões antes x depois, telas e regras alteradas, lista de admins possivelmente temporários, resultados, contagem de NCs/histórico antes e depois comprovando que nada foi perdido.
 
 ## Detalhes técnicos
-- Mudança de papéis impacta `useCurrentRole`, `users.functions.ts` (assertAdmin, countActiveAdmins, createUser) e todas as páginas com checagens de papel — serão reescritas para papel por unidade.
-- Unidade selecionada guardada em localStorage + validada contra `user_unit_permissions`; chave do React Query inclui unit_id e `queryClient.clear()` na troca.
+- `ALTER TYPE app_role ADD VALUE 'lider'` em migração separada.
+- Tabelas novas: `user_area_permissions`, `nc_evidencias`, `notificacoes` (com GRANT + RLS). Funções security definer: `user_has_area_access`, `nc_transition_guard` (gatilho BEFORE UPDATE validando papel × transição × campos), gatilho de histórico em `nao_conformidades`.
+- `NC_STATUS_*` em `audit-constants.ts` atualizados para os novos códigos; dashboard ajustado.
+- Mudanças de status via função do servidor (`requireSupabaseAuth`) + gatilho no banco como barreira final.
