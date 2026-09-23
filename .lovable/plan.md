@@ -66,6 +66,11 @@ Status atuais das NCs: aberta 5, em_andamento 1, aprovada 1, encerrada 11, cance
 ## 4. Entrega (sem publicar)
 Permissões antes x depois, telas e regras alteradas, lista de admins possivelmente temporários, resultados, contagem de NCs/histórico antes e depois comprovando que nada foi perdido.
 
+## Próximo projeto (fora deste plano): várias unidades
+Dados confirmados para quando for feito:
+- Cummins Motores — código MOT — empresa Cummins — Guarulhos/SP — Ativa (recebe os dados atuais).
+- Cummins BLC — código BLC — empresa Intralogistica — Guarulhos/SP — Ativa (confirmar se a empresa também é Cummins).
+
 ## Detalhes técnicos
 - `ALTER TYPE app_role ADD VALUE 'lider'` em migração separada.
 - Tabelas novas: `user_area_permissions`, `nc_evidencias`, `notificacoes` (com GRANT + RLS). Funções security definer: `user_has_area_access`, `nc_transition_guard` (gatilho BEFORE UPDATE validando papel × transição × campos), gatilho de histórico em `nao_conformidades`.
