@@ -16,36 +16,35 @@ Almoxarifado (EBU), Ativação (EBU), Blocado, CEM (CEM), CTT (CTT), Embalagem (
 **Usuários: 23 cadastros**
 - 14 ativos com papel · 4 inativos sem papel · 5 excluídos (vinculados como inativos, conforme sua escolha).
 
-**Administradores atuais (12)** e papel novo proposto:
+**Matriz nominal dos 23 usuários** (último acesso no horário de Brasília; o papel atual não muda)
 
-| Nome | E-mail | Área | Papel atual | Papel novo | Situação |
-|---|---|---|---|---|---|
-| Kivia Mateus de Oliveira Correa | as73i@cummins.com | Qualidade | administrador | ADMIN_GLOBAL | VALIDADO |
-| Gleisson Nogueira | bc98w@cummins.com | Qualidade | administrador | ADMIN_UNIDADE | PENDENTE_DE_VALIDACAO |
-| Lucas N. Santana | ua228@cummins.com | Qualidade | administrador | ADMIN_UNIDADE | PENDENTE_DE_VALIDACAO |
-| Jefferson Leandro | ax14n@cummins.com | Almoxarifado | administrador | ADMIN_UNIDADE | PENDENTE_DE_VALIDACAO |
-| Jorge M Lima | xf113@cummins.com | Almoxarifado | administrador | ADMIN_UNIDADE | PENDENTE_DE_VALIDACAO |
-| Anderson Souza | st541@cummins.com | Embalagem | administrador | ADMIN_UNIDADE | PENDENTE_DE_VALIDACAO |
-| Claudete G de Moura | be25a@cummins.com | Recebimento | administrador | ADMIN_UNIDADE | PENDENTE_DE_VALIDACAO |
-| Claudio Trindade | kj810@cummins.com | PSBU | administrador | ADMIN_UNIDADE | PENDENTE_DE_VALIDACAO |
-| Ícaro Camilo | rz024@cummins.com | Ativação | administrador | ADMIN_UNIDADE | PENDENTE_DE_VALIDACAO |
-| Ícaro Vasconcellos | qw887@cummins.com | Ativação | administrador | ADMIN_UNIDADE | PENDENTE_DE_VALIDACAO |
-| Leandro Alencar | bd58d@cummins.com | Ativação | administrador | ADMIN_UNIDADE | PENDENTE_DE_VALIDACAO |
-| Paulo Roberto | bc50u@cummins.com | CTT | administrador | ADMIN_UNIDADE | PENDENTE_DE_VALIDACAO |
+| Nome | E-mail | Papel atual | Área atual | Último acesso | Status | Papel novo proposto | Situação |
+|---|---|---|---|---|---|---|---|
+| Kivia Mateus de Oliveira Correa | as73i@cummins.com | administrador | Qualidade | 23/09/2026 15:11 | Ativo | ADMIN_GLOBAL | VALIDADO |
+| Anderson Souza | st541@cummins.com | administrador | Embalagem | 28/07/2026 09:33 | Ativo | ADMIN_UNIDADE | PENDENTE_DE_VALIDACAO |
+| Claudete G de Moura | be25a@cummins.com | administrador | Recebimento | 22/09/2026 21:56 | Ativo | ADMIN_UNIDADE | PENDENTE_DE_VALIDACAO |
+| Claudio Trindade | kj810@cummins.com | administrador | PSBU | 16/07/2026 20:41 | Ativo | ADMIN_UNIDADE | PENDENTE_DE_VALIDACAO |
+| Gleisson Nogueira | bc98w@cummins.com | administrador | Qualidade | 02/09/2026 14:24 | Ativo | ADMIN_UNIDADE | PENDENTE_DE_VALIDACAO |
+| Ícaro Camilo | rz024@cummins.com | administrador | Ativação | 21/09/2026 11:54 | Ativo | ADMIN_UNIDADE | PENDENTE_DE_VALIDACAO |
+| Ícaro Vasconcellos | qw887@cummins.com | administrador | Ativação | 16/07/2026 17:54 | Ativo | ADMIN_UNIDADE | PENDENTE_DE_VALIDACAO |
+| Jefferson Leandro | ax14n@cummins.com | administrador | Almoxarifado | 16/07/2026 17:56 | Ativo | ADMIN_UNIDADE | PENDENTE_DE_VALIDACAO |
+| Jorge M Lima | xf113@cummins.com | administrador | Almoxarifado | 22/09/2026 21:54 | Ativo | ADMIN_UNIDADE | PENDENTE_DE_VALIDACAO |
+| Leandro Alencar | bd58d@cummins.com | administrador | Ativação | 27/08/2026 12:56 | Ativo | ADMIN_UNIDADE | PENDENTE_DE_VALIDACAO |
+| Lucas N. Santana | ua228@cummins.com | administrador | Qualidade | 09/09/2026 13:27 | Ativo | ADMIN_UNIDADE | PENDENTE_DE_VALIDACAO |
+| Paulo Roberto | bc50u@cummins.com | administrador | CTT | 27/08/2026 14:38 | Ativo | ADMIN_UNIDADE | PENDENTE_DE_VALIDACAO |
+| Alessandro Ventura | ba93n@cummins.com | gestor | Ativação | 16/07/2026 18:41 | Ativo | GERENTE | PENDENTE_DE_VALIDACAO |
+| Caroline Clemente | yd669@cummins.com | gestor | sem área | 17/09/2026 11:36 | Ativo | GERENTE | PENDENTE_AREA |
+| Lucas Nunes | ua228@cummins.com.br | — | Qualidade | 22/09/2026 21:54 | Inativo | — | PENDENTE_DE_VALIDACAO |
+| Lucas Santana | ua228@cummmins.com | — | Qualidade | 20/07/2026 20:29 | Inativo | — | PENDENTE_DE_VALIDACAO |
+| Wesley Ferrarezi | ba72q@cummins.com | — | Recebimento | 16/07/2026 17:56 | Inativo | — | PENDENTE_DE_VALIDACAO |
+| Test | probe-1784235085761@example.com | — | sem área | 16/07/2026 17:51 | Inativo | — | PENDENTE_AREA |
+| TESTE - SENHA TEMPORARIA | teste.senhatemp2+1790121048@cummins.com | — | sem área | nunca | Excluído | — | PENDENTE_AREA |
+| teste.senhatemp+1790120934@cummins.com | teste.senhatemp+1790120934@cummins.com | — | sem área | nunca | Excluído | — | PENDENTE_AREA |
+| Usuário excluído | — | — | Almoxarifado | nunca | Excluído | — | PENDENTE_DE_VALIDACAO |
+| Usuário excluído | — | — | Almoxarifado | nunca | Excluído | — | PENDENTE_DE_VALIDACAO |
+| Usuário excluído | — | — | Recebimento | nunca | Excluído | — | PENDENTE_DE_VALIDACAO |
 
-Obs.: vários administradores têm cargo "Líder" — ficam pendentes para decisão (provavelmente LIDER). Nada é alterado no papel atual.
-
-**Gestores atuais (2)**
-
-| Nome | E-mail | Área | Papel novo | Situação |
-|---|---|---|---|---|
-| Alessandro Ventura | ba93n@cummins.com | Ativação | GERENTE | PENDENTE_DE_VALIDACAO |
-| Caroline Clemente | yd669@cummins.com | sem área | GERENTE | PENDENTE_AREA |
-
-**Auditores atuais:** nenhum. **Consulta atuais:** nenhum.
-
-**Sem papel (9) — ficam inativos, papel novo em branco, PENDENTE_DE_VALIDACAO**
-Lucas Nunes (Qualidade, inativo), Lucas Santana (Qualidade, inativo), Wesley Ferrarezi (Recebimento, inativo), Test (sem área, inativo), TESTE - SENHA TEMPORARIA (excluído), teste.senhatemp+... (excluído), 3 × "Usuário excluído" (Almoxarifado, Almoxarifado, Recebimento).
+Resumo: 12 administradores, 2 gestores, 0 auditores, 0 consulta, 9 sem papel. Vários administradores têm cargo "Líder" e ficam pendentes para você decidir. Inativos e excluídos recebem vínculo marcado como inativo.
 
 **Usuários sem área (4) — PENDENTE_AREA, nenhuma área inventada**
 Caroline Clemente, Test, TESTE - SENHA TEMPORARIA, teste.senhatemp+1790120934.
