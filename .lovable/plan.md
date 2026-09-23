@@ -46,6 +46,13 @@ Almoxarifado (EBU), Ativação (EBU), Blocado, CEM (CEM), CTT (CTT), Embalagem (
 
 Resumo: 12 administradores, 2 gestores, 0 auditores, 0 consulta, 9 sem papel. Vários administradores têm cargo "Líder" e ficam pendentes para você decidir. Inativos e excluídos recebem vínculo marcado como inativo.
 
+**Listas por papel atual**
+- Administradores (12): Kivia Mateus de Oliveira Correa, Anderson Souza, Claudete G de Moura, Claudio Trindade, Gleisson Nogueira, Ícaro Camilo, Ícaro Vasconcellos, Jefferson Leandro, Jorge M Lima, Leandro Alencar, Lucas N. Santana, Paulo Roberto. Só Kivia vira ADMIN_GLOBAL (escolha sua); os outros 11 ficam ADMIN_UNIDADE pendente de validação.
+- Gestores (2): Alessandro Ventura, Caroline Clemente.
+- Auditores (0): nenhum usuário tem esse papel hoje, então nenhum vira LIDER automaticamente.
+- Consulta (0): nenhum.
+- Sem papel (9): Lucas Nunes, Lucas Santana, Wesley Ferrarezi, Test, TESTE - SENHA TEMPORARIA, teste.senhatemp+1790120934, 3 × Usuário excluído.
+
 **Usuários sem área (4) — PENDENTE_AREA, nenhuma área inventada**
 Caroline Clemente, Test, TESTE - SENHA TEMPORARIA, teste.senhatemp+1790120934.
 
@@ -55,18 +62,22 @@ Caroline Clemente, Test, TESTE - SENHA TEMPORARIA, teste.senhatemp+1790120934.
 - user_area_permissions: 19 (somente a área atual de cada um; 4 sem área não recebem)
 - unit_audit_log: 1 (criação da unidade) + 1 por vínculo de área/usuário
 
-## 2. O que a migração faz
-- Cria `units`, papéis novos (lista separada, não substitui a atual), `user_unit_permissions` (com situação de validação), `user_area_permissions` e `unit_audit_log`.
-- `areas`: adiciona unidade (ainda opcional), código, ativo e data de atualização; regra de código único por unidade (códigos vazios permitidos).
-- Liga as 13 áreas à Cummins Motores e cria os vínculos acima.
-- Novas tabelas com leitura restrita: cada usuário vê só os próprios vínculos; administradores atuais veem tudo; gravação só pelo servidor. Isso não muda o acesso a nenhum dado existente.
-- Não toca em: user_roles, regras de acesso atuais, auditorias, NCs, histórico, perfis.
+## 2. Migrações planejadas (em ordem)
+1. **Estrutura**: criar lista de papéis novos; criar `units`, `user_unit_permissions`, `user_area_permissions`, `unit_audit_log` (com acesso restrito); adicionar em `areas` unidade (opcional), código (vazio), ativo e data de atualização; regra de código único por unidade.
+2. **Dados** (mesma migração, só inclusões): inserir Cummins Motores; ligar as 13 áreas; criar os 23 vínculos de unidade e os 19 de área conforme a matriz; registrar no log.
+3. **Verificação** (só leitura): os 10 testes abaixo + contagens antes/depois.
+
+Não toca em: user_roles, regras de acesso atuais, auditorias, NCs, histórico, perfis, telas.
 
 ## 3. Testes após execução
 1 unidade única · 2 código de unidade duplicado rejeitado · 3 todas as áreas com unidade · 4 código de área repetido na mesma unidade rejeitado · 5 23 vínculos de unidade · 6 os 4 sem área pendentes · 7 nenhuma área extra (cada usuário ≤ 1 área, igual à atual) · 8 user_roles com 14 registros idênticos · 9 login continua · 10 auditorias (21) e NCs (34) acessíveis com mesmas contagens. Mais: comparação das regras de acesso antigas antes/depois (mesma lista).
 
 ## 4. Rollback
-Script pronto que remove somente o que foi adicionado: apaga as tabelas novas, remove as colunas novas de `areas`, remove a lista de papéis nova e a tabela `units`. Nenhum dado antigo depende delas, então a volta é completa. Versão anterior do projeto também fica restaurável pelo histórico.
+Antes de executar, guardo as contagens e a lista de regras de acesso atuais. Para voltar, uma migração de reversão, nesta ordem:
+1. apagar `unit_audit_log`, `user_area_permissions`, `user_unit_permissions`;
+2. em `areas`, remover a regra de código único e as colunas novas (unidade, código, ativo, data de atualização);
+3. apagar `units` e a lista de papéis nova.
+Nenhum dado antigo depende dessas estruturas, então a volta é completa e sem perdas. A versão anterior do projeto também fica restaurável pelo histórico.
 
 ## Detalhes técnicos
 - Enum `unit_role` (ADMIN_GLOBAL, ADMIN_UNIDADE, ANALISTA, LIDER, COORDENADOR, GERENTE, CONSULTOR); `user_unit_permissions.role` nulável; `validation_status` text (VALIDADO, PENDENTE_DE_VALIDACAO, PENDENTE_AREA) validado por trigger.
