@@ -32,7 +32,7 @@ Tabelas existentes e vínculo com unidade:
 
 | Nome | Código | Empresa | Cidade/UF | Status | Dados atuais |
 |---|---|---|---|---|---|
-| Cummins Motores | 001 | Intralogistica | Guarulhos / SP | Ativa | recebe todos os registros existentes |
+| Cummins Motores | CBL | Intralogistica | Guarulhos / SP | Ativa | recebe todos os registros existentes |
 | Cummins BLC | BLC | Intralogistica | Guarulhos / SP | Ativa | começa vazia (áreas e usuários cadastrados depois) |
 
 ## 3. Plano (executado em fases, cada uma testada antes da próxima)
