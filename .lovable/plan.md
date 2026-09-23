@@ -28,9 +28,13 @@ Tabelas existentes e vínculo com unidade:
 - Registros sem unidade: 100% (nenhuma tabela possui unit_id). Registros sem área identificável: 0 em auditorias/NC; 4 perfis sem área (ficam só com a unidade, pendentes de validação).
 - RLS atual: todas as tabelas operacionais leem com "qualquer usuário autenticado" e escrevem por papel global (`has_role`). Armazenamento `audit-photos` é privado mas qualquer autenticado lê/grava qualquer arquivo. Não há isolamento por unidade hoje.
 
-## 2. Pergunta antes de executar
+## 2. Unidade atual (dados confirmados)
 
-Preciso do nome/código reais da unidade atual (ex.: "Cummins – Motores", código "MOT", cidade/UF). Não inventarei esses dados.
+- Nome: Cummins Motores
+- Código: 001
+- Empresa: Intralogistica
+- Cidade/UF: Guarulhos / São Paulo
+- Status: Ativa
 
 ## 3. Plano (executado em fases, cada uma testada antes da próxima)
 
