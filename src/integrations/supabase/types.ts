@@ -102,27 +102,47 @@ export type Database = {
       }
       areas: {
         Row: {
+          active: boolean
+          code: string | null
           created_at: string
           descricao: string | null
           id: string
           nome: string
           setor: string | null
+          unit_id: string | null
+          updated_at: string
         }
         Insert: {
+          active?: boolean
+          code?: string | null
           created_at?: string
           descricao?: string | null
           id?: string
           nome: string
           setor?: string | null
+          unit_id?: string | null
+          updated_at?: string
         }
         Update: {
+          active?: boolean
+          code?: string | null
           created_at?: string
           descricao?: string | null
           id?: string
           nome?: string
           setor?: string | null
+          unit_id?: string | null
+          updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "areas_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       auditores: {
         Row: {
@@ -744,6 +764,155 @@ export type Database = {
           },
         ]
       }
+      unit_audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          entity: string | null
+          entity_id: string | null
+          id: string
+          justification: string | null
+          new_value: Json | null
+          previous_value: Json | null
+          unit_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          entity?: string | null
+          entity_id?: string | null
+          id?: string
+          justification?: string | null
+          new_value?: Json | null
+          previous_value?: Json | null
+          unit_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          entity?: string | null
+          entity_id?: string | null
+          id?: string
+          justification?: string | null
+          new_value?: Json | null
+          previous_value?: Json | null
+          unit_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unit_audit_log_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      units: {
+        Row: {
+          active: boolean
+          city: string | null
+          code: string
+          company_name: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          logo_path: string | null
+          name: string
+          primary_color: string | null
+          secondary_color: string | null
+          state: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          active?: boolean
+          city?: string | null
+          code: string
+          company_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          logo_path?: string | null
+          name: string
+          primary_color?: string | null
+          secondary_color?: string | null
+          state?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          active?: boolean
+          city?: string | null
+          code?: string
+          company_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          logo_path?: string | null
+          name?: string
+          primary_color?: string | null
+          secondary_color?: string | null
+          state?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      user_area_permissions: {
+        Row: {
+          active: boolean
+          area_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          unit_id: string
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          area_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          unit_id: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          area_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          unit_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_area_permissions_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_area_permissions_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -765,6 +934,56 @@ export type Database = {
         }
         Relationships: []
       }
+      user_unit_permissions: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string | null
+          id: string
+          is_default_unit: boolean
+          role: Database["public"]["Enums"]["unit_role"] | null
+          unit_id: string
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          validation_status: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_default_unit?: boolean
+          role?: Database["public"]["Enums"]["unit_role"] | null
+          unit_id: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          validation_status?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_default_unit?: boolean
+          role?: Database["public"]["Enums"]["unit_role"] | null
+          unit_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          validation_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_unit_permissions_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -780,6 +999,14 @@ export type Database = {
     }
     Enums: {
       app_role: "administrador" | "auditor" | "gestor" | "consulta"
+      unit_role:
+        | "ADMIN_GLOBAL"
+        | "ADMIN_UNIDADE"
+        | "ANALISTA"
+        | "LIDER"
+        | "COORDENADOR"
+        | "GERENTE"
+        | "CONSULTOR"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -908,6 +1135,15 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["administrador", "auditor", "gestor", "consulta"],
+      unit_role: [
+        "ADMIN_GLOBAL",
+        "ADMIN_UNIDADE",
+        "ANALISTA",
+        "LIDER",
+        "COORDENADOR",
+        "GERENTE",
+        "CONSULTOR",
+      ],
     },
   },
 } as const
