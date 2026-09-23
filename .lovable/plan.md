@@ -28,13 +28,12 @@ Tabelas existentes e vínculo com unidade:
 - Registros sem unidade: 100% (nenhuma tabela possui unit_id). Registros sem área identificável: 0 em auditorias/NC; 4 perfis sem área (ficam só com a unidade, pendentes de validação).
 - RLS atual: todas as tabelas operacionais leem com "qualquer usuário autenticado" e escrevem por papel global (`has_role`). Armazenamento `audit-photos` é privado mas qualquer autenticado lê/grava qualquer arquivo. Não há isolamento por unidade hoje.
 
-## 2. Unidade atual (dados confirmados)
+## 2. Unidades reais (dados confirmados)
 
-- Nome: Cummins Motores
-- Código: 001
-- Empresa: Intralogistica
-- Cidade/UF: Guarulhos / São Paulo
-- Status: Ativa
+| Nome | Código | Empresa | Cidade/UF | Status | Dados atuais |
+|---|---|---|---|---|---|
+| Cummins Motores | 001 | Intralogistica | Guarulhos / SP | Ativa | recebe todos os registros existentes |
+| Cummins BLC | BLC | Intralogistica | Guarulhos / SP | Ativa | começa vazia (áreas e usuários cadastrados depois) |
 
 ## 3. Plano (executado em fases, cada uma testada antes da próxima)
 
