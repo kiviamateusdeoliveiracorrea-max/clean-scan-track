@@ -62,6 +62,7 @@ export type Database = {
           procedimento: string | null
           status: string
           titulo: string
+          unit_id: string | null
           updated_at: string
         }
         Insert: {
@@ -75,6 +76,7 @@ export type Database = {
           procedimento?: string | null
           status?: string
           titulo: string
+          unit_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -88,6 +90,7 @@ export type Database = {
           procedimento?: string | null
           status?: string
           titulo?: string
+          unit_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -96,6 +99,13 @@ export type Database = {
             columns: ["area_id"]
             isOneToOne: false
             referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alertas_processo_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
             referencedColumns: ["id"]
           },
         ]
@@ -191,6 +201,7 @@ export type Database = {
           seiton: number
           shitsuke: number
           status: string
+          unit_id: string | null
         }
         Insert: {
           area_id?: string | null
@@ -214,6 +225,7 @@ export type Database = {
           seiton?: number
           shitsuke?: number
           status?: string
+          unit_id?: string | null
         }
         Update: {
           area_id?: string | null
@@ -237,6 +249,7 @@ export type Database = {
           seiton?: number
           shitsuke?: number
           status?: string
+          unit_id?: string | null
         }
         Relationships: [
           {
@@ -260,6 +273,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "auditorias_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
         ]
       }
       auditorias_log: {
@@ -274,6 +294,7 @@ export type Database = {
           executado_por_nome: string | null
           id: string
           justificativa: string | null
+          unit_id: string | null
         }
         Insert: {
           acao: string
@@ -286,6 +307,7 @@ export type Database = {
           executado_por_nome?: string | null
           id?: string
           justificativa?: string | null
+          unit_id?: string | null
         }
         Update: {
           acao?: string
@@ -298,6 +320,7 @@ export type Database = {
           executado_por_nome?: string | null
           id?: string
           justificativa?: string | null
+          unit_id?: string | null
         }
         Relationships: [
           {
@@ -305,6 +328,13 @@ export type Database = {
             columns: ["executado_por"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "auditorias_log_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
             referencedColumns: ["id"]
           },
         ]
@@ -325,6 +355,7 @@ export type Database = {
           prazo: string | null
           responsavel_id: string | null
           status: string
+          unit_id: string | null
           updated_at: string
         }
         Insert: {
@@ -342,6 +373,7 @@ export type Database = {
           prazo?: string | null
           responsavel_id?: string | null
           status?: string
+          unit_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -359,6 +391,7 @@ export type Database = {
           prazo?: string | null
           responsavel_id?: string | null
           status?: string
+          unit_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -374,6 +407,13 @@ export type Database = {
             columns: ["responsavel_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gemba_visitas_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
             referencedColumns: ["id"]
           },
         ]
@@ -393,6 +433,7 @@ export type Database = {
           processo: string | null
           responsavel_id: string | null
           status: string
+          unit_id: string | null
           updated_at: string
         }
         Insert: {
@@ -409,6 +450,7 @@ export type Database = {
           processo?: string | null
           responsavel_id?: string | null
           status?: string
+          unit_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -425,6 +467,7 @@ export type Database = {
           processo?: string | null
           responsavel_id?: string | null
           status?: string
+          unit_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -440,6 +483,13 @@ export type Database = {
             columns: ["responsavel_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "melhorias_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
             referencedColumns: ["id"]
           },
         ]
@@ -475,6 +525,7 @@ export type Database = {
           severidade: string
           status: string
           status_anterior: string | null
+          unit_id: string | null
           updated_at: string
           updated_by: string | null
         }
@@ -508,6 +559,7 @@ export type Database = {
           severidade?: string
           status?: string
           status_anterior?: string | null
+          unit_id?: string | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -541,6 +593,7 @@ export type Database = {
           severidade?: string
           status?: string
           status_anterior?: string | null
+          unit_id?: string | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -585,6 +638,13 @@ export type Database = {
             columns: ["responsavel_nc_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nao_conformidades_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
             referencedColumns: ["id"]
           },
         ]
@@ -993,6 +1053,17 @@ export type Database = {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
+        }
+        Returns: boolean
+      }
+      is_global_admin: { Args: never; Returns: boolean }
+      is_unit_admin: { Args: { _unit_id: string }; Returns: boolean }
+      user_has_area_access: { Args: { _area_id: string }; Returns: boolean }
+      user_has_unit_access: { Args: { _unit_id: string }; Returns: boolean }
+      user_has_unit_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["unit_role"]
+          _unit_id: string
         }
         Returns: boolean
       }
