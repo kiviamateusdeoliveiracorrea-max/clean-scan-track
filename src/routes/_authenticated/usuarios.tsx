@@ -42,6 +42,8 @@ import { toast } from "sonner";
 import { Trash2, UserPlus, Loader2, Lock, Pencil, KeyRound, UserX } from "lucide-react";
 import { normalizeUserEmail } from "@/lib/email-normalization";
 import { useCurrentRole } from "@/hooks/use-current-role";
+import { UnitPermissionsSection } from "@/components/UnitPermissionsSection";
+import { getMyUnitAdminAccess } from "@/lib/unit-permissions.functions";
 
 export const Route = createFileRoute("/_authenticated/usuarios")({
   component: UsuariosPage,
@@ -71,6 +73,7 @@ type EditingUser = {
 function UsuariosPage() {
   const qc = useQueryClient();
   const { canManageUsers, isAdmin, isLoading: roleLoading } = useCurrentRole();
+  const unitAccess = useQuery({ queryKey: ["unit-admin-access"], queryFn: () => getMyUnitAdminAccess() });
   const [status, setStatus] = useState<StatusFilter>("ativos");
 
   const { data: users, isLoading, error } = useQuery({
@@ -750,6 +753,7 @@ function UsuariosPage() {
           )}
         </DialogContent>
       </Dialog>
+      {unitAccess.data?.allowed && <UnitPermissionsSection />}
     </div>
   );
 }
