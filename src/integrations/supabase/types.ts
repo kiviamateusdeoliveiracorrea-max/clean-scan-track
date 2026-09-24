@@ -25,6 +25,7 @@ export type Database = {
           target_user_email: string | null
           target_user_id: string | null
           target_user_nome: string | null
+          unit_id: string | null
         }
         Insert: {
           acao: string
@@ -36,6 +37,7 @@ export type Database = {
           target_user_email?: string | null
           target_user_id?: string | null
           target_user_nome?: string | null
+          unit_id?: string | null
         }
         Update: {
           acao?: string
@@ -47,8 +49,17 @@ export type Database = {
           target_user_email?: string | null
           target_user_id?: string | null
           target_user_nome?: string | null
+          unit_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "admin_logs_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       alertas_processo: {
         Row: {
@@ -1057,13 +1068,26 @@ export type Database = {
         Returns: boolean
       }
       is_global_admin: { Args: never; Returns: boolean }
-      is_unit_admin: { Args: { _unit_id: string }; Returns: boolean }
-      user_has_area_access: { Args: { _area_id: string }; Returns: boolean }
-      user_has_unit_access: { Args: { _unit_id: string }; Returns: boolean }
+      is_unit_admin: { Args: { target_unit_id: string }; Returns: boolean }
+      multiunit_consistency_report: {
+        Args: never
+        Returns: {
+          check_name: string
+          qtd: number
+        }[]
+      }
+      user_has_area_access: {
+        Args: { target_area_id: string }
+        Returns: boolean
+      }
+      user_has_unit_access: {
+        Args: { target_unit_id: string }
+        Returns: boolean
+      }
       user_has_unit_role: {
         Args: {
-          _role: Database["public"]["Enums"]["unit_role"]
-          _unit_id: string
+          target_role: Database["public"]["Enums"]["unit_role"]
+          target_unit_id: string
         }
         Returns: boolean
       }
