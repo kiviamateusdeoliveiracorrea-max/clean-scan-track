@@ -73,7 +73,13 @@ type EditingUser = {
 function UsuariosPage() {
   const qc = useQueryClient();
   const { canManageUsers, isAdmin, isLoading: roleLoading } = useCurrentRole();
-  const unitAccess = useQuery({ queryKey: ["unit-admin-access"], queryFn: () => getMyUnitAdminAccess() });
+  const unitAccess = useQuery({
+    queryKey: ["unit-admin-access"],
+    queryFn: () => getMyUnitAdminAccess(),
+    staleTime: 0,
+    refetchOnMount: "always",
+    retry: false,
+  });
   const [status, setStatus] = useState<StatusFilter>("ativos");
 
   const { data: users, isLoading, error } = useQuery({

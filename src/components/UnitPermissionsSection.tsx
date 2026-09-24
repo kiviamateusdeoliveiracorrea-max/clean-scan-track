@@ -39,7 +39,19 @@ export function UnitPermissionsSection() {
   const qc = useQueryClient();
   const list = useServerFn(listUnitPermissions);
   const save = useServerFn(saveUnitPermission);
-  const q = useQuery({ queryKey: ["unit-permissions"], queryFn: () => list() });
+  const q = useQuery({
+    queryKey: ["unit-permissions"],
+    queryFn: async () => {
+      try {
+        return { ok: true as const, ...(await list()) };
+      } catch (e) {
+        const msg = (e as Error)?.message ?? "";
+        if (msg.includes("Acesso negado")) return null;
+        throw e;
+      }
+    },
+    retry: false,
+  });
   const [f, setF] = useState({ unit: ALL, oldRole: ALL, newRole: ALL, area: ALL, status: ALL, valid: ALL, semArea: false, adminPend: false, busca: "" });
   const [edit, setEdit] = useState<Row | null>(null);
 
