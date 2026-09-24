@@ -90,6 +90,8 @@ import {
   classificaPontuacao,
 } from "@/lib/audit-constants";
 import { toast } from "sonner";
+import { useCurrentRole } from "@/hooks/use-current-role";
+import { NO_PERMISSION_MSG, removeNcPhotos, uploadNcPhoto, validateNcPhoto } from "@/lib/nc-photo-upload";
 
 export const Route = createFileRoute("/_authenticated/auditorias/$id")({
   component: AuditoriaDetail,
@@ -365,6 +367,7 @@ function NovaNCDialog({
   onCreated: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const { canResolveNC } = useCurrentRole();
   const [criterio, setCriterio] = useState<string>(CRITERIOS_5S[0].nome);
   const [descricao, setDescricao] = useState("");
   const [severidade, setSeveridade] = useState("media");
@@ -387,6 +390,10 @@ function NovaNCDialog({
   };
 
   const handleSave = async () => {
+    if (!canResolveNC) {
+      toast.error(NO_PERMISSION_MSG);
+      return;
+    }
     if (!descricao.trim()) {
       toast.error("Descreva a não conformidade");
       return;
@@ -395,36 +402,50 @@ function NovaNCDialog({
       toast.error("E-mail do responsável inválido");
       return;
     }
+    if (file) {
+      const invalid = validateNcPhoto(file);
+      if (invalid) {
+        toast.error(invalid);
+        return;
+      }
+    }
     setSaving(true);
     let foto_url: string | null = null;
     if (file) {
-      const ext = file.name.split(".").pop();
-      const path = `${auditoriaId}/${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage
-        .from("audit-photos")
-        .upload(path, file);
-      if (upErr) {
-        toast.error("Erro no upload: " + upErr.message);
+      try {
+        foto_url = await uploadNcPhoto(
+          file,
+          `${auditoriaId}/${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        );
+      } catch (e: any) {
+        toast.error(e?.message ?? "Erro no upload da foto.");
         setSaving(false);
         return;
       }
-      foto_url = path;
     }
-    const { error } = await supabase.from("nao_conformidades").insert(({
-      auditoria_id: auditoriaId,
-      area_id: areaId,
-      criterio,
-      descricao,
-      severidade,
-      plano_acao: planoAcao || null,
-      responsavel: responsavel || null,
-      prazo: prazo || null,
-      foto_url,
-      status: "aberta",
-    } as any));
+    const { data: created, error } = await supabase
+      .from("nao_conformidades")
+      .insert({
+        auditoria_id: auditoriaId,
+        area_id: areaId,
+        criterio,
+        descricao,
+        severidade,
+        plano_acao: planoAcao || null,
+        responsavel: responsavel || null,
+        prazo: prazo || null,
+        foto_url,
+        foto_urls: foto_url ? [foto_url] : [],
+        status: "aberta",
+      } as any)
+      .select("id");
     setSaving(false);
-    if (error) {
-      toast.error(error.message);
+    if (error || !created || created.length === 0) {
+      if (foto_url) await removeNcPhotos([foto_url]);
+      console.error("[NC foto] NC não salva; foto removida", { error });
+      toast.error(
+        error && /row-level|policy/i.test(error.message) ? NO_PERMISSION_MSG : error?.message ?? NO_PERMISSION_MSG,
+      );
       return;
     }
     toast.success("Não conformidade registrada");

@@ -42,6 +42,7 @@ import { EvidenceThumbs } from "@/components/EvidenceThumbs";
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
 const MAX_UPLOAD_MB = 10;
 import { useCurrentRole } from "@/hooks/use-current-role";
+import { NO_PERMISSION_MSG, removeNcPhotos, uploadNcPhoto, validateNcPhoto } from "@/lib/nc-photo-upload";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/nao-conformidades")({
@@ -326,53 +327,40 @@ function NCList() {
       toast.error("Descreva o que foi realizado (tratativa).");
       return;
     }
+    if (!canResolveNC) {
+      return toast.error(NO_PERMISSION_MSG);
+    }
+    // Valida todas as fotos antes de enviar qualquer arquivo.
+    for (const f of fotos) {
+      const invalid = validateNcPhoto(f);
+      if (invalid) return toast.error(invalid);
+    }
+    for (const f of docs) {
+      if (f.size > MAX_UPLOAD_MB * 1024 * 1024)
+        return toast.error(`Documento ${f.name} excede ${MAX_UPLOAD_MB}MB.`);
+    }
     setResolveSaving(true);
     const uploadedPhotos: string[] = [];
-    for (const f of fotos) {
-      const typeOk = ALLOWED_IMAGE_TYPES.includes(f.type) ||
-        /\.(jpe?g|png|webp|gif)$/i.test(f.name);
-      if (!typeOk) {
-        setResolveSaving(false);
-        console.error("[Evidence] tipo inválido", { name: f.name, type: f.type });
-        return toast.error(`Formato não suportado: ${f.name}. Use JPG, PNG, WEBP ou GIF.`);
-      }
-      if (f.size > MAX_UPLOAD_MB * 1024 * 1024) {
-        setResolveSaving(false);
-        return toast.error(`Arquivo ${f.name} excede ${MAX_UPLOAD_MB}MB.`);
-      }
-      const ext = (f.name.split(".").pop() || "jpg").toLowerCase();
-      const path = `${resolving.auditoria_id ?? "nc"}/tratativa-${resolving.id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
-      const { error: upErr } = await supabase.storage
-        .from("audit-photos")
-        .upload(path, f, { contentType: f.type || `image/${ext === "jpg" ? "jpeg" : ext}`, upsert: false });
-      if (upErr) {
-        setResolveSaving(false);
-        console.error("[Evidence] upload foto falhou", { path, error: upErr });
-        return toast.error("Erro no upload: " + upErr.message);
-      }
-      // Confirma que o arquivo existe no bucket antes de gravar no banco.
-      const { data: check, error: checkErr } = await supabase.storage
-        .from("audit-photos")
-        .createSignedUrl(path, 60);
-      if (checkErr || !check?.signedUrl) {
-        setResolveSaving(false);
-        console.error("[Evidence] verificação pós-upload falhou", { path, error: checkErr });
-        return toast.error("Upload não pôde ser confirmado. Tente novamente.");
-      }
-      uploadedPhotos.push(path);
-    }
     const uploadedDocs: string[] = [];
-    for (const f of docs) {
-      if (f.size > MAX_UPLOAD_MB * 1024 * 1024) {
-        setResolveSaving(false);
-        return toast.error(`Documento ${f.name} excede ${MAX_UPLOAD_MB}MB.`);
+    const rollback = async () => removeNcPhotos([...uploadedPhotos, ...uploadedDocs]);
+    try {
+      for (const f of fotos) {
+        const base = `${resolving.auditoria_id ?? "nc"}/tratativa-${resolving.id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+        uploadedPhotos.push(await uploadNcPhoto(f, base));
       }
-      const ext = f.name.split(".").pop() || "pdf";
+    } catch (e: any) {
+      await rollback();
+      setResolveSaving(false);
+      return toast.error(e?.message ?? "Erro no upload da foto.");
+    }
+    for (const f of docs) {
+      const ext = (f.name.split(".").pop() || "pdf").toLowerCase();
       const path = `${resolving.auditoria_id ?? "nc"}/doc-${resolving.id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
       const { error: upErr } = await supabase.storage
         .from("audit-photos")
-        .upload(path, f, { contentType: f.type || undefined });
+        .upload(path, f, { contentType: f.type || "application/octet-stream" });
       if (upErr) {
+        await rollback();
         setResolveSaving(false);
         console.error("[Evidence] upload documento falhou", { path, error: upErr });
         return toast.error("Erro no upload do documento: " + upErr.message);
@@ -408,10 +396,16 @@ function NCList() {
     }
     if (uploadedDocs.length > 0) update.documento_urls = mergedDocs;
 
-    const { error } = await supabase.from("nao_conformidades").update(update).eq("id", resolving.id);
-    if (error) {
+    const { data: updated, error } = await supabase
+      .from("nao_conformidades")
+      .update(update)
+      .eq("id", resolving.id)
+      .select("id");
+    if (error || !updated || updated.length === 0) {
+      await rollback();
       setResolveSaving(false);
-      return toast.error(error.message);
+      console.error("[NC foto] NC não salva; arquivos removidos", { error });
+      return toast.error(error ? error.message : NO_PERMISSION_MSG);
     }
 
     // Histórico
