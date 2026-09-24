@@ -117,12 +117,12 @@ function NovaAuditoria() {
     }
     const { data: d, error } = await supabase
       .from("auditorias")
-      .insert({
+      .insert(({
         area_id: areaId,
         auditor_id: auditorId,
         data_auditoria: data,
         status: "rascunho",
-      })
+      } as any))
       .select("id")
       .single();
     if (error || !d) {
@@ -456,7 +456,7 @@ function NovaAuditoria() {
 
     const ncRows = [...ncPerguntas, ...ncRows5S];
     if (ncRows.length > 0) {
-      const { error: ncErr } = await supabase.from("nao_conformidades").insert(ncRows);
+      const { error: ncErr } = await supabase.from("nao_conformidades").insert(ncRows as any);
       if (ncErr) toast.error("Erro ao gerar ações corretivas: " + ncErr.message);
     }
 
