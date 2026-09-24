@@ -73,7 +73,7 @@ export type Database = {
           procedimento: string | null
           status: string
           titulo: string
-          unit_id: string | null
+          unit_id: string
           updated_at: string
         }
         Insert: {
@@ -87,7 +87,7 @@ export type Database = {
           procedimento?: string | null
           status?: string
           titulo: string
-          unit_id?: string | null
+          unit_id: string
           updated_at?: string
         }
         Update: {
@@ -101,7 +101,7 @@ export type Database = {
           procedimento?: string | null
           status?: string
           titulo?: string
-          unit_id?: string | null
+          unit_id?: string
           updated_at?: string
         }
         Relationships: [
@@ -212,7 +212,7 @@ export type Database = {
           seiton: number
           shitsuke: number
           status: string
-          unit_id: string | null
+          unit_id: string
         }
         Insert: {
           area_id?: string | null
@@ -236,7 +236,7 @@ export type Database = {
           seiton?: number
           shitsuke?: number
           status?: string
-          unit_id?: string | null
+          unit_id: string
         }
         Update: {
           area_id?: string | null
@@ -260,7 +260,7 @@ export type Database = {
           seiton?: number
           shitsuke?: number
           status?: string
-          unit_id?: string | null
+          unit_id?: string
         }
         Relationships: [
           {
@@ -305,7 +305,7 @@ export type Database = {
           executado_por_nome: string | null
           id: string
           justificativa: string | null
-          unit_id: string | null
+          unit_id: string
         }
         Insert: {
           acao: string
@@ -318,7 +318,7 @@ export type Database = {
           executado_por_nome?: string | null
           id?: string
           justificativa?: string | null
-          unit_id?: string | null
+          unit_id: string
         }
         Update: {
           acao?: string
@@ -331,7 +331,7 @@ export type Database = {
           executado_por_nome?: string | null
           id?: string
           justificativa?: string | null
-          unit_id?: string | null
+          unit_id?: string
         }
         Relationships: [
           {
@@ -366,7 +366,7 @@ export type Database = {
           prazo: string | null
           responsavel_id: string | null
           status: string
-          unit_id: string | null
+          unit_id: string
           updated_at: string
         }
         Insert: {
@@ -384,7 +384,7 @@ export type Database = {
           prazo?: string | null
           responsavel_id?: string | null
           status?: string
-          unit_id?: string | null
+          unit_id: string
           updated_at?: string
         }
         Update: {
@@ -402,7 +402,7 @@ export type Database = {
           prazo?: string | null
           responsavel_id?: string | null
           status?: string
-          unit_id?: string | null
+          unit_id?: string
           updated_at?: string
         }
         Relationships: [
@@ -444,7 +444,7 @@ export type Database = {
           processo: string | null
           responsavel_id: string | null
           status: string
-          unit_id: string | null
+          unit_id: string
           updated_at: string
         }
         Insert: {
@@ -461,7 +461,7 @@ export type Database = {
           processo?: string | null
           responsavel_id?: string | null
           status?: string
-          unit_id?: string | null
+          unit_id: string
           updated_at?: string
         }
         Update: {
@@ -478,7 +478,7 @@ export type Database = {
           processo?: string | null
           responsavel_id?: string | null
           status?: string
-          unit_id?: string | null
+          unit_id?: string
           updated_at?: string
         }
         Relationships: [
@@ -536,7 +536,7 @@ export type Database = {
           severidade: string
           status: string
           status_anterior: string | null
-          unit_id: string | null
+          unit_id: string
           updated_at: string
           updated_by: string | null
         }
@@ -570,7 +570,7 @@ export type Database = {
           severidade?: string
           status?: string
           status_anterior?: string | null
-          unit_id?: string | null
+          unit_id: string
           updated_at?: string
           updated_by?: string | null
         }
@@ -604,7 +604,7 @@ export type Database = {
           severidade?: string
           status?: string
           status_anterior?: string | null
-          unit_id?: string | null
+          unit_id?: string
           updated_at?: string
           updated_by?: string | null
         }
