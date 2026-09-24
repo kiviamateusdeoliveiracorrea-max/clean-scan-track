@@ -1012,6 +1012,8 @@ export type Database = {
           created_by: string | null
           id: string
           is_default_unit: boolean
+          justification: string | null
+          observation: string | null
           role: Database["public"]["Enums"]["unit_role"] | null
           unit_id: string
           updated_at: string
@@ -1025,6 +1027,8 @@ export type Database = {
           created_by?: string | null
           id?: string
           is_default_unit?: boolean
+          justification?: string | null
+          observation?: string | null
           role?: Database["public"]["Enums"]["unit_role"] | null
           unit_id: string
           updated_at?: string
@@ -1038,6 +1042,8 @@ export type Database = {
           created_by?: string | null
           id?: string
           is_default_unit?: boolean
+          justification?: string | null
+          observation?: string | null
           role?: Database["public"]["Enums"]["unit_role"] | null
           unit_id?: string
           updated_at?: string

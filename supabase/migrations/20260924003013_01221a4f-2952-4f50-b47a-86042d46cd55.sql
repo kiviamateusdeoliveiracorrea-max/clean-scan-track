@@ -1,0 +1,3 @@
+ALTER TABLE public.user_unit_permissions DROP CONSTRAINT user_unit_permissions_validation_status_check;
+ALTER TABLE public.user_unit_permissions ADD CONSTRAINT user_unit_permissions_validation_status_check CHECK (validation_status = ANY (ARRAY['VALIDADO','PENDENTE_DE_VALIDACAO','PENDENTE_AREA','PENDENTE_PAPEL','PENDENTE_PAPEL_E_AREA','INATIVO']));
+ALTER TABLE public.user_unit_permissions ADD COLUMN IF NOT EXISTS justification text, ADD COLUMN IF NOT EXISTS observation text;
