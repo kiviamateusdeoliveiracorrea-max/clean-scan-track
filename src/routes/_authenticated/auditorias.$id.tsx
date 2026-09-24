@@ -410,7 +410,7 @@ function NovaNCDialog({
       }
       foto_url = path;
     }
-    const { error } = await supabase.from("nao_conformidades").insert({
+    const { error } = await supabase.from("nao_conformidades").insert(({
       auditoria_id: auditoriaId,
       area_id: areaId,
       criterio,
@@ -421,7 +421,7 @@ function NovaNCDialog({
       prazo: prazo || null,
       foto_url,
       status: "aberta",
-    });
+    } as any));
     setSaving(false);
     if (error) {
       toast.error(error.message);
