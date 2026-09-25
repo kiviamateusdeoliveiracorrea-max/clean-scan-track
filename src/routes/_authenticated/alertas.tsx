@@ -26,7 +26,7 @@ import { Megaphone, Plus, Trash2, Pencil, Calendar, FileText } from "lucide-reac
 import { toast } from "sonner";
 import { EvidenceThumbs } from "@/components/EvidenceThumbs";
 import { PhotoPicker } from "@/components/PhotoPicker";
-import { uploadPhotos } from "@/lib/upload-photos";
+import { uploadPhotos, rollbackUploads } from "@/lib/upload-photos";
 import { useAreas } from "@/hooks/use-app-lookups";
 import { useCurrentRole } from "@/hooks/use-current-role";
 
@@ -94,8 +94,10 @@ function AlertasPage() {
   async function save() {
     if (!titulo.trim()) return toast.error("Informe o título do alerta");
     setSaving(true);
+    let sent: string[] = [];
     try {
       const novas = await uploadPhotos(fotos, `alertas/${editing?.id ?? "novo"}`);
+      sent = novas;
       const payload: any = {
         titulo: titulo.trim(),
         descricao: descricao.trim() || null,
@@ -120,6 +122,7 @@ function AlertasPage() {
       reset();
       qc.invalidateQueries({ queryKey: ["alertas"] });
     } catch (e: any) {
+      if (sent.length) await rollbackUploads(sent, "alertas", editing?.id ?? null, e);
       toast.error(e.message ?? "Erro ao salvar");
     } finally {
       setSaving(false);
