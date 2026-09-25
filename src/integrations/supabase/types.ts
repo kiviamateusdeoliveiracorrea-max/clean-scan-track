@@ -1182,6 +1182,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_view_admin_log: { Args: { _unit: string }; Returns: boolean }
       evidence_owner: {
         Args: { _path: string }
         Returns: {
