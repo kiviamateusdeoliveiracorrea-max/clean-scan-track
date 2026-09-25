@@ -15,6 +15,7 @@ import { Route as AlterarSenhaObrigatoriaRouteImport } from './routes/alterar-se
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
+import { Route as AuthenticatedUnidadesRouteImport } from './routes/_authenticated/unidades'
 import { Route as AuthenticatedPerguntasRouteImport } from './routes/_authenticated/perguntas'
 import { Route as AuthenticatedNaoConformidadesRouteImport } from './routes/_authenticated/nao-conformidades'
 import { Route as AuthenticatedMinhaContaRouteImport } from './routes/_authenticated/minha-conta'
@@ -56,6 +57,11 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
 const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
   id: '/usuarios',
   path: '/usuarios',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedUnidadesRoute = AuthenticatedUnidadesRouteImport.update({
+  id: '/unidades',
+  path: '/unidades',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedPerguntasRoute = AuthenticatedPerguntasRouteImport.update({
@@ -144,6 +150,7 @@ export interface FileRoutesByFullPath {
   '/minha-conta': typeof AuthenticatedMinhaContaRoute
   '/nao-conformidades': typeof AuthenticatedNaoConformidadesRoute
   '/perguntas': typeof AuthenticatedPerguntasRoute
+  '/unidades': typeof AuthenticatedUnidadesRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/auditorias/$id': typeof AuthenticatedAuditoriasIdRoute
   '/auditorias/nova': typeof AuthenticatedAuditoriasNovaRoute
@@ -163,6 +170,7 @@ export interface FileRoutesByTo {
   '/minha-conta': typeof AuthenticatedMinhaContaRoute
   '/nao-conformidades': typeof AuthenticatedNaoConformidadesRoute
   '/perguntas': typeof AuthenticatedPerguntasRoute
+  '/unidades': typeof AuthenticatedUnidadesRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/': typeof AuthenticatedIndexRoute
   '/auditorias/$id': typeof AuthenticatedAuditoriasIdRoute
@@ -185,6 +193,7 @@ export interface FileRoutesById {
   '/_authenticated/minha-conta': typeof AuthenticatedMinhaContaRoute
   '/_authenticated/nao-conformidades': typeof AuthenticatedNaoConformidadesRoute
   '/_authenticated/perguntas': typeof AuthenticatedPerguntasRoute
+  '/_authenticated/unidades': typeof AuthenticatedUnidadesRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/auditorias/$id': typeof AuthenticatedAuditoriasIdRoute
@@ -208,6 +217,7 @@ export interface FileRouteTypes {
     | '/minha-conta'
     | '/nao-conformidades'
     | '/perguntas'
+    | '/unidades'
     | '/usuarios'
     | '/auditorias/$id'
     | '/auditorias/nova'
@@ -227,6 +237,7 @@ export interface FileRouteTypes {
     | '/minha-conta'
     | '/nao-conformidades'
     | '/perguntas'
+    | '/unidades'
     | '/usuarios'
     | '/'
     | '/auditorias/$id'
@@ -248,6 +259,7 @@ export interface FileRouteTypes {
     | '/_authenticated/minha-conta'
     | '/_authenticated/nao-conformidades'
     | '/_authenticated/perguntas'
+    | '/_authenticated/unidades'
     | '/_authenticated/usuarios'
     | '/_authenticated/'
     | '/_authenticated/auditorias/$id'
@@ -304,6 +316,13 @@ declare module '@tanstack/react-router' {
       path: '/usuarios'
       fullPath: '/usuarios'
       preLoaderRoute: typeof AuthenticatedUsuariosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/unidades': {
+      id: '/_authenticated/unidades'
+      path: '/unidades'
+      fullPath: '/unidades'
+      preLoaderRoute: typeof AuthenticatedUnidadesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/perguntas': {
@@ -411,6 +430,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMinhaContaRoute: typeof AuthenticatedMinhaContaRoute
   AuthenticatedNaoConformidadesRoute: typeof AuthenticatedNaoConformidadesRoute
   AuthenticatedPerguntasRoute: typeof AuthenticatedPerguntasRoute
+  AuthenticatedUnidadesRoute: typeof AuthenticatedUnidadesRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedAuditoriasIdRoute: typeof AuthenticatedAuditoriasIdRoute
@@ -429,6 +449,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMinhaContaRoute: AuthenticatedMinhaContaRoute,
   AuthenticatedNaoConformidadesRoute: AuthenticatedNaoConformidadesRoute,
   AuthenticatedPerguntasRoute: AuthenticatedPerguntasRoute,
+  AuthenticatedUnidadesRoute: AuthenticatedUnidadesRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedAuditoriasIdRoute: AuthenticatedAuditoriasIdRoute,
