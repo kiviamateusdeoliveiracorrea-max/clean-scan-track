@@ -22,6 +22,7 @@ import { Route as AuthenticatedMelhoriasRouteImport } from './routes/_authentica
 import { Route as AuthenticatedHistoricoRouteImport } from './routes/_authenticated/historico'
 import { Route as AuthenticatedGembaRouteImport } from './routes/_authenticated/gemba'
 import { Route as AuthenticatedAuditoresRouteImport } from './routes/_authenticated/auditores'
+import { Route as AuthenticatedArquivosSemVinculoRouteImport } from './routes/_authenticated/arquivos-sem-vinculo'
 import { Route as AuthenticatedAreasRouteImport } from './routes/_authenticated/areas'
 import { Route as AuthenticatedAlertasRouteImport } from './routes/_authenticated/alertas'
 import { Route as AuthenticatedAuditoriasIndexRouteImport } from './routes/_authenticated/auditorias.index'
@@ -93,6 +94,12 @@ const AuthenticatedAuditoresRoute = AuthenticatedAuditoresRouteImport.update({
   path: '/auditores',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedArquivosSemVinculoRoute =
+  AuthenticatedArquivosSemVinculoRouteImport.update({
+    id: '/arquivos-sem-vinculo',
+    path: '/arquivos-sem-vinculo',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAreasRoute = AuthenticatedAreasRouteImport.update({
   id: '/areas',
   path: '/areas',
@@ -129,6 +136,7 @@ export interface FileRoutesByFullPath {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/alertas': typeof AuthenticatedAlertasRoute
   '/areas': typeof AuthenticatedAreasRoute
+  '/arquivos-sem-vinculo': typeof AuthenticatedArquivosSemVinculoRoute
   '/auditores': typeof AuthenticatedAuditoresRoute
   '/gemba': typeof AuthenticatedGembaRoute
   '/historico': typeof AuthenticatedHistoricoRoute
@@ -147,6 +155,7 @@ export interface FileRoutesByTo {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/alertas': typeof AuthenticatedAlertasRoute
   '/areas': typeof AuthenticatedAreasRoute
+  '/arquivos-sem-vinculo': typeof AuthenticatedArquivosSemVinculoRoute
   '/auditores': typeof AuthenticatedAuditoresRoute
   '/gemba': typeof AuthenticatedGembaRoute
   '/historico': typeof AuthenticatedHistoricoRoute
@@ -168,6 +177,7 @@ export interface FileRoutesById {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/_authenticated/alertas': typeof AuthenticatedAlertasRoute
   '/_authenticated/areas': typeof AuthenticatedAreasRoute
+  '/_authenticated/arquivos-sem-vinculo': typeof AuthenticatedArquivosSemVinculoRoute
   '/_authenticated/auditores': typeof AuthenticatedAuditoresRoute
   '/_authenticated/gemba': typeof AuthenticatedGembaRoute
   '/_authenticated/historico': typeof AuthenticatedHistoricoRoute
@@ -190,6 +200,7 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/alertas'
     | '/areas'
+    | '/arquivos-sem-vinculo'
     | '/auditores'
     | '/gemba'
     | '/historico'
@@ -208,6 +219,7 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/alertas'
     | '/areas'
+    | '/arquivos-sem-vinculo'
     | '/auditores'
     | '/gemba'
     | '/historico'
@@ -228,6 +240,7 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/_authenticated/alertas'
     | '/_authenticated/areas'
+    | '/_authenticated/arquivos-sem-vinculo'
     | '/_authenticated/auditores'
     | '/_authenticated/gemba'
     | '/_authenticated/historico'
@@ -342,6 +355,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAuditoresRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/arquivos-sem-vinculo': {
+      id: '/_authenticated/arquivos-sem-vinculo'
+      path: '/arquivos-sem-vinculo'
+      fullPath: '/arquivos-sem-vinculo'
+      preLoaderRoute: typeof AuthenticatedArquivosSemVinculoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/areas': {
       id: '/_authenticated/areas'
       path: '/areas'
@@ -383,6 +403,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAlertasRoute: typeof AuthenticatedAlertasRoute
   AuthenticatedAreasRoute: typeof AuthenticatedAreasRoute
+  AuthenticatedArquivosSemVinculoRoute: typeof AuthenticatedArquivosSemVinculoRoute
   AuthenticatedAuditoresRoute: typeof AuthenticatedAuditoresRoute
   AuthenticatedGembaRoute: typeof AuthenticatedGembaRoute
   AuthenticatedHistoricoRoute: typeof AuthenticatedHistoricoRoute
@@ -400,6 +421,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAlertasRoute: AuthenticatedAlertasRoute,
   AuthenticatedAreasRoute: AuthenticatedAreasRoute,
+  AuthenticatedArquivosSemVinculoRoute: AuthenticatedArquivosSemVinculoRoute,
   AuthenticatedAuditoresRoute: AuthenticatedAuditoresRoute,
   AuthenticatedGembaRoute: AuthenticatedGembaRoute,
   AuthenticatedHistoricoRoute: AuthenticatedHistoricoRoute,
