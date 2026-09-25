@@ -9,7 +9,7 @@ export const ALLOWED_IMAGE_TYPES = [
   "image/jpg",
   "image/png",
   "image/webp",
-  "image/gif",
+  "image/heic",
 ];
 
 export function PhotoPicker({
