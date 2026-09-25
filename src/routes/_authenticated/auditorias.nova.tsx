@@ -338,25 +338,13 @@ function NovaAuditoria() {
       return;
     }
 
-    const uploadedPaths: string[] = [];
-    for (const file of fotos) {
-      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-      const path = `${auditoriaId}/auditoria-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-      const contentType =
-        file.type ||
-        (ext === "png"
-          ? "image/png"
-          : ext === "webp"
-          ? "image/webp"
-          : "image/jpeg");
-      const { error: upErr } = await supabase.storage
-        .from("audit-photos")
-        .upload(path, file, { contentType, upsert: false });
-      if (upErr) {
-        toast.error("Erro no upload de foto: " + upErr.message);
-      } else {
-        uploadedPaths.push(path);
-      }
+    let uploadedPaths: string[] = [];
+    try {
+      uploadedPaths = await uploadPhotos(fotos, auditoriaId);
+    } catch (e: any) {
+      setSaving(false);
+      toast.error(e?.message ?? "Erro no upload de foto.");
+      return;
     }
 
     const { error } = await supabase
@@ -381,8 +369,9 @@ function NovaAuditoria() {
       })
       .eq("id", auditoriaId);
     if (error) {
+      await rollbackUploads(uploadedPaths, "auditoria-fotos-gerais", auditoriaId, error);
       setSaving(false);
-      toast.error("Erro ao salvar: " + error.message);
+      toast.error("Não foi possível salvar a auditoria. As fotos enviadas foram descartadas. " + error.message);
       return;
     }
 
