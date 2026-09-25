@@ -26,7 +26,7 @@ import { Lightbulb, Plus, Trash2, Pencil, User, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { EvidenceThumbs } from "@/components/EvidenceThumbs";
 import { PhotoPicker } from "@/components/PhotoPicker";
-import { uploadPhotos } from "@/lib/upload-photos";
+import { uploadPhotos, rollbackUploads } from "@/lib/upload-photos";
 import { useActiveUsers, useAreas } from "@/hooks/use-app-lookups";
 import { useCurrentRole } from "@/hooks/use-current-role";
 
@@ -120,8 +120,10 @@ function MelhoriasPage() {
   async function save() {
     if (!descricao.trim()) return toast.error("Descreva a oportunidade");
     setSaving(true);
+    let sent: string[] = [];
     try {
       const novas = await uploadPhotos(fotos, `melhorias/${editing?.id ?? "nova"}`);
+      sent = novas;
       const payload: any = {
         area_id: areaId || null,
         processo: processo.trim() || null,
@@ -149,6 +151,7 @@ function MelhoriasPage() {
       reset();
       qc.invalidateQueries({ queryKey: ["melhorias"] });
     } catch (e: any) {
+      if (sent.length) await rollbackUploads(sent, "melhorias", editing?.id ?? null, e);
       toast.error(e.message ?? "Erro ao salvar");
     } finally {
       setSaving(false);

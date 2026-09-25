@@ -341,7 +341,7 @@ function NovaAuditoria() {
 
     let uploadedPaths: string[] = [];
     try {
-      uploadedPaths = await uploadPhotos(fotos, auditoriaId);
+      uploadedPaths = await uploadPhotos(fotos, auditoriaId, "auditoria-fotos-gerais", auditoriaId);
     } catch (e: any) {
       setSaving(false);
       toast.error(e?.message ?? "Erro no upload de foto.");

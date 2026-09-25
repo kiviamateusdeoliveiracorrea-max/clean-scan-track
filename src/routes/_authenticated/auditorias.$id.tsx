@@ -91,6 +91,7 @@ import {
 } from "@/lib/audit-constants";
 import { toast } from "sonner";
 import { useCurrentRole } from "@/hooks/use-current-role";
+import { AddAuditPhotos } from "@/components/AddAuditPhotos";
 import { NO_PERMISSION_MSG, removeNcPhotos, uploadNcPhoto, validateNcPhoto } from "@/lib/nc-photo-upload";
 
 export const Route = createFileRoute("/_authenticated/auditorias/$id")({
@@ -100,6 +101,7 @@ export const Route = createFileRoute("/_authenticated/auditorias/$id")({
 function AuditoriaDetail() {
   const { id } = Route.useParams();
   const qc = useQueryClient();
+  const { canResolveNC } = useCurrentRole();
 
   const { data: audit } = useQuery({
     queryKey: ["auditoria", id],
@@ -195,15 +197,18 @@ function AuditoriaDetail() {
         </Card>
       )}
 
-      {Array.isArray((audit as any).fotos) && (audit as any).fotos.length > 0 && (
+      {((Array.isArray((audit as any).fotos) && (audit as any).fotos.length > 0) || canResolveNC) && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <Camera className="h-4 w-4" /> Fotos da auditoria ({(audit as any).fotos.length})
+              <Camera className="h-4 w-4" /> Fotos da auditoria ({((audit as any).fotos ?? []).length})
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <AuditPhotos paths={(audit as any).fotos as string[]} />
+          <CardContent className="space-y-3">
+            {((audit as any).fotos ?? []).length > 0 && <AuditPhotos paths={(audit as any).fotos as string[]} />}
+            {canResolveNC && (
+              <AddAuditPhotos auditoriaId={id} onDone={() => qc.invalidateQueries({ queryKey: ["auditoria", id] })} />
+            )}
           </CardContent>
         </Card>
       )}

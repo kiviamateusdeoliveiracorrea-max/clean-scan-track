@@ -26,7 +26,7 @@ import { Footprints, Plus, Trash2, Pencil, User, Calendar, ThumbsUp, Lightbulb }
 import { toast } from "sonner";
 import { EvidenceThumbs } from "@/components/EvidenceThumbs";
 import { PhotoPicker } from "@/components/PhotoPicker";
-import { uploadPhotos } from "@/lib/upload-photos";
+import { uploadPhotos, rollbackUploads } from "@/lib/upload-photos";
 import { useActiveUsers, useAreas } from "@/hooks/use-app-lookups";
 import { useCurrentRole } from "@/hooks/use-current-role";
 
@@ -110,9 +110,12 @@ function GembaPage() {
   async function save() {
     if (!areaId) return toast.error("Selecione a área visitada");
     setSaving(true);
+    let sent: string[] = [];
     try {
       const antes = await uploadPhotos(fotosAntes, `gemba/${editing?.id ?? "nova"}/antes`);
+      sent = antes;
       const depois = await uploadPhotos(fotosDepois, `gemba/${editing?.id ?? "nova"}/depois`);
+      sent = [...antes, ...depois];
       const payload: any = {
         area_id: areaId,
         data_visita: dataVisita || new Date().toISOString().slice(0, 10),
@@ -142,6 +145,7 @@ function GembaPage() {
       reset();
       qc.invalidateQueries({ queryKey: ["gemba"] });
     } catch (e: any) {
+      if (sent.length) await rollbackUploads(sent, "gemba", editing?.id ?? null, e);
       toast.error(e.message ?? "Erro ao salvar");
     } finally {
       setSaving(false);

@@ -350,6 +350,59 @@ export type Database = {
           },
         ]
       }
+      evidence_events: {
+        Row: {
+          context: string | null
+          created_at: string
+          detail: string | null
+          event: string
+          id: string
+          mime: string | null
+          path: string | null
+          record_id: string | null
+          result: string | null
+          size_bytes: number | null
+          unit_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          context?: string | null
+          created_at?: string
+          detail?: string | null
+          event: string
+          id?: string
+          mime?: string | null
+          path?: string | null
+          record_id?: string | null
+          result?: string | null
+          size_bytes?: number | null
+          unit_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          context?: string | null
+          created_at?: string
+          detail?: string | null
+          event?: string
+          id?: string
+          mime?: string | null
+          path?: string | null
+          record_id?: string | null
+          result?: string | null
+          size_bytes?: number | null
+          unit_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evidence_events_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       evidence_upload_failures: {
         Row: {
           context: string
@@ -730,6 +783,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      orphan_file_reviews: {
+        Row: {
+          justification: string | null
+          linked_record: string | null
+          path: string
+          reviewed_at: string
+          reviewed_by: string | null
+          status: string
+        }
+        Insert: {
+          justification?: string | null
+          linked_record?: string | null
+          path: string
+          reviewed_at?: string
+          reviewed_by?: string | null
+          status: string
+        }
+        Update: {
+          justification?: string | null
+          linked_record?: string | null
+          path?: string
+          reviewed_at?: string
+          reviewed_by?: string | null
+          status?: string
+        }
+        Relationships: []
       }
       perguntas_auditoria: {
         Row: {
