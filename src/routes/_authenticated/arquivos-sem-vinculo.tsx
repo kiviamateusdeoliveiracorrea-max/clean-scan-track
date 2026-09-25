@@ -44,6 +44,9 @@ function Page() {
   const [audId, setAudId] = useState("");
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
+  const [fStatus, setFStatus] = useState("");
+  const [fOrigem, setFOrigem] = useState("");
+  const [fBusca, setFBusca] = useState("");
 
   const open = (row: OrphanRow, action: Action) => {
     setDlg({ row, action });
@@ -74,6 +77,13 @@ function Page() {
       setBusy(false);
     }
   };
+
+  const rowsF = (q.data?.rows ?? []).filter(
+    (r) =>
+      (!fStatus || r.status === fStatus) &&
+      (!fOrigem || r.origem === fOrigem) &&
+      (!fBusca || (r.path + r.name).toLowerCase().includes(fBusca.toLowerCase())),
+  );
 
   return (
     <div className="p-4 md:p-8 space-y-4 max-w-7xl mx-auto">
@@ -106,7 +116,18 @@ function Page() {
           </div>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Lista ({q.data.rows.length})</CardTitle>
+              <CardTitle className="text-base">Lista ({rowsF.length})</CardTitle>
+              <div className="flex flex-wrap gap-2 pt-2">
+                <Input aria-label="Buscar" placeholder="Buscar por nome ou caminho" value={fBusca} onChange={(e) => setFBusca(e.target.value)} className="h-8 w-56 text-xs" />
+                <select aria-label="Filtrar status" className="h-8 rounded-md border bg-background px-2 text-xs" value={fStatus} onChange={(e) => setFStatus(e.target.value)}>
+                  <option value="">Todos os status</option>
+                  {[...new Set(q.data.rows.map((r) => r.status))].map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+                <select aria-label="Filtrar origem" className="h-8 rounded-md border bg-background px-2 text-xs" value={fOrigem} onChange={(e) => setFOrigem(e.target.value)}>
+                  <option value="">Todas as origens</option>
+                  {[...new Set(q.data.rows.map((r) => r.origem))].map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
             </CardHeader>
             <CardContent className="overflow-x-auto">
               <table className="w-full text-xs">
@@ -118,7 +139,7 @@ function Page() {
                   </tr>
                 </thead>
                 <tbody>
-                  {q.data.rows.map((r) => (
+                  {rowsF.map((r) => (
                     <tr key={r.path} className="border-t align-top">
                       <td className="p-2 break-all">{r.name}</td>
                       <td className="p-2 font-mono break-all text-muted-foreground">{r.path}</td>
