@@ -1,3 +1,4 @@
+import { unitMatch, pickUnitQuestions } from "@/lib/active-unit";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -220,7 +221,7 @@ function NovaAuditoria() {
   const areasQ = useQuery({
     queryKey: ["areas"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("areas").select("*").order("nome");
+      const { data, error } = await supabase.from("areas").select("*").match(unitMatch()).eq("active", true).order("nome");
       if (error) throw error;
       return data ?? [];
     },
@@ -267,7 +268,7 @@ function NovaAuditoria() {
         .eq("ativo", true)
         .order("created_at", { ascending: true });
       if (error) throw error;
-      return data ?? [];
+      return pickUnitQuestions(data ?? []);
     },
   });
 

@@ -1,3 +1,4 @@
+import { unitMatch } from "@/lib/active-unit";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -90,7 +91,7 @@ function UsuariosPage() {
   const areasQ = useQuery({
     queryKey: ["areas"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("areas").select("id, nome").order("nome");
+      const { data, error } = await supabase.from("areas").select("id, nome").match(unitMatch()).order("nome");
       if (error) throw error;
       return data ?? [];
     },

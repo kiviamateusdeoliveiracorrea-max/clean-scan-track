@@ -36,3 +36,16 @@ export function byUnit<T extends { eq: (c: string, v: string) => T }>(q: T, colu
   const id = read();
   return id ? q.eq(column, id) : q;
 }
+
+/** Filtro para `.match(...)`: { unit_id } da unidade ativa, ou {} quando não definida. */
+export function unitMatch(): Record<string, string> {
+  const id = read();
+  return id ? { unit_id: id } : {};
+}
+
+/** Perguntas: usa as da unidade ativa quando existirem; senão, as do modelo (sem unidade). */
+export function pickUnitQuestions<T extends { unit_id?: string | null }>(rows: T[]): T[] {
+  const id = read();
+  const own = id ? rows.filter((r) => r.unit_id === id) : [];
+  return own.length ? own : rows.filter((r) => !r.unit_id);
+}

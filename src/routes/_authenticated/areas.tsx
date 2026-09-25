@@ -1,3 +1,4 @@
+import { unitMatch } from "@/lib/active-unit";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -32,7 +33,7 @@ function AreasPage() {
   const { data = [] } = useQuery({
     queryKey: ["areas"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("areas").select("*").order("nome");
+      const { data, error } = await supabase.from("areas").select("*").match(unitMatch()).order("nome");
       if (error) throw error;
       return data ?? [];
     },
@@ -40,7 +41,7 @@ function AreasPage() {
 
   const save = async () => {
     if (!nome.trim()) return toast.error("Informe o nome");
-    const { error } = await supabase.from("areas").insert({ nome, setor, descricao });
+    const { error } = await supabase.from("areas").insert({ nome, setor, descricao, ...unitMatch() } as any);
     if (error) return toast.error(error.message);
     toast.success("Área cadastrada");
     setNome(""); setSetor(""); setDescricao(""); setOpen(false);

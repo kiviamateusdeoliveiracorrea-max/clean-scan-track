@@ -1,3 +1,4 @@
+import { unitMatch } from "@/lib/active-unit";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -70,6 +71,7 @@ function GembaPage() {
         .select(
           "*, areas(nome), responsavel:profiles!gemba_visitas_responsavel_id_fkey(id,nome,cargo)",
         )
+        .match(unitMatch())
         .order("data_visita", { ascending: false });
       if (error) throw error;
       return data ?? [];

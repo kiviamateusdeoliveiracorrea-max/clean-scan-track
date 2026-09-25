@@ -1,3 +1,4 @@
+import { unitMatch } from "@/lib/active-unit";
 import logoAsset from "@/assets/logo-empresas.png.asset.json";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -38,6 +39,7 @@ function Dashboard() {
       const { data, error } = await supabase
         .from("auditorias")
         .select("*, areas(nome), auditores(nome)")
+        .match(unitMatch())
         .not("status", "in", "(cancelada,rascunho)")
         .order("data_auditoria", { ascending: false })
         .limit(50);
@@ -54,7 +56,8 @@ function Dashboard() {
         .select(
           "*, resp_acao:profiles!nao_conformidades_responsavel_acao_id_fkey(id,nome,cargo,areas(nome))",
         )
-        .eq("excluida", false);
+        .eq("excluida", false)
+        .match(unitMatch());
       if (error) throw error;
       return data ?? [];
     },
@@ -64,7 +67,7 @@ function Dashboard() {
   const melhoriasQuery = useQuery({
     queryKey: ["melhorias-dashboard"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("melhorias").select("id, status, area_id, areas(nome)");
+      const { data, error } = await supabase.from("melhorias").select("id, status, area_id, areas(nome)").match(unitMatch());
       if (error) throw error;
       return data ?? [];
     },

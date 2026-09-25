@@ -1,3 +1,4 @@
+import { unitMatch } from "@/lib/active-unit";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -58,6 +59,7 @@ function AlertasPage() {
       const { data, error } = await supabase
         .from("alertas_processo")
         .select("*, areas(nome)")
+        .match(unitMatch())
         .order("data_emissao", { ascending: false });
       if (error) throw error;
       return data ?? [];
