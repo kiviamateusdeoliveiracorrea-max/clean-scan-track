@@ -934,7 +934,7 @@ function NovaAuditoria() {
               <span>Selecionar Arquivo</span>
               <input
                 type="file"
-                accept="image/jpeg,image/jpg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+                accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,.jpg,.jpeg,.jfif,.png,.webp,.heic"
                 multiple
                 className="hidden"
                 onChange={(e) => {
