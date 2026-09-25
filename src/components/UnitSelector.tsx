@@ -21,7 +21,7 @@ export function UnitSelector({ enabled, tone = "sidebar" }: { enabled: boolean; 
       const next = data.defaultUnitId && ids.includes(data.defaultUnitId) ? data.defaultUnitId : ids[0] ?? null;
       if (next !== cur) {
         setActiveUnitId(next);
-        qc.invalidateQueries({ predicate: (q) => q.queryKey[0] !== "my-units" && q.queryKey[0] !== "my-roles" });
+        qc.resetQueries({ predicate: (q) => q.queryKey[0] !== "my-units" && q.queryKey[0] !== "my-roles" });
       }
     }
   }, [data, qc]);
@@ -47,8 +47,7 @@ export function UnitSelector({ enabled, tone = "sidebar" }: { enabled: boolean; 
         value={active ?? ""}
         onChange={(e) => {
           setActiveUnitId(e.target.value);
-          qc.removeQueries({ predicate: (q) => q.queryKey[0] !== "my-units" && q.queryKey[0] !== "my-roles" });
-          qc.invalidateQueries();
+          qc.resetQueries({ predicate: (q) => q.queryKey[0] !== "my-units" && q.queryKey[0] !== "my-roles" });
         }}
         className="w-full rounded-md border border-input bg-background px-2 py-1 text-xs text-foreground"
       >
