@@ -229,7 +229,7 @@ function NovaAuditoria() {
   const auditoresQ = useQuery({
     queryKey: ["auditores"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("auditores").select("*").order("nome");
+      const { data, error } = await supabase.from("auditores").select("id, nome").order("nome");
       if (error) throw error;
       return data ?? [];
     },
