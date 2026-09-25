@@ -195,15 +195,18 @@ function AuditoriaDetail() {
         </Card>
       )}
 
-      {Array.isArray((audit as any).fotos) && (audit as any).fotos.length > 0 && (
+      {((Array.isArray((audit as any).fotos) && (audit as any).fotos.length > 0) || canResolveNC) && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <Camera className="h-4 w-4" /> Fotos da auditoria ({(audit as any).fotos.length})
+              <Camera className="h-4 w-4" /> Fotos da auditoria ({((audit as any).fotos ?? []).length})
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <AuditPhotos paths={(audit as any).fotos as string[]} />
+          <CardContent className="space-y-3">
+            {((audit as any).fotos ?? []).length > 0 && <AuditPhotos paths={(audit as any).fotos as string[]} />}
+            {canResolveNC && (
+              <AddAuditPhotos auditoriaId={id} onDone={() => qc.invalidateQueries({ queryKey: ["auditoria", id] })} />
+            )}
           </CardContent>
         </Card>
       )}
