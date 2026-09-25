@@ -1,3 +1,4 @@
+import { unitMatch } from "@/lib/active-unit";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,6 +19,7 @@ function Historico() {
         .from("auditorias")
         .select("*, areas(nome), auditores(nome)")
         .neq("status", "cancelada")
+        .match(unitMatch())
         .order("data_auditoria", { ascending: false });
       if (error) throw error;
       return data ?? [];

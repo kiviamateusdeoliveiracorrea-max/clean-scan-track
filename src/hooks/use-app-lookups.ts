@@ -1,3 +1,4 @@
+import { unitMatch } from "@/lib/active-unit";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -28,7 +29,7 @@ export function useAreas() {
   return useQuery({
     queryKey: ["areas"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("areas").select("id, nome").order("nome");
+      const { data, error } = await supabase.from("areas").select("id, nome").match(unitMatch()).order("nome");
       if (error) throw error;
       return data ?? [];
     },

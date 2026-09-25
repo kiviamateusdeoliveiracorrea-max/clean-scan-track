@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { unitMatch } from "@/lib/active-unit";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -177,6 +178,7 @@ function NCList() {
         .select(
           "*, areas(nome), auditorias(data_auditoria, auditores(nome)), resp_nc:profiles!nao_conformidades_responsavel_nc_id_fkey(id,nome,cargo,area_id,areas(nome)), resp_acao:profiles!nao_conformidades_responsavel_acao_id_fkey(id,nome,cargo,area_id,areas(nome)), aprovador:profiles!nao_conformidades_aprovador_id_fkey(id,nome,cargo,area_id,areas(nome))",
         )
+        .match(unitMatch())
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];

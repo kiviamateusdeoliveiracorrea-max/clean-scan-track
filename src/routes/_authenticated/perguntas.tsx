@@ -1,3 +1,4 @@
+import { unitMatch, pickUnitQuestions } from "@/lib/active-unit";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
@@ -88,14 +89,14 @@ function PerguntasPage() {
         .order("categoria")
         .order("pergunta");
       if (error) throw error;
-      return (data ?? []) as Pergunta[];
+      return pickUnitQuestions(data ?? []) as Pergunta[];
     },
   });
 
   const { data: areas = [] } = useQuery({
     queryKey: ["areas"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("areas").select("id, nome").order("nome");
+      const { data, error } = await supabase.from("areas").select("id, nome").match(unitMatch()).order("nome");
       if (error) throw error;
       return data ?? [];
     },

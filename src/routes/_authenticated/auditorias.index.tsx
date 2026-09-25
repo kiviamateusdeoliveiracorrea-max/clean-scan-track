@@ -1,3 +1,4 @@
+import { unitMatch } from "@/lib/active-unit";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
@@ -44,6 +45,7 @@ function AuditoriasList() {
       const { data, error } = await supabase
         .from("auditorias")
         .select("*, areas(nome, setor), auditores(nome)")
+        .match(unitMatch())
         .order("data_auditoria", { ascending: false });
       if (error) throw error;
       return data ?? [];

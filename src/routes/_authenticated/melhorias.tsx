@@ -1,3 +1,4 @@
+import { unitMatch } from "@/lib/active-unit";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -75,6 +76,7 @@ function MelhoriasPage() {
       const { data, error } = await supabase
         .from("melhorias")
         .select("*, areas(nome), responsavel:profiles!melhorias_responsavel_id_fkey(id,nome,cargo)")
+        .match(unitMatch())
         .order("data_identificacao", { ascending: false });
       if (error) throw error;
       return data ?? [];

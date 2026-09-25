@@ -27,6 +27,7 @@ import {
   LogOut,
   UserCircle,
   FileWarning,
+  Building2,
 } from "lucide-react";
 
 import appCss from "../styles.css?url";
@@ -35,6 +36,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import logoAsset from "@/assets/intralog-logo.png.asset.json";
 import { getMyRoles, type AppRole } from "@/lib/users.functions";
+import { UnitSelector, useMyUnits } from "@/components/UnitSelector";
 
 function NotFoundComponent() {
   return (
@@ -152,6 +154,7 @@ type NavItem = {
   icon: typeof LayoutDashboard;
   exact?: boolean;
   adminOnly?: boolean;
+  globalOnly?: boolean;
 };
 
 const navItems: NavItem[] = [
@@ -167,6 +170,7 @@ const navItems: NavItem[] = [
   { to: "/auditores", label: "Auditores", icon: UserCog },
   { to: "/usuarios", label: "Usuários", icon: Users },
   { to: "/arquivos-sem-vinculo", label: "Arquivos sem vínculo", icon: FileWarning, adminOnly: true },
+  { to: "/unidades", label: "Configurações › Unidades", icon: Building2, globalOnly: true },
   { to: "/minha-conta", label: "Minha conta", icon: UserCircle },
 ];
 
@@ -207,7 +211,9 @@ function AppShell({ children }: { children: ReactNode }) {
   const roles = (rolesData?.roles ?? []) as AppRole[];
   const isAdmin = roles.includes("administrador");
 
-  const visibleNav = navItems.filter((it) => !it.adminOnly || isAdmin);
+  const { data: myUnits } = useMyUnits(!!userEmail && !isAuthRoute);
+  const isGlobal = !!myUnits?.isGlobal;
+  const visibleNav = navItems.filter((it) => (!it.adminOnly || isAdmin) && (!it.globalOnly || isGlobal));
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -235,6 +241,9 @@ function AppShell({ children }: { children: ReactNode }) {
             alt="Intralog JSL"
             className="h-10 w-auto max-w-full object-contain"
           />
+        </div>
+        <div className="px-4 pt-3">
+          <UnitSelector enabled={!!userEmail} />
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {visibleNav.map((item) => {
@@ -295,6 +304,9 @@ function AppShell({ children }: { children: ReactNode }) {
               >
                 <X className="h-5 w-5" />
               </button>
+            </div>
+            <div className="px-4 pt-3">
+              <UnitSelector enabled={!!userEmail} />
             </div>
             <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
               {visibleNav.map((item) => {
