@@ -1,0 +1,2 @@
+REVOKE EXECUTE ON FUNCTION public.row_access(uuid,uuid), public.evidence_owner(text), public.evidence_read_allowed(text,uuid), public.evidence_write_allowed(text) FROM public, anon;
+GRANT EXECUTE ON FUNCTION public.row_access(uuid,uuid), public.evidence_owner(text), public.evidence_read_allowed(text,uuid), public.evidence_write_allowed(text) TO authenticated;
