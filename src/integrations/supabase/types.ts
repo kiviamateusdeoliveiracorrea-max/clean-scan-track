@@ -1004,6 +1004,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
+          is_test: boolean
           logo_path: string | null
           name: string
           primary_color: string | null
@@ -1020,6 +1021,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          is_test?: boolean
           logo_path?: string | null
           name: string
           primary_color?: string | null
@@ -1036,6 +1038,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          is_test?: boolean
           logo_path?: string | null
           name?: string
           primary_color?: string | null
@@ -1179,6 +1182,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      evidence_owner: {
+        Args: { _path: string }
+        Returns: {
+          area_id: string
+          unit_id: string
+        }[]
+      }
+      evidence_read_allowed: {
+        Args: { _owner: string; _path: string }
+        Returns: boolean
+      }
+      evidence_write_allowed: { Args: { _path: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1188,6 +1203,10 @@ export type Database = {
       }
       is_global_admin: { Args: never; Returns: boolean }
       is_unit_admin: { Args: { target_unit_id: string }; Returns: boolean }
+      log_access_denied: {
+        Args: { _detail: string; _entity: string; _entity_id: string }
+        Returns: undefined
+      }
       multiunit_consistency_report: {
         Args: never
         Returns: {
@@ -1195,6 +1214,7 @@ export type Database = {
           qtd: number
         }[]
       }
+      row_access: { Args: { _area: string; _unit: string }; Returns: boolean }
       user_has_area_access: {
         Args: { target_area_id: string }
         Returns: boolean

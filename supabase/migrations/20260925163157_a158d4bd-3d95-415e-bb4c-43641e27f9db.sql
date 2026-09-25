@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.row_access(uuid,uuid), public.evidence_owner(text), public.evidence_read_allowed(text,uuid), public.evidence_write_allowed(text), public.user_has_area_access(uuid), public.user_has_unit_access(uuid), public.is_unit_admin(uuid), public.is_global_admin(), public.user_has_unit_role(uuid, public.unit_role) TO postgres, service_role;
