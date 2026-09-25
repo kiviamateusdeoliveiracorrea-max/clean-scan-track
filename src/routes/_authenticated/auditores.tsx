@@ -31,7 +31,7 @@ function AuditoresPage() {
   const { data = [] } = useQuery({
     queryKey: ["auditores"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("auditores").select("*").order("nome");
+      const { data, error } = await (supabase.rpc as any)("list_auditores");
       if (error) throw error;
       return data ?? [];
     },
@@ -105,6 +105,7 @@ function AuditoresPage() {
               <CardContent className="p-4 flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="font-semibold text-primary truncate">{a.nome}</p>
+                  {a.area_nome && <p className="text-xs text-muted-foreground">Área: {a.area_nome}</p>}
                   {a.matricula && <p className="text-xs text-muted-foreground">Mat.: {a.matricula}</p>}
                   {a.email && (
                     <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
