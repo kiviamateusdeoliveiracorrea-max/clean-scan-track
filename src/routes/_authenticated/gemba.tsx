@@ -113,6 +113,7 @@ function GembaPage() {
     let sent: string[] = [];
     try {
       const antes = await uploadPhotos(fotosAntes, `gemba/${editing?.id ?? "nova"}/antes`);
+      sent = antes;
       const depois = await uploadPhotos(fotosDepois, `gemba/${editing?.id ?? "nova"}/depois`);
       sent = [...antes, ...depois];
       const payload: any = {
@@ -144,6 +145,7 @@ function GembaPage() {
       reset();
       qc.invalidateQueries({ queryKey: ["gemba"] });
     } catch (e: any) {
+      if (sent.length) await rollbackUploads(sent, "gemba", editing?.id ?? null, e);
       toast.error(e.message ?? "Erro ao salvar");
     } finally {
       setSaving(false);
