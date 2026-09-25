@@ -177,6 +177,7 @@ function NCList() {
         .select(
           "*, areas(nome), auditorias(data_auditoria, auditores(nome)), resp_nc:profiles!nao_conformidades_responsavel_nc_id_fkey(id,nome,cargo,area_id,areas(nome)), resp_acao:profiles!nao_conformidades_responsavel_acao_id_fkey(id,nome,cargo,area_id,areas(nome)), aprovador:profiles!nao_conformidades_aprovador_id_fkey(id,nome,cargo,area_id,areas(nome))",
         )
+        .match(unitMatch())
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
