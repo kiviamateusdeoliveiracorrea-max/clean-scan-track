@@ -1199,6 +1199,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      auditor_units: { Args: { _auditor: string }; Returns: string[] }
       can_view_admin_log: { Args: { _unit: string }; Returns: boolean }
       evidence_owner: {
         Args: { _path: string }
@@ -1221,6 +1222,17 @@ export type Database = {
       }
       is_global_admin: { Args: never; Returns: boolean }
       is_unit_admin: { Args: { target_unit_id: string }; Returns: boolean }
+      list_auditores: {
+        Args: never
+        Returns: {
+          area_nome: string
+          can_see_contact: boolean
+          email: string
+          id: string
+          matricula: string
+          nome: string
+        }[]
+      }
       log_access_denied: {
         Args: { _detail: string; _entity: string; _entity_id: string }
         Returns: undefined
@@ -1232,6 +1244,7 @@ export type Database = {
           qtd: number
         }[]
       }
+      profile_visible: { Args: { _target: string }; Returns: boolean }
       row_access: { Args: { _area: string; _unit: string }; Returns: boolean }
       user_has_area_access: {
         Args: { target_area_id: string }
