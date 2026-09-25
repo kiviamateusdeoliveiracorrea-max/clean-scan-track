@@ -69,4 +69,19 @@ export async function removeNcPhotos(paths: string[]) {
   if (paths.length === 0) return;
   const { error } = await supabase.storage.from("audit-photos").remove(paths);
   if (error) console.error("[NC foto] ÓRFÃO — não foi possível remover", { paths, error });
+  try {
+    const { data } = await supabase.auth.getUser();
+    if (data.user)
+      await supabase.from("evidence_events" as any).insert(
+        paths.map((p) => ({
+          user_id: data.user!.id,
+          event: "ROLLBACK_EXECUTADO",
+          context: "nao-conformidade",
+          path: p,
+          result: error ? "FALHOU_ORFAO" : "REMOVIDO",
+        })) as any,
+      );
+  } catch (e) {
+    console.error("[evidência] não foi possível registrar rollback", e);
+  }
 }

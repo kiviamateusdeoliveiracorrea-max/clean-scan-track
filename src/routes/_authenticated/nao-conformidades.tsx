@@ -42,7 +42,7 @@ import { EvidenceThumbs } from "@/components/EvidenceThumbs";
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
 const MAX_UPLOAD_MB = 10;
 import { useCurrentRole } from "@/hooks/use-current-role";
-import { NO_PERMISSION_MSG, removeNcPhotos, uploadNcPhoto, validateNcPhoto } from "@/lib/nc-photo-upload";
+import { NO_PERMISSION_MSG, removeNcPhotos, resolveImageMime, uploadNcPhoto, validateNcPhoto } from "@/lib/nc-photo-upload";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/nao-conformidades")({
@@ -358,7 +358,7 @@ function NCList() {
       const path = `${resolving.auditoria_id ?? "nc"}/doc-${resolving.id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
       const { error: upErr } = await supabase.storage
         .from("audit-photos")
-        .upload(path, f, { contentType: f.type || "application/octet-stream" });
+        .upload(path, f, { contentType: f.type || (ext === "pdf" ? "application/pdf" : resolveImageMime(f) ?? "application/octet-stream") });
       if (upErr) {
         await rollback();
         setResolveSaving(false);
@@ -914,7 +914,7 @@ function NCList() {
                     <span>Selecionar Arquivo</span>
                     <input
                       type="file"
-                      accept="image/jpeg,image/jpg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+                      accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,.jpg,.jpeg,.jfif,.png,.webp,.heic"
                       multiple
                       className="hidden"
                       onChange={(e) => {
