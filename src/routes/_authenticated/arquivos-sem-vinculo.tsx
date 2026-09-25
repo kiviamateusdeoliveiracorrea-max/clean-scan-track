@@ -59,7 +59,7 @@ function Page() {
     if (!dlg) return;
     setBusy(true);
     try {
-      await review({
+      const res: any = await review({
         data: {
           path: dlg.row.path,
           action: dlg.action,
@@ -68,6 +68,10 @@ function Page() {
           confirm: dlg.action === "EXCLUIR" ? confirm : undefined,
         },
       });
+      if (res && res.ok === false) {
+        toast.error(res.error ?? "Não foi possível registrar.");
+        return;
+      }
       toast.success("Decisão registrada.");
       setDlg(null);
       qc.invalidateQueries({ queryKey: ["orphan-files"] });
@@ -155,7 +159,7 @@ function Page() {
                       <td className="p-2">
                         <div className="flex flex-wrap gap-1">
                           {(["VINCULAR", "MANTER", "ARQUIVAR", "EXCLUIR"] as Action[]).map((a) => (
-                            <Button key={a} size="sm" variant={a === "EXCLUIR" ? "destructive" : "outline"} className="h-6 px-2 text-[10px]" onClick={() => open(r, a)}>
+                            <Button key={a} size="sm" variant={a === "EXCLUIR" ? "destructive" : "outline"} className="h-6 px-2 text-[10px]" disabled={a === "EXCLUIR" && !["Mantido", "Arquivado"].includes(r.status)} title={a === "EXCLUIR" && !["Mantido", "Arquivado"].includes(r.status) ? "Marque como Mantido ou Arquivado antes de excluir" : undefined} onClick={() => open(r, a)}>
                               {LABEL[a]}
                             </Button>
                           ))}
