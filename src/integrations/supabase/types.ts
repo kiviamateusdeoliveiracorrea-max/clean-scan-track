@@ -350,6 +350,39 @@ export type Database = {
           },
         ]
       }
+      evidence_upload_failures: {
+        Row: {
+          context: string
+          created_at: string
+          error_message: string | null
+          id: string
+          paths: string[]
+          record_id: string | null
+          rollback_ok: boolean
+          user_id: string
+        }
+        Insert: {
+          context: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          paths?: string[]
+          record_id?: string | null
+          rollback_ok?: boolean
+          user_id?: string
+        }
+        Update: {
+          context?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          paths?: string[]
+          record_id?: string | null
+          rollback_ok?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       gemba_visitas: {
         Row: {
           acao_definida: string | null
