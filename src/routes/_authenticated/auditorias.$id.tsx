@@ -114,9 +114,11 @@ function AuditoriaDetail() {
       if (error) throw error;
       if (!data) {
         // Registro inexistente ou de outra unidade/área: registra a tentativa bloqueada.
-        await (supabase.rpc as any)("log_access_denied", {
-          _entity: "auditorias", _entity_id: id, _detail: "Abertura por URL sem acesso",
-        }).catch(() => {});
+        try {
+          await (supabase.rpc as any)("log_access_denied", {
+            _entity: "auditorias", _entity_id: id, _detail: "Abertura por URL sem acesso",
+          });
+        } catch { /* registro não bloqueia a tela */ }
         throw new Error("Auditoria não encontrada ou sem acesso para sua unidade/área.");
       }
       return data;
