@@ -820,6 +820,7 @@ export type Database = {
           id: string
           pergunta: string
           peso: number
+          unit_id: string | null
           updated_at: string
         }
         Insert: {
@@ -830,6 +831,7 @@ export type Database = {
           id?: string
           pergunta: string
           peso?: number
+          unit_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -840,9 +842,18 @@ export type Database = {
           id?: string
           pergunta?: string
           peso?: number
+          unit_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "perguntas_auditoria_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -1007,9 +1018,11 @@ export type Database = {
           is_test: boolean
           logo_path: string | null
           name: string
+          observation: string | null
           primary_color: string | null
           secondary_color: string | null
           state: string | null
+          status: string
           updated_at: string
           updated_by: string | null
         }
@@ -1024,9 +1037,11 @@ export type Database = {
           is_test?: boolean
           logo_path?: string | null
           name: string
+          observation?: string | null
           primary_color?: string | null
           secondary_color?: string | null
           state?: string | null
+          status?: string
           updated_at?: string
           updated_by?: string | null
         }
@@ -1041,9 +1056,11 @@ export type Database = {
           is_test?: boolean
           logo_path?: string | null
           name?: string
+          observation?: string | null
           primary_color?: string | null
           secondary_color?: string | null
           state?: string | null
+          status?: string
           updated_at?: string
           updated_by?: string | null
         }
