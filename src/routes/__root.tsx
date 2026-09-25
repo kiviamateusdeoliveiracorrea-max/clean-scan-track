@@ -26,6 +26,7 @@ import {
   ListChecks,
   LogOut,
   UserCircle,
+  FileWarning,
 } from "lucide-react";
 
 import appCss from "../styles.css?url";
@@ -165,6 +166,7 @@ const navItems: NavItem[] = [
   { to: "/areas", label: "Áreas", icon: MapPin },
   { to: "/auditores", label: "Auditores", icon: UserCog },
   { to: "/usuarios", label: "Usuários", icon: Users },
+  { to: "/arquivos-sem-vinculo", label: "Arquivos sem vínculo", icon: FileWarning, adminOnly: true },
   { to: "/minha-conta", label: "Minha conta", icon: UserCircle },
 ];
 
