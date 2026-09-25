@@ -358,7 +358,7 @@ function NCList() {
       const path = `${resolving.auditoria_id ?? "nc"}/doc-${resolving.id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
       const { error: upErr } = await supabase.storage
         .from("audit-photos")
-        .upload(path, f, { contentType: f.type || "application/octet-stream" });
+        .upload(path, f, { contentType: f.type || (ext === "pdf" ? "application/pdf" : resolveImageMime(f) ?? "application/octet-stream") });
       if (upErr) {
         await rollback();
         setResolveSaving(false);

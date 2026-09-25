@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadPhotos, rollbackUploads } from "@/lib/upload-photos";
+import { resolveImageMime, validateNcPhoto } from "@/lib/nc-photo-upload";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -193,9 +194,12 @@ function NovaAuditoria() {
     reader.readAsDataURL(file);
     const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
     const path = `${id}/nc-${perguntaId}-${Date.now()}.${ext}`;
-    const contentType =
-      file.type ||
-      (ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg");
+    const invalid = validateNcPhoto(file);
+    if (invalid) {
+      toast.error(invalid);
+      return;
+    }
+    const contentType = resolveImageMime(file)!;
     const { error } = await supabase.storage
       .from("audit-photos")
       .upload(path, file, { contentType, upsert: true });
