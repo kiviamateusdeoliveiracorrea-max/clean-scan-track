@@ -232,7 +232,7 @@ export const reviewOrphanFile = createServerFn({ method: "POST" })
       if (data.confirm !== "EXCLUIR") throw new Error('Digite EXCLUIR para confirmar a exclusão.');
       const { data: prev } = await admin.from("orphan_file_reviews").select("status").eq("path", data.path).maybeSingle();
       if (!prev || !["MANTIDO", "ARQUIVADO"].includes(prev.status))
-        throw new Error("Exclusão só é permitida após validação: marque o arquivo como Mantido ou Arquivado antes.");
+        return { ok: false, status: "", error: "Exclusão só é permitida após validação: marque o arquivo como Mantido ou Arquivado antes." };
       const { error } = await admin.storage.from("audit-photos").remove([data.path]);
       if (error) throw new Error("Não foi possível excluir: " + error.message);
       status = "EXCLUIDO"; event = "LIMPEZA_ORFAO";
