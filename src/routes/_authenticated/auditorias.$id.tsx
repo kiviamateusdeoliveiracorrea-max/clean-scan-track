@@ -91,6 +91,7 @@ import {
 } from "@/lib/audit-constants";
 import { toast } from "sonner";
 import { useCurrentRole } from "@/hooks/use-current-role";
+import { AddAuditPhotos } from "@/components/AddAuditPhotos";
 import { NO_PERMISSION_MSG, removeNcPhotos, uploadNcPhoto, validateNcPhoto } from "@/lib/nc-photo-upload";
 
 export const Route = createFileRoute("/_authenticated/auditorias/$id")({
@@ -100,6 +101,7 @@ export const Route = createFileRoute("/_authenticated/auditorias/$id")({
 function AuditoriaDetail() {
   const { id } = Route.useParams();
   const qc = useQueryClient();
+  const { canResolveNC } = useCurrentRole();
 
   const { data: audit } = useQuery({
     queryKey: ["auditoria", id],
