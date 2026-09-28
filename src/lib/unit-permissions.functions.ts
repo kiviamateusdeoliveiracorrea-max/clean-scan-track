@@ -102,7 +102,7 @@ export const listUnitPermissions = createServerFn({ method: "GET" })
     });
 
     // Usuários que ainda não têm nenhum vínculo de unidade (status SEM_UNIDADE).
-    const unlinked = (profilesR.data ?? [])
+    const unlinked = (acc.isGlobal ? (profilesR.data ?? []) : [])
       .filter((p: any) => !linkedIds.has(p.id))
       .map((p: any) => ({
         id: `nounit:${p.id}`,
