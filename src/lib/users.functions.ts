@@ -279,7 +279,11 @@ export const createUser = createServerFn({ method: "POST" })
         })
         .select("id")
         .maybeSingle();
-      if (permErr) throw new Error(permErr.message);
+      if (permErr) {
+        throw new Error(
+          `Usuário criado, mas o vínculo com a unidade falhou (${permErr.message}). Use "Corrigir vínculo" em Permissões por Unidade.`,
+        );
+      }
 
       if (data.area_id) {
         const { error: aErr } = await supabaseAdmin.from("user_area_permissions").upsert(
