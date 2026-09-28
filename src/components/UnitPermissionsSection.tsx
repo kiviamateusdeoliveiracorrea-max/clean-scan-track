@@ -170,11 +170,27 @@ export function UnitPermissionsSection() {
         <h2 className="flex items-center gap-2 text-xl font-semibold"><ShieldCheck className="h-5 w-5" /> Permissões por Unidade</h2>
         <p className="text-sm text-muted-foreground">Classifique o papel local e as áreas de cada usuário. O papel atual não é alterado nesta etapa.</p>
       </div>
-      <div className="grid grid-cols-2 gap-2 md:grid-cols-6">
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-4 lg:grid-cols-7">
         {kpis.map(([l, v]) => (
           <Card key={l}><CardContent className="p-3"><p className="text-xs text-muted-foreground">{l}</p><p className="text-2xl font-bold">{v}</p></CardContent></Card>
         ))}
       </div>
+
+      <Card>
+        <CardHeader className="pb-2"><CardTitle className="text-base">Usuários sem unidade ({semUnidade.length})</CardTitle></CardHeader>
+        <CardContent className="space-y-2">
+          {semUnidade.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Todos os usuários possuem vínculo de unidade.</p>
+          ) : (
+            <>
+              <p className="text-xs text-muted-foreground">
+                Estes usuários não veem auditorias, não conformidades nem indicadores até receberem uma unidade.
+              </p>
+              {semUnidade.map(renderRow)}
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-base">Administradores para revisão ({adminsReview.length})</CardTitle></CardHeader>
@@ -182,6 +198,7 @@ export function UnitPermissionsSection() {
           {adminsReview.length === 0 ? <p className="text-sm text-muted-foreground">Nenhum administrador pendente.</p> : adminsReview.map(renderRow)}
         </CardContent>
       </Card>
+
 
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-base">Usuários ({rows.length})</CardTitle></CardHeader>
