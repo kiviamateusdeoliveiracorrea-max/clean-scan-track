@@ -262,7 +262,60 @@ export const createUser = createServerFn({ method: "POST" })
         { user_id: created.user.id, role: data.role },
         { onConflict: "user_id,role" },
       );
+
+      // Vínculo multiunidade obrigatório: unidade padrão + área escolhida.
+      const { data: permRow, error: permErr } = await supabaseAdmin
+        .from("user_unit_permissions")
+        .insert({
+          user_id: created.user.id,
+          unit_id: data.unit_id,
+          role: null,
+          active: true,
+          is_default_unit: true,
+          validation_status: "PENDENTE_PAPEL",
+          justification: "Vínculo criado automaticamente no cadastro do usuário.",
+          created_by: context.userId,
+          updated_by: context.userId,
+        })
+        .select("id")
+        .maybeSingle();
+      if (permErr) throw new Error(permErr.message);
+
+      if (data.area_id) {
+        const { error: aErr } = await supabaseAdmin.from("user_area_permissions").upsert(
+          {
+            user_id: created.user.id,
+            unit_id: data.unit_id,
+            area_id: data.area_id,
+            active: true,
+            created_by: context.userId,
+            updated_by: context.userId,
+          },
+          { onConflict: "user_id,area_id" },
+        );
+        if (aErr) throw new Error(aErr.message);
+      }
+
+      await supabaseAdmin.from("unit_audit_log").insert({
+        unit_id: data.unit_id,
+        user_id: context.userId,
+        action: "CRIAR_USUARIO_COM_UNIDADE",
+        entity: "user_unit_permissions",
+        entity_id: created.user.id,
+        previous_value: null,
+        new_value: {
+          permission_id: permRow?.id ?? null,
+          unit_id: data.unit_id,
+          is_default_unit: true,
+          validation_status: "PENDENTE_PAPEL",
+          role: null,
+          papel_global: data.role,
+          areas: data.area_id ? [data.area_id] : [],
+        },
+        justification: "Cadastro de novo usuário com vínculo automático de unidade e área.",
+      });
     }
+
 
     return { ok: true, userId: created.user?.id };
   });
