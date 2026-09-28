@@ -240,6 +240,27 @@ export function UnitPermissionsSection() {
           }}
         />
       )}
+
+      {assigning && (
+        <AssignDialog
+          row={assigning}
+          isGlobal={data.isGlobal}
+          units={data.units.filter((u: any) => u.active)}
+          allAreas={data.allAreas ?? []}
+          areaName={areaName}
+          onClose={() => setAssigning(null)}
+          onSave={async (payload) => {
+            try {
+              const res = await assign({ data: payload });
+              toast.success(`Vínculo criado. Situação: ${res.status}`);
+              setAssigning(null);
+              qc.invalidateQueries({ queryKey: ["unit-permissions"] });
+            } catch (e: any) {
+              toast.error(e?.message ?? "Falha ao corrigir vínculo");
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
