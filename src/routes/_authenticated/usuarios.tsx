@@ -158,13 +158,15 @@ function UsuariosPage() {
           role,
           cargo: cargo.trim() || null,
           area_id: areaId || null,
+          unit_id: unitId,
         },
       }),
     onSuccess: () => {
-      toast.success("Usuário criado");
+      toast.success("Usuário criado e vinculado à unidade");
       setNome(""); setEmail(""); setPassword(""); setRole("consulta");
       setCargo(""); setAreaId("");
       invalidate();
+      qc.invalidateQueries({ queryKey: ["unit-permissions"] });
     },
     onError: (e: any) => toast.error(e.message ?? "Falha ao criar usuário"),
   });
