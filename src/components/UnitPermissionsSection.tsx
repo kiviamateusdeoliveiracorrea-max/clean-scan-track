@@ -211,7 +211,9 @@ export function UnitPermissionsSection() {
             {sel("area", "Área", data.areas.map((a: any) => [a.id, a.nome]))}
             {sel("status", "Status", [["ativo", "Ativo"], ["inativo", "Inativo"]])}
             {sel("valid", "Validação", [["VALIDADO", "Validado"], ["PENDENTE", "Pendente"]])}
+            <label className="flex items-center gap-2 text-xs"><Checkbox checked={f.semUnidade} onCheckedChange={(v) => setF({ ...f, semUnidade: !!v })} /> Sem unidade</label>
             <label className="flex items-center gap-2 text-xs"><Checkbox checked={f.semArea} onCheckedChange={(v) => setF({ ...f, semArea: !!v })} /> Sem área</label>
+            <label className="flex items-center gap-2 text-xs"><Checkbox checked={f.pendValid} onCheckedChange={(v) => setF({ ...f, pendValid: !!v })} /> Pendente de validação</label>
             <label className="flex items-center gap-2 text-xs"><Checkbox checked={f.adminPend} onCheckedChange={(v) => setF({ ...f, adminPend: !!v })} /> Administrador pendente</label>
           </div>
           <div className="space-y-2">{rows.map(renderRow)}</div>
