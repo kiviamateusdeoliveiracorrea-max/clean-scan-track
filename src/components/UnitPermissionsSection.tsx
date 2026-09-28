@@ -336,3 +336,78 @@ function EditDialog({ row, isGlobal, areas, unitName, areaName, onClose, onSave 
     </Dialog>
   );
 }
+
+function AssignDialog({ row, isGlobal, units, allAreas, areaName, onClose, onSave }: {
+  row: Row; isGlobal: boolean; units: any[]; allAreas: any[]; areaName: (id: string) => string;
+  onClose: () => void; onSave: (p: any) => Promise<void>;
+}) {
+  const [unitId, setUnitId] = useState<string>(units[0]?.id ?? "");
+  const [role, setRole] = useState<string>(PEND);
+  const [areaIds, setAreaIds] = useState<string[]>([]);
+  const [isDefault, setIsDefault] = useState(true);
+  const [just, setJust] = useState("");
+  const [obs, setObs] = useState("");
+  const [busy, setBusy] = useState(false);
+  const roleOpts = [PEND, ...UNIT_ROLES.filter((r) => isGlobal || r !== "ADMIN_GLOBAL")];
+  const areas = allAreas.filter((a: any) => a.unit_id === unitId && a.active);
+
+  const go = async () => {
+    if (!unitId) return toast.error("Selecione a unidade.");
+    if (just.trim().length < 5) return toast.error("Informe a justificativa (mínimo 5 caracteres).");
+    setBusy(true);
+    await onSave({
+      userId: row.user_id, unitId, role: role === PEND ? null : role,
+      areaIds, isDefault, justification: just, observation: obs,
+    });
+    setBusy(false);
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+        <DialogHeader><DialogTitle>Corrigir vínculo de {row.nome || "usuário"}</DialogTitle></DialogHeader>
+        <div className="space-y-3 text-sm">
+          <div className="text-xs text-muted-foreground space-y-0.5">
+            <p>E-mail: {row.email || "—"}</p>
+            <p>Papel atual (não muda): {row.papeis_globais.join(", ") || "—"}</p>
+            <p>Área principal do cadastro: {row.area_principal_id ? areaName(row.area_principal_id) : "—"}</p>
+            <p>Criado em: {fmtDate(row.created_at)}</p>
+          </div>
+          <div className="space-y-1">
+            <Label>Unidade *</Label>
+            <Select value={unitId} onValueChange={(v) => { setUnitId(v); setAreaIds([]); }}>
+              <SelectTrigger><SelectValue placeholder="Selecione a unidade" /></SelectTrigger>
+              <SelectContent>{units.map((u: any) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label>Papel na unidade</Label>
+            <Select value={role} onValueChange={setRole}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{roleOpts.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label>Áreas autorizadas</Label>
+            <div className="grid grid-cols-2 gap-1 rounded-md border p-2">
+              {areas.length === 0 && <p className="text-xs text-muted-foreground">Nenhuma área ativa nesta unidade.</p>}
+              {areas.map((a: any) => (
+                <label key={a.id} className="flex items-center gap-2 text-xs">
+                  <Checkbox checked={areaIds.includes(a.id)} onCheckedChange={(v) => setAreaIds(v ? [...areaIds, a.id] : areaIds.filter((x) => x !== a.id))} />
+                  {a.nome}
+                </label>
+              ))}
+            </div>
+          </div>
+          <label className="flex items-center gap-2"><Switch checked={isDefault} onCheckedChange={setIsDefault} /> Unidade padrão</label>
+          <div className="space-y-1"><Label>Justificativa *</Label><Textarea value={just} onChange={(e) => setJust(e.target.value)} maxLength={1000} /></div>
+          <div className="space-y-1"><Label>Observação</Label><Textarea value={obs} onChange={(e) => setObs(e.target.value)} maxLength={1000} /></div>
+        </div>
+        <DialogFooter className="flex-wrap gap-2">
+          <Button variant="ghost" onClick={onClose} disabled={busy}>Cancelar</Button>
+          <Button onClick={go} disabled={busy}>Criar vínculo</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
