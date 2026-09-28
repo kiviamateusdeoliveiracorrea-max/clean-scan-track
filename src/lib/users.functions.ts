@@ -162,6 +162,7 @@ export const createUser = createServerFn({ method: "POST" })
         role: z.enum(ROLES),
         cargo: z.string().trim().max(100).optional().nullable(),
         area_id: z.string().uuid().optional().nullable(),
+        unit_id: z.string().uuid({ message: "Selecione a unidade do novo usuário." }),
       })
       .parse(input),
   )
@@ -169,6 +170,29 @@ export const createUser = createServerFn({ method: "POST" })
     await assertManager(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const email = normalizeUserEmail(data.email);
+
+    // Unidade é obrigatória: valida antes de criar qualquer coisa.
+    const { data: unitRow, error: unitErr } = await supabaseAdmin
+      .from("units")
+      .select("id, active")
+      .eq("id", data.unit_id)
+      .maybeSingle();
+    if (unitErr) throw new Error(unitErr.message);
+    if (!unitRow) throw new Error("Unidade não encontrada. Selecione uma unidade válida.");
+    if (!unitRow.active) throw new Error("Esta unidade está inativa. Selecione uma unidade ativa.");
+
+    if (data.area_id) {
+      const { data: areaRow, error: areaErr } = await supabaseAdmin
+        .from("areas")
+        .select("id, unit_id")
+        .eq("id", data.area_id)
+        .maybeSingle();
+      if (areaErr) throw new Error(areaErr.message);
+      if (!areaRow || areaRow.unit_id !== data.unit_id) {
+        throw new Error("A área selecionada não pertence à unidade escolhida.");
+      }
+    }
+
 
     const { createClient } = await import("@supabase/supabase-js");
 
