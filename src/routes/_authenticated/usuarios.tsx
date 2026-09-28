@@ -283,6 +283,10 @@ function UsuariosPage() {
                 toast.error("Senha deve ter ao menos 8 caracteres");
                 return;
               }
+              if (!unitId) {
+                toast.error("Selecione a unidade do novo usuário antes de concluir o cadastro.");
+                return;
+              }
               createMut.mutate();
             }}
           >
