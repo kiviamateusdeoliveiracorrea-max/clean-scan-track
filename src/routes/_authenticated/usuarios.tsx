@@ -1,7 +1,8 @@
-import { unitMatch } from "@/lib/active-unit";
+import { useActiveUnitId } from "@/lib/active-unit";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useMyUnits } from "@/components/UnitSelector";
 import {
   listUsers,
   createUser,
@@ -88,21 +89,41 @@ function UsuariosPage() {
     queryFn: () => listUsers({ data: { status } }),
   });
 
-  const areasQ = useQuery({
-    queryKey: ["areas"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("areas").select("id, nome").match(unitMatch()).order("nome");
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
-
+  const activeUnitId = useActiveUnitId();
+  const myUnits = useMyUnits(!!canManageUsers);
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<AppRole>("consulta");
   const [cargo, setCargo] = useState("");
   const [areaId, setAreaId] = useState<string>("");
+  const [unitId, setUnitId] = useState<string>("");
+
+  const unitOptions = myUnits.data?.units ?? [];
+  useEffect(() => {
+    if (unitId) return;
+    const fallback =
+      (activeUnitId && unitOptions.some((u: any) => u.id === activeUnitId) ? activeUnitId : null) ??
+      myUnits.data?.defaultUnitId ??
+      unitOptions[0]?.id ??
+      "";
+    if (fallback) setUnitId(fallback);
+  }, [activeUnitId, unitOptions, myUnits.data?.defaultUnitId, unitId]);
+
+  const areasQ = useQuery({
+    queryKey: ["areas", unitId],
+    enabled: !!unitId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("areas")
+        .select("id, nome")
+        .eq("unit_id", unitId)
+        .eq("active", true)
+        .order("nome");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
 
   const [editing, setEditing] = useState<EditingUser | null>(null);
   const [resetting, setResetting] = useState<{
@@ -137,13 +158,15 @@ function UsuariosPage() {
           role,
           cargo: cargo.trim() || null,
           area_id: areaId || null,
+          unit_id: unitId,
         },
       }),
     onSuccess: () => {
-      toast.success("Usuário criado");
+      toast.success("Usuário criado e vinculado à unidade");
       setNome(""); setEmail(""); setPassword(""); setRole("consulta");
       setCargo(""); setAreaId("");
       invalidate();
+      qc.invalidateQueries({ queryKey: ["unit-permissions"] });
     },
     onError: (e: any) => toast.error(e.message ?? "Falha ao criar usuário"),
   });
@@ -260,6 +283,10 @@ function UsuariosPage() {
                 toast.error("Senha deve ter ao menos 8 caracteres");
                 return;
               }
+              if (!unitId) {
+                toast.error("Selecione a unidade do novo usuário antes de concluir o cadastro.");
+                return;
+              }
               createMut.mutate();
             }}
           >
@@ -282,10 +309,34 @@ function UsuariosPage() {
               <Input value={cargo} onChange={(e) => setCargo(e.target.value)} placeholder="Ex.: Supervisor" />
             </div>
             <div className="space-y-1.5">
-              <Label>Área</Label>
-              <Select value={areaId} onValueChange={setAreaId}>
+              <Label>Unidade *</Label>
+              <Select
+                value={unitId}
+                onValueChange={(v) => {
+                  setUnitId(v);
+                  setAreaId("");
+                }}
+              >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione..." />
+                  <SelectValue placeholder="Selecione a unidade..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {unitOptions.map((u: any) => (
+                    <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {!unitId && (
+                <p className="text-xs text-destructive">
+                  O cadastro só é concluído com uma unidade definida.
+                </p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label>Área</Label>
+              <Select value={areaId} onValueChange={setAreaId} disabled={!unitId}>
+                <SelectTrigger>
+                  <SelectValue placeholder={unitId ? "Selecione..." : "Escolha a unidade primeiro"} />
                 </SelectTrigger>
                 <SelectContent>
                   {(areasQ.data ?? []).map((a: any) => (

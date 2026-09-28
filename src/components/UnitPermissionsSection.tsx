@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { listUnitPermissions, saveUnitPermission, UNIT_ROLES } from "@/lib/unit-permissions.functions";
+import { listUnitPermissions, saveUnitPermission, assignUserUnit, UNIT_ROLES } from "@/lib/unit-permissions.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,13 @@ function fmt(d: string | null) {
   return new Date(d).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" });
 }
 
+function fmtDate(d: string | null) {
+  if (!d) return "—";
+  return new Date(d).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+}
+
 function acaoNecessaria(r: Row) {
+  if (r.sem_unidade) return "Corrigir vínculo (definir unidade)";
   if (!r.active) return "—";
   if (r.validation_status === "VALIDADO") return r.area_ids.length ? "Nenhuma" : "Revisar área";
   if (!r.role && !r.area_ids.length) return "Definir papel e área";
@@ -39,6 +45,7 @@ export function UnitPermissionsSection() {
   const qc = useQueryClient();
   const list = useServerFn(listUnitPermissions);
   const save = useServerFn(saveUnitPermission);
+  const assign = useServerFn(assignUserUnit);
   const q = useQuery({
     queryKey: ["unit-permissions"],
     queryFn: async () => {
@@ -52,14 +59,19 @@ export function UnitPermissionsSection() {
     },
     retry: false,
   });
-  const [f, setF] = useState({ unit: ALL, oldRole: ALL, newRole: ALL, area: ALL, status: ALL, valid: ALL, semArea: false, adminPend: false, busca: "" });
+  const [f, setF] = useState({ unit: ALL, oldRole: ALL, newRole: ALL, area: ALL, status: ALL, valid: ALL, semArea: false, semUnidade: false, pendValid: false, adminPend: false, busca: "" });
   const [edit, setEdit] = useState<Row | null>(null);
+  const [assigning, setAssigning] = useState<Row | null>(null);
 
   const data = q.data;
-  const areaName = (id: string) => data?.areas.find((a: any) => a.id === id)?.nome ?? "—";
-  const unitName = (id: string) => data?.units.find((u: any) => u.id === id)?.name ?? "—";
+  const areaName = (id: string) =>
+    (data?.allAreas ?? data?.areas ?? []).find((a: any) => a.id === id)?.nome ?? "—";
+  const unitName = (id: string | null) =>
+    !id ? "Sem unidade" : data?.units.find((u: any) => u.id === id)?.name ?? "—";
   const isAdminPend = (r: Row) =>
-    r.active && r.validation_status !== "VALIDADO" && (r.papeis_globais.includes("administrador") || ["ADMIN_GLOBAL", "ADMIN_UNIDADE"].includes(r.role));
+    !r.sem_unidade && r.active && r.validation_status !== "VALIDADO" && (r.papeis_globais.includes("administrador") || ["ADMIN_GLOBAL", "ADMIN_UNIDADE"].includes(r.role));
+  const isPendValid = (r: Row) =>
+    r.sem_unidade || (r.active && r.validation_status !== "VALIDADO" && r.validation_status !== "INATIVO");
 
   const rows: Row[] = useMemo(() => {
     const all = data?.rows ?? [];
@@ -71,6 +83,8 @@ export function UnitPermissionsSection() {
       if (f.status !== ALL && (f.status === "ativo") !== (r.active && r.conta_ativa)) return false;
       if (f.valid !== ALL && (f.valid === "VALIDADO") !== (r.validation_status === "VALIDADO")) return false;
       if (f.semArea && r.area_ids.length > 0) return false;
+      if (f.semUnidade && !r.sem_unidade) return false;
+      if (f.pendValid && !isPendValid(r)) return false;
       if (f.adminPend && !isAdminPend(r)) return false;
       if (f.busca && !`${r.nome} ${r.email}`.toLowerCase().includes(f.busca.toLowerCase())) return false;
       return true;
@@ -82,10 +96,12 @@ export function UnitPermissionsSection() {
   if (!data) return null;
 
   const all = data.rows as Row[];
+  const semUnidade = all.filter((r) => r.sem_unidade);
   const kpis = [
     ["Total de usuários", all.length],
     ["Papéis validados", all.filter((r) => r.validation_status === "VALIDADO").length],
-    ["Papéis pendentes", all.filter((r) => r.active && r.validation_status !== "VALIDADO" && r.validation_status !== "INATIVO").length],
+    ["Papéis pendentes", all.filter((r) => !r.sem_unidade && r.active && r.validation_status !== "VALIDADO" && r.validation_status !== "INATIVO").length],
+    ["Usuários sem unidade", semUnidade.length],
     ["Usuários sem área", all.filter((r) => r.active && r.area_ids.length === 0).length],
     ["Administradores pendentes", all.filter(isAdminPend).length],
     ["Usuários inativos", all.filter((r) => !r.active || !r.conta_ativa).length],
@@ -114,25 +130,36 @@ export function UnitPermissionsSection() {
         </div>
         <div className="flex flex-wrap gap-1">
           <Badge variant={r.conta_ativa ? "default" : "outline"}>{r.excluido ? "Excluído" : r.conta_ativa ? "Conta ativa" : "Conta inativa"}</Badge>
-          <Badge variant={r.validation_status === "VALIDADO" ? "secondary" : "outline"}>{r.validation_status}</Badge>
-          {r.active && r.area_ids.length === 0 && (
+          {r.sem_unidade ? (
+            <Badge variant="destructive"><AlertTriangle className="mr-1 h-3 w-3" />SEM_UNIDADE</Badge>
+          ) : (
+            <Badge variant={r.validation_status === "VALIDADO" ? "secondary" : "outline"}>{r.validation_status}</Badge>
+          )}
+          {!r.sem_unidade && r.active && r.area_ids.length === 0 && (
             <Badge variant="destructive"><AlertTriangle className="mr-1 h-3 w-3" />Área pendente</Badge>
           )}
         </div>
       </div>
       <div className="grid gap-x-4 gap-y-0.5 text-xs text-muted-foreground sm:grid-cols-2">
         <span>Papel atual: <b className="text-foreground">{r.papeis_globais.join(", ") || "—"}</b></span>
-        <span>Novo papel local: <b className="text-foreground">{r.role ?? PEND}</b></span>
+        <span>Novo papel local: <b className="text-foreground">{r.role ?? (r.sem_unidade ? "—" : PEND)}</b></span>
         <span>Unidade: {unitName(r.unit_id)}{r.is_default_unit ? " (padrão)" : ""}</span>
         <span>Área principal: {r.area_principal_id ? areaName(r.area_principal_id) : "—"}</span>
         <span>Áreas autorizadas: {r.area_ids.map(areaName).join(", ") || "—"}</span>
+        <span>Criado em: {fmtDate(r.created_at)}</span>
         <span>Último acesso: {fmt(r.ultimo_acesso)}</span>
         <span>Ação necessária: <b className="text-foreground">{acaoNecessaria(r)}</b></span>
       </div>
       <div className="pt-1">
-        <Button size="sm" variant="outline" disabled={r.user_id === data.me} onClick={() => setEdit(r)}>
-          {r.user_id === data.me ? "Você não pode editar a si mesmo" : "Editar"}
-        </Button>
+        {r.sem_unidade ? (
+          <Button size="sm" disabled={r.user_id === data.me} onClick={() => setAssigning(r)}>
+            {r.user_id === data.me ? "Você não pode editar a si mesmo" : "Corrigir vínculo"}
+          </Button>
+        ) : (
+          <Button size="sm" variant="outline" disabled={r.user_id === data.me} onClick={() => setEdit(r)}>
+            {r.user_id === data.me ? "Você não pode editar a si mesmo" : "Editar"}
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -143,11 +170,27 @@ export function UnitPermissionsSection() {
         <h2 className="flex items-center gap-2 text-xl font-semibold"><ShieldCheck className="h-5 w-5" /> Permissões por Unidade</h2>
         <p className="text-sm text-muted-foreground">Classifique o papel local e as áreas de cada usuário. O papel atual não é alterado nesta etapa.</p>
       </div>
-      <div className="grid grid-cols-2 gap-2 md:grid-cols-6">
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-4 lg:grid-cols-7">
         {kpis.map(([l, v]) => (
           <Card key={l}><CardContent className="p-3"><p className="text-xs text-muted-foreground">{l}</p><p className="text-2xl font-bold">{v}</p></CardContent></Card>
         ))}
       </div>
+
+      <Card>
+        <CardHeader className="pb-2"><CardTitle className="text-base">Usuários sem unidade ({semUnidade.length})</CardTitle></CardHeader>
+        <CardContent className="space-y-2">
+          {semUnidade.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Todos os usuários possuem vínculo de unidade.</p>
+          ) : (
+            <>
+              <p className="text-xs text-muted-foreground">
+                Estes usuários não veem auditorias, não conformidades nem indicadores até receberem uma unidade.
+              </p>
+              {semUnidade.map(renderRow)}
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-base">Administradores para revisão ({adminsReview.length})</CardTitle></CardHeader>
@@ -155,6 +198,7 @@ export function UnitPermissionsSection() {
           {adminsReview.length === 0 ? <p className="text-sm text-muted-foreground">Nenhum administrador pendente.</p> : adminsReview.map(renderRow)}
         </CardContent>
       </Card>
+
 
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-base">Usuários ({rows.length})</CardTitle></CardHeader>
@@ -167,7 +211,9 @@ export function UnitPermissionsSection() {
             {sel("area", "Área", data.areas.map((a: any) => [a.id, a.nome]))}
             {sel("status", "Status", [["ativo", "Ativo"], ["inativo", "Inativo"]])}
             {sel("valid", "Validação", [["VALIDADO", "Validado"], ["PENDENTE", "Pendente"]])}
+            <label className="flex items-center gap-2 text-xs"><Checkbox checked={f.semUnidade} onCheckedChange={(v) => setF({ ...f, semUnidade: !!v })} /> Sem unidade</label>
             <label className="flex items-center gap-2 text-xs"><Checkbox checked={f.semArea} onCheckedChange={(v) => setF({ ...f, semArea: !!v })} /> Sem área</label>
+            <label className="flex items-center gap-2 text-xs"><Checkbox checked={f.pendValid} onCheckedChange={(v) => setF({ ...f, pendValid: !!v })} /> Pendente de validação</label>
             <label className="flex items-center gap-2 text-xs"><Checkbox checked={f.adminPend} onCheckedChange={(v) => setF({ ...f, adminPend: !!v })} /> Administrador pendente</label>
           </div>
           <div className="space-y-2">{rows.map(renderRow)}</div>
@@ -190,6 +236,27 @@ export function UnitPermissionsSection() {
               qc.invalidateQueries({ queryKey: ["unit-permissions"] });
             } catch (e: any) {
               toast.error(e?.message ?? "Falha ao salvar");
+            }
+          }}
+        />
+      )}
+
+      {assigning && (
+        <AssignDialog
+          row={assigning}
+          isGlobal={data.isGlobal}
+          units={data.units.filter((u: any) => u.active)}
+          allAreas={data.allAreas ?? []}
+          areaName={areaName}
+          onClose={() => setAssigning(null)}
+          onSave={async (payload) => {
+            try {
+              const res = await assign({ data: payload });
+              toast.success(`Vínculo criado. Situação: ${res.status}`);
+              setAssigning(null);
+              qc.invalidateQueries({ queryKey: ["unit-permissions"] });
+            } catch (e: any) {
+              toast.error(e?.message ?? "Falha ao corrigir vínculo");
             }
           }}
         />
@@ -264,6 +331,81 @@ function EditDialog({ row, isGlobal, areas, unitName, areaName, onClose, onSave 
           <Button variant="outline" onClick={() => go("areas")} disabled={busy}>Atualizar áreas</Button>
           <Button variant="outline" onClick={() => go("pending")} disabled={busy || lockedGlobal}>Salvar como pendente</Button>
           <Button onClick={() => go("validate")} disabled={busy || lockedGlobal}>Validar papel</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function AssignDialog({ row, isGlobal, units, allAreas, areaName, onClose, onSave }: {
+  row: Row; isGlobal: boolean; units: any[]; allAreas: any[]; areaName: (id: string) => string;
+  onClose: () => void; onSave: (p: any) => Promise<void>;
+}) {
+  const [unitId, setUnitId] = useState<string>(units[0]?.id ?? "");
+  const [role, setRole] = useState<string>(PEND);
+  const [areaIds, setAreaIds] = useState<string[]>([]);
+  const [isDefault, setIsDefault] = useState(true);
+  const [just, setJust] = useState("");
+  const [obs, setObs] = useState("");
+  const [busy, setBusy] = useState(false);
+  const roleOpts = [PEND, ...UNIT_ROLES.filter((r) => isGlobal || r !== "ADMIN_GLOBAL")];
+  const areas = allAreas.filter((a: any) => a.unit_id === unitId && a.active);
+
+  const go = async () => {
+    if (!unitId) return toast.error("Selecione a unidade.");
+    if (just.trim().length < 5) return toast.error("Informe a justificativa (mínimo 5 caracteres).");
+    setBusy(true);
+    await onSave({
+      userId: row.user_id, unitId, role: role === PEND ? null : role,
+      areaIds, isDefault, justification: just, observation: obs,
+    });
+    setBusy(false);
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+        <DialogHeader><DialogTitle>Corrigir vínculo de {row.nome || "usuário"}</DialogTitle></DialogHeader>
+        <div className="space-y-3 text-sm">
+          <div className="text-xs text-muted-foreground space-y-0.5">
+            <p>E-mail: {row.email || "—"}</p>
+            <p>Papel atual (não muda): {row.papeis_globais.join(", ") || "—"}</p>
+            <p>Área principal do cadastro: {row.area_principal_id ? areaName(row.area_principal_id) : "—"}</p>
+            <p>Criado em: {fmtDate(row.created_at)}</p>
+          </div>
+          <div className="space-y-1">
+            <Label>Unidade *</Label>
+            <Select value={unitId} onValueChange={(v) => { setUnitId(v); setAreaIds([]); }}>
+              <SelectTrigger><SelectValue placeholder="Selecione a unidade" /></SelectTrigger>
+              <SelectContent>{units.map((u: any) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label>Papel na unidade</Label>
+            <Select value={role} onValueChange={setRole}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{roleOpts.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label>Áreas autorizadas</Label>
+            <div className="grid grid-cols-2 gap-1 rounded-md border p-2">
+              {areas.length === 0 && <p className="text-xs text-muted-foreground">Nenhuma área ativa nesta unidade.</p>}
+              {areas.map((a: any) => (
+                <label key={a.id} className="flex items-center gap-2 text-xs">
+                  <Checkbox checked={areaIds.includes(a.id)} onCheckedChange={(v) => setAreaIds(v ? [...areaIds, a.id] : areaIds.filter((x) => x !== a.id))} />
+                  {a.nome}
+                </label>
+              ))}
+            </div>
+          </div>
+          <label className="flex items-center gap-2"><Switch checked={isDefault} onCheckedChange={setIsDefault} /> Unidade padrão</label>
+          <div className="space-y-1"><Label>Justificativa *</Label><Textarea value={just} onChange={(e) => setJust(e.target.value)} maxLength={1000} /></div>
+          <div className="space-y-1"><Label>Observação</Label><Textarea value={obs} onChange={(e) => setObs(e.target.value)} maxLength={1000} /></div>
+        </div>
+        <DialogFooter className="flex-wrap gap-2">
+          <Button variant="ghost" onClick={onClose} disabled={busy}>Cancelar</Button>
+          <Button onClick={go} disabled={busy}>Criar vínculo</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

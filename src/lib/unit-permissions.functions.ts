@@ -54,17 +54,19 @@ export const listUnitPermissions = createServerFn({ method: "GET" })
     const { supabaseAdmin: admin } = await import("@/integrations/supabase/client.server");
     const acc = await requireAccess(admin, context.userId);
 
-    let uupQ = admin
+    const { data: allUup, error: e1 } = await admin
       .from("user_unit_permissions")
       .select("id, user_id, unit_id, role, active, is_default_unit, validation_status, justification, observation, updated_at");
-    if (!acc.isGlobal) uupQ = uupQ.in("unit_id", acc.adminUnits);
-    const { data: uup, error: e1 } = await uupQ;
     if (e1) throw new Error(e1.message);
+    const uup = acc.isGlobal
+      ? (allUup ?? [])
+      : (allUup ?? []).filter((r: any) => acc.adminUnits.includes(r.unit_id));
+    const linkedIds = new Set((allUup ?? []).map((r: any) => r.user_id));
     const userIds = [...new Set((uup ?? []).map((r: any) => r.user_id))];
 
     const [profilesR, rolesR, uapR, areasR, unitsR, authR] = await Promise.all([
-      admin.from("profiles").select("id, nome, email, ativo, excluido, area_id").in("id", userIds.length ? userIds : ["00000000-0000-0000-0000-000000000000"]),
-      admin.from("user_roles").select("user_id, role").in("user_id", userIds.length ? userIds : ["00000000-0000-0000-0000-000000000000"]),
+      admin.from("profiles").select("id, nome, email, ativo, excluido, area_id, cargo, created_at").eq("excluido", false),
+      admin.from("user_roles").select("user_id, role"),
       admin.from("user_area_permissions").select("user_id, unit_id, area_id, active").eq("active", true),
       admin.from("areas").select("id, nome, unit_id, active").order("nome"),
       admin.from("units").select("id, name, code, active").order("name"),
@@ -76,6 +78,8 @@ export const listUnitPermissions = createServerFn({ method: "GET" })
     for (const u of authR.data?.users ?? []) lastSignIn.set(u.id, u.last_sign_in_at ?? null);
     const profiles = new Map((profilesR.data ?? []).map((p: any) => [p.id, p]));
     const units = (unitsR.data ?? []).filter((u: any) => acc.isGlobal || acc.adminUnits.includes(u.id));
+    const rolesOf = (id: string) =>
+      (rolesR.data ?? []).filter((x: any) => x.user_id === id).map((x: any) => x.role);
 
     const rows = (uup ?? []).map((r: any) => {
       const p: any = profiles.get(r.user_id) ?? {};
@@ -83,23 +87,155 @@ export const listUnitPermissions = createServerFn({ method: "GET" })
         ...r,
         nome: p.nome ?? null,
         email: p.email ?? null,
+        cargo: p.cargo ?? null,
+        created_at: p.created_at ?? null,
         conta_ativa: p.ativo !== false && !p.excluido,
         excluido: !!p.excluido,
         area_principal_id: p.area_id ?? null,
-        papeis_globais: (rolesR.data ?? []).filter((x: any) => x.user_id === r.user_id).map((x: any) => x.role),
+        papeis_globais: rolesOf(r.user_id),
         area_ids: (uapR.data ?? [])
           .filter((x: any) => x.user_id === r.user_id && x.unit_id === r.unit_id)
           .map((x: any) => x.area_id),
         ultimo_acesso: lastSignIn.get(r.user_id) ?? null,
+        sem_unidade: false,
       };
     });
+
+    // Usuários que ainda não têm nenhum vínculo de unidade (status SEM_UNIDADE).
+    const unlinked = (acc.isGlobal ? (profilesR.data ?? []) : [])
+      .filter((p: any) => !linkedIds.has(p.id))
+      .map((p: any) => ({
+        id: `nounit:${p.id}`,
+        user_id: p.id,
+        unit_id: null,
+        role: null,
+        active: true,
+        is_default_unit: false,
+        validation_status: "SEM_UNIDADE",
+        justification: null,
+        observation: null,
+        updated_at: null,
+        nome: p.nome ?? null,
+        email: p.email ?? null,
+        cargo: p.cargo ?? null,
+        created_at: p.created_at ?? null,
+        conta_ativa: p.ativo !== false,
+        excluido: false,
+        area_principal_id: p.area_id ?? null,
+        papeis_globais: rolesOf(p.id),
+        area_ids: [] as string[],
+        ultimo_acesso: lastSignIn.get(p.id) ?? null,
+        sem_unidade: true,
+      }));
+
     return {
-      rows,
+      rows: [...unlinked, ...rows],
       units,
       areas: (areasR.data ?? []).filter((a: any) => units.some((u: any) => u.id === a.unit_id)),
+      allAreas: areasR.data ?? [],
       me: context.userId,
       isGlobal: acc.isGlobal,
     };
+  });
+
+const assignSchema = z.object({
+  userId: z.string().uuid(),
+  unitId: z.string().uuid(),
+  role: z.enum(UNIT_ROLES).nullable(),
+  areaIds: z.array(z.string().uuid()).max(50),
+  isDefault: z.boolean(),
+  justification: z.string().trim().max(1000),
+  observation: z.string().trim().max(1000).optional().default(""),
+});
+
+/** Corrige o vínculo de um usuário que não pertence a nenhuma unidade. */
+export const assignUserUnit = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => assignSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin: admin } = await import("@/integrations/supabase/client.server");
+    const acc = await requireAccess(admin, context.userId);
+
+    if (data.userId === context.userId) throw new Error("Você não pode alterar o próprio vínculo.");
+    if (data.justification.length < 5) throw new Error("Informe uma justificativa (mínimo 5 caracteres).");
+    if (!acc.isGlobal && !acc.adminUnits.includes(data.unitId)) {
+      throw new Error("Acesso negado: você só administra a própria unidade.");
+    }
+    if (data.role === "ADMIN_GLOBAL" && !acc.isGlobal) {
+      throw new Error("Somente um ADMIN_GLOBAL pode atribuir ADMIN_GLOBAL.");
+    }
+
+    const { data: prof, error: pErr } = await admin
+      .from("profiles").select("id, excluido").eq("id", data.userId).maybeSingle();
+    if (pErr) throw new Error(pErr.message);
+    if (!prof || prof.excluido) throw new Error("Usuário não encontrado.");
+
+    const { data: existing } = await admin
+      .from("user_unit_permissions").select("id").eq("user_id", data.userId).eq("unit_id", data.unitId).maybeSingle();
+    if (existing) throw new Error("Este usuário já possui vínculo com esta unidade. Use Editar.");
+
+    const { data: unitRow } = await admin.from("units").select("id, active").eq("id", data.unitId).maybeSingle();
+    if (!unitRow) throw new Error("Unidade não encontrada.");
+    if (!unitRow.active) throw new Error("Unidade inativa: escolha uma unidade ativa.");
+
+    const { data: unitAreas } = await admin.from("areas").select("id").eq("unit_id", data.unitId);
+    const valid = new Set((unitAreas ?? []).map((a: any) => a.id));
+    if (data.areaIds.some((id) => !valid.has(id))) throw new Error("Área não pertence à unidade.");
+
+    const hasArea = data.areaIds.length > 0;
+    const status = !data.role && !hasArea
+      ? "PENDENTE_PAPEL_E_AREA"
+      : !data.role
+        ? "PENDENTE_PAPEL"
+        : !hasArea
+          ? "PENDENTE_AREA"
+          : "PENDENTE_PAPEL";
+
+    const { data: inserted, error: iErr } = await admin
+      .from("user_unit_permissions")
+      .insert({
+        user_id: data.userId,
+        unit_id: data.unitId,
+        role: data.role,
+        active: true,
+        is_default_unit: data.isDefault,
+        validation_status: status,
+        justification: data.justification,
+        observation: data.observation || null,
+        created_by: context.userId,
+        updated_by: context.userId,
+      })
+      .select("id")
+      .maybeSingle();
+    if (iErr) throw new Error(iErr.message);
+
+    if (hasArea) {
+      const { error: aErr } = await admin.from("user_area_permissions").upsert(
+        data.areaIds.map((a) => ({
+          user_id: data.userId, unit_id: data.unitId, area_id: a, active: true,
+          created_by: context.userId, updated_by: context.userId,
+        })),
+        { onConflict: "user_id,area_id" },
+      );
+      if (aErr) throw new Error(aErr.message);
+    }
+
+    await admin.from("unit_audit_log").insert({
+      unit_id: data.unitId,
+      user_id: context.userId,
+      action: "CORRIGIR_VINCULO",
+      entity: "user_unit_permissions",
+      entity_id: data.userId,
+      previous_value: { unidade: null, role: null, validation_status: "SEM_UNIDADE", areas: [] },
+      new_value: {
+        permission_id: inserted?.id ?? null, unit_id: data.unitId, role: data.role,
+        validation_status: status, is_default_unit: data.isDefault, areas: data.areaIds,
+        observation: data.observation || null,
+      },
+      justification: data.justification,
+    });
+
+    return { ok: true, status };
   });
 
 const saveSchema = z.object({
