@@ -309,10 +309,34 @@ function UsuariosPage() {
               <Input value={cargo} onChange={(e) => setCargo(e.target.value)} placeholder="Ex.: Supervisor" />
             </div>
             <div className="space-y-1.5">
-              <Label>Área</Label>
-              <Select value={areaId} onValueChange={setAreaId}>
+              <Label>Unidade *</Label>
+              <Select
+                value={unitId}
+                onValueChange={(v) => {
+                  setUnitId(v);
+                  setAreaId("");
+                }}
+              >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione..." />
+                  <SelectValue placeholder="Selecione a unidade..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {unitOptions.map((u: any) => (
+                    <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {!unitId && (
+                <p className="text-xs text-destructive">
+                  O cadastro só é concluído com uma unidade definida.
+                </p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label>Área</Label>
+              <Select value={areaId} onValueChange={setAreaId} disabled={!unitId}>
+                <SelectTrigger>
+                  <SelectValue placeholder={unitId ? "Selecione..." : "Escolha a unidade primeiro"} />
                 </SelectTrigger>
                 <SelectContent>
                   {(areasQ.data ?? []).map((a: any) => (
