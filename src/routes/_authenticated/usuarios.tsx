@@ -89,21 +89,41 @@ function UsuariosPage() {
     queryFn: () => listUsers({ data: { status } }),
   });
 
-  const areasQ = useQuery({
-    queryKey: ["areas"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("areas").select("id, nome").match(unitMatch()).order("nome");
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
-
+  const activeUnitId = useActiveUnitId();
+  const myUnits = useMyUnits(!!canManageUsers);
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<AppRole>("consulta");
   const [cargo, setCargo] = useState("");
   const [areaId, setAreaId] = useState<string>("");
+  const [unitId, setUnitId] = useState<string>("");
+
+  const unitOptions = myUnits.data?.units ?? [];
+  useEffect(() => {
+    if (unitId) return;
+    const fallback =
+      (activeUnitId && unitOptions.some((u: any) => u.id === activeUnitId) ? activeUnitId : null) ??
+      myUnits.data?.defaultUnitId ??
+      unitOptions[0]?.id ??
+      "";
+    if (fallback) setUnitId(fallback);
+  }, [activeUnitId, unitOptions, myUnits.data?.defaultUnitId, unitId]);
+
+  const areasQ = useQuery({
+    queryKey: ["areas", unitId],
+    enabled: !!unitId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("areas")
+        .select("id, nome")
+        .eq("unit_id", unitId)
+        .eq("active", true)
+        .order("nome");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
 
   const [editing, setEditing] = useState<EditingUser | null>(null);
   const [resetting, setResetting] = useState<{
