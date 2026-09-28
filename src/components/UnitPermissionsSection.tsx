@@ -130,25 +130,36 @@ export function UnitPermissionsSection() {
         </div>
         <div className="flex flex-wrap gap-1">
           <Badge variant={r.conta_ativa ? "default" : "outline"}>{r.excluido ? "Excluído" : r.conta_ativa ? "Conta ativa" : "Conta inativa"}</Badge>
-          <Badge variant={r.validation_status === "VALIDADO" ? "secondary" : "outline"}>{r.validation_status}</Badge>
-          {r.active && r.area_ids.length === 0 && (
+          {r.sem_unidade ? (
+            <Badge variant="destructive"><AlertTriangle className="mr-1 h-3 w-3" />SEM_UNIDADE</Badge>
+          ) : (
+            <Badge variant={r.validation_status === "VALIDADO" ? "secondary" : "outline"}>{r.validation_status}</Badge>
+          )}
+          {!r.sem_unidade && r.active && r.area_ids.length === 0 && (
             <Badge variant="destructive"><AlertTriangle className="mr-1 h-3 w-3" />Área pendente</Badge>
           )}
         </div>
       </div>
       <div className="grid gap-x-4 gap-y-0.5 text-xs text-muted-foreground sm:grid-cols-2">
         <span>Papel atual: <b className="text-foreground">{r.papeis_globais.join(", ") || "—"}</b></span>
-        <span>Novo papel local: <b className="text-foreground">{r.role ?? PEND}</b></span>
+        <span>Novo papel local: <b className="text-foreground">{r.role ?? (r.sem_unidade ? "—" : PEND)}</b></span>
         <span>Unidade: {unitName(r.unit_id)}{r.is_default_unit ? " (padrão)" : ""}</span>
         <span>Área principal: {r.area_principal_id ? areaName(r.area_principal_id) : "—"}</span>
         <span>Áreas autorizadas: {r.area_ids.map(areaName).join(", ") || "—"}</span>
+        <span>Criado em: {fmtDate(r.created_at)}</span>
         <span>Último acesso: {fmt(r.ultimo_acesso)}</span>
         <span>Ação necessária: <b className="text-foreground">{acaoNecessaria(r)}</b></span>
       </div>
       <div className="pt-1">
-        <Button size="sm" variant="outline" disabled={r.user_id === data.me} onClick={() => setEdit(r)}>
-          {r.user_id === data.me ? "Você não pode editar a si mesmo" : "Editar"}
-        </Button>
+        {r.sem_unidade ? (
+          <Button size="sm" disabled={r.user_id === data.me} onClick={() => setAssigning(r)}>
+            {r.user_id === data.me ? "Você não pode editar a si mesmo" : "Corrigir vínculo"}
+          </Button>
+        ) : (
+          <Button size="sm" variant="outline" disabled={r.user_id === data.me} onClick={() => setEdit(r)}>
+            {r.user_id === data.me ? "Você não pode editar a si mesmo" : "Editar"}
+          </Button>
+        )}
       </div>
     </div>
   );
