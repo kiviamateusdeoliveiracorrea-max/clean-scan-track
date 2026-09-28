@@ -26,7 +26,13 @@ function fmt(d: string | null) {
   return new Date(d).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" });
 }
 
+function fmtDate(d: string | null) {
+  if (!d) return "—";
+  return new Date(d).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+}
+
 function acaoNecessaria(r: Row) {
+  if (r.sem_unidade) return "Corrigir vínculo (definir unidade)";
   if (!r.active) return "—";
   if (r.validation_status === "VALIDADO") return r.area_ids.length ? "Nenhuma" : "Revisar área";
   if (!r.role && !r.area_ids.length) return "Definir papel e área";
