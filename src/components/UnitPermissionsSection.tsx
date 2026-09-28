@@ -45,6 +45,7 @@ export function UnitPermissionsSection() {
   const qc = useQueryClient();
   const list = useServerFn(listUnitPermissions);
   const save = useServerFn(saveUnitPermission);
+  const assign = useServerFn(assignUserUnit);
   const q = useQuery({
     queryKey: ["unit-permissions"],
     queryFn: async () => {
@@ -58,14 +59,19 @@ export function UnitPermissionsSection() {
     },
     retry: false,
   });
-  const [f, setF] = useState({ unit: ALL, oldRole: ALL, newRole: ALL, area: ALL, status: ALL, valid: ALL, semArea: false, adminPend: false, busca: "" });
+  const [f, setF] = useState({ unit: ALL, oldRole: ALL, newRole: ALL, area: ALL, status: ALL, valid: ALL, semArea: false, semUnidade: false, pendValid: false, adminPend: false, busca: "" });
   const [edit, setEdit] = useState<Row | null>(null);
+  const [assigning, setAssigning] = useState<Row | null>(null);
 
   const data = q.data;
-  const areaName = (id: string) => data?.areas.find((a: any) => a.id === id)?.nome ?? "—";
-  const unitName = (id: string) => data?.units.find((u: any) => u.id === id)?.name ?? "—";
+  const areaName = (id: string) =>
+    (data?.allAreas ?? data?.areas ?? []).find((a: any) => a.id === id)?.nome ?? "—";
+  const unitName = (id: string | null) =>
+    !id ? "Sem unidade" : data?.units.find((u: any) => u.id === id)?.name ?? "—";
   const isAdminPend = (r: Row) =>
-    r.active && r.validation_status !== "VALIDADO" && (r.papeis_globais.includes("administrador") || ["ADMIN_GLOBAL", "ADMIN_UNIDADE"].includes(r.role));
+    !r.sem_unidade && r.active && r.validation_status !== "VALIDADO" && (r.papeis_globais.includes("administrador") || ["ADMIN_GLOBAL", "ADMIN_UNIDADE"].includes(r.role));
+  const isPendValid = (r: Row) =>
+    r.sem_unidade || (r.active && r.validation_status !== "VALIDADO" && r.validation_status !== "INATIVO");
 
   const rows: Row[] = useMemo(() => {
     const all = data?.rows ?? [];
@@ -77,6 +83,8 @@ export function UnitPermissionsSection() {
       if (f.status !== ALL && (f.status === "ativo") !== (r.active && r.conta_ativa)) return false;
       if (f.valid !== ALL && (f.valid === "VALIDADO") !== (r.validation_status === "VALIDADO")) return false;
       if (f.semArea && r.area_ids.length > 0) return false;
+      if (f.semUnidade && !r.sem_unidade) return false;
+      if (f.pendValid && !isPendValid(r)) return false;
       if (f.adminPend && !isAdminPend(r)) return false;
       if (f.busca && !`${r.nome} ${r.email}`.toLowerCase().includes(f.busca.toLowerCase())) return false;
       return true;
@@ -88,10 +96,12 @@ export function UnitPermissionsSection() {
   if (!data) return null;
 
   const all = data.rows as Row[];
+  const semUnidade = all.filter((r) => r.sem_unidade);
   const kpis = [
     ["Total de usuários", all.length],
     ["Papéis validados", all.filter((r) => r.validation_status === "VALIDADO").length],
-    ["Papéis pendentes", all.filter((r) => r.active && r.validation_status !== "VALIDADO" && r.validation_status !== "INATIVO").length],
+    ["Papéis pendentes", all.filter((r) => !r.sem_unidade && r.active && r.validation_status !== "VALIDADO" && r.validation_status !== "INATIVO").length],
+    ["Usuários sem unidade", semUnidade.length],
     ["Usuários sem área", all.filter((r) => r.active && r.area_ids.length === 0).length],
     ["Administradores pendentes", all.filter(isAdminPend).length],
     ["Usuários inativos", all.filter((r) => !r.active || !r.conta_ativa).length],
