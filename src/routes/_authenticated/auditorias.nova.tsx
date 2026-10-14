@@ -1,3 +1,4 @@
+import { calcularScore } from "@/lib/audit-score";
 import { unitMatch, pickUnitQuestions } from "@/lib/active-unit";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
