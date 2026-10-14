@@ -9,34 +9,30 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
-import { Route as AlterarSenhaObrigatoriaRouteImport } from './routes/alterar-senha-obrigatoria'
-import { Route as AuthRouteImport } from './routes/auth'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AlterarSenhaObrigatoriaRouteImport } from './routes/alterar-senha-obrigatoria'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
-import { Route as AuthenticatedAlertasRouteImport } from './routes/_authenticated/alertas'
-import { Route as AuthenticatedAreasRouteImport } from './routes/_authenticated/areas'
-import { Route as AuthenticatedArquivosSemVinculoRouteImport } from './routes/_authenticated/arquivos-sem-vinculo'
-import { Route as AuthenticatedAuditoresRouteImport } from './routes/_authenticated/auditores'
-import { Route as AuthenticatedGembaRouteImport } from './routes/_authenticated/gemba'
-import { Route as AuthenticatedHistoricoRouteImport } from './routes/_authenticated/historico'
-import { Route as AuthenticatedMelhoriasRouteImport } from './routes/_authenticated/melhorias'
-import { Route as AuthenticatedMinhaContaRouteImport } from './routes/_authenticated/minha-conta'
-import { Route as AuthenticatedNaoConformidadesRouteImport } from './routes/_authenticated/nao-conformidades'
-import { Route as AuthenticatedPerguntasRouteImport } from './routes/_authenticated/perguntas'
-import { Route as AuthenticatedUnidadesRouteImport } from './routes/_authenticated/unidades'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
+import { Route as AuthenticatedUnidadesRouteImport } from './routes/_authenticated/unidades'
+import { Route as AuthenticatedPerguntasRouteImport } from './routes/_authenticated/perguntas'
+import { Route as AuthenticatedNaoConformidadesRouteImport } from './routes/_authenticated/nao-conformidades'
+import { Route as AuthenticatedMinhaContaRouteImport } from './routes/_authenticated/minha-conta'
+import { Route as AuthenticatedMelhoriasRouteImport } from './routes/_authenticated/melhorias'
+import { Route as AuthenticatedHistoricoRouteImport } from './routes/_authenticated/historico'
+import { Route as AuthenticatedGembaRouteImport } from './routes/_authenticated/gemba'
+import { Route as AuthenticatedAuditoresRouteImport } from './routes/_authenticated/auditores'
+import { Route as AuthenticatedArquivosSemVinculoRouteImport } from './routes/_authenticated/arquivos-sem-vinculo'
+import { Route as AuthenticatedAreasRouteImport } from './routes/_authenticated/areas'
+import { Route as AuthenticatedAlertasRouteImport } from './routes/_authenticated/alertas'
 import { Route as AuthenticatedAuditoriasIndexRouteImport } from './routes/_authenticated/auditorias.index'
-import { Route as AuthenticatedAuditoriasIdRouteImport } from './routes/_authenticated/auditorias.$id'
 import { Route as AuthenticatedAuditoriasNovaRouteImport } from './routes/_authenticated/auditorias.nova'
+import { Route as AuthenticatedAuditoriasIdRouteImport } from './routes/_authenticated/auditorias.$id'
 
-const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
-  id: '/_authenticated',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AlterarSenhaObrigatoriaRoute = AlterarSenhaObrigatoriaRouteImport.update({
-  id: '/alterar-senha-obrigatoria',
-  path: '/alterar-senha-obrigatoria',
+const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
+  id: '/redefinir-senha',
+  path: '/redefinir-senha',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -44,9 +40,13 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
-  id: '/redefinir-senha',
-  path: '/redefinir-senha',
+const AlterarSenhaObrigatoriaRoute = AlterarSenhaObrigatoriaRouteImport.update({
+  id: '/alterar-senha-obrigatoria',
+  path: '/alterar-senha-obrigatoria',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
@@ -54,45 +54,19 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedAlertasRoute = AuthenticatedAlertasRouteImport.update({
-  id: '/alertas',
-  path: '/alertas',
+const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
+  id: '/usuarios',
+  path: '/usuarios',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedAreasRoute = AuthenticatedAreasRouteImport.update({
-  id: '/areas',
-  path: '/areas',
+const AuthenticatedUnidadesRoute = AuthenticatedUnidadesRouteImport.update({
+  id: '/unidades',
+  path: '/unidades',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedArquivosSemVinculoRoute =
-  AuthenticatedArquivosSemVinculoRouteImport.update({
-    id: '/arquivos-sem-vinculo',
-    path: '/arquivos-sem-vinculo',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedAuditoresRoute = AuthenticatedAuditoresRouteImport.update({
-  id: '/auditores',
-  path: '/auditores',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedGembaRoute = AuthenticatedGembaRouteImport.update({
-  id: '/gemba',
-  path: '/gemba',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedHistoricoRoute = AuthenticatedHistoricoRouteImport.update({
-  id: '/historico',
-  path: '/historico',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedMelhoriasRoute = AuthenticatedMelhoriasRouteImport.update({
-  id: '/melhorias',
-  path: '/melhorias',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedMinhaContaRoute = AuthenticatedMinhaContaRouteImport.update({
-  id: '/minha-conta',
-  path: '/minha-conta',
+const AuthenticatedPerguntasRoute = AuthenticatedPerguntasRouteImport.update({
+  id: '/perguntas',
+  path: '/perguntas',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedNaoConformidadesRoute =
@@ -101,19 +75,45 @@ const AuthenticatedNaoConformidadesRoute =
     path: '/nao-conformidades',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedPerguntasRoute = AuthenticatedPerguntasRouteImport.update({
-  id: '/perguntas',
-  path: '/perguntas',
+const AuthenticatedMinhaContaRoute = AuthenticatedMinhaContaRouteImport.update({
+  id: '/minha-conta',
+  path: '/minha-conta',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedUnidadesRoute = AuthenticatedUnidadesRouteImport.update({
-  id: '/unidades',
-  path: '/unidades',
+const AuthenticatedMelhoriasRoute = AuthenticatedMelhoriasRouteImport.update({
+  id: '/melhorias',
+  path: '/melhorias',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
-  id: '/usuarios',
-  path: '/usuarios',
+const AuthenticatedHistoricoRoute = AuthenticatedHistoricoRouteImport.update({
+  id: '/historico',
+  path: '/historico',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedGembaRoute = AuthenticatedGembaRouteImport.update({
+  id: '/gemba',
+  path: '/gemba',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAuditoresRoute = AuthenticatedAuditoresRouteImport.update({
+  id: '/auditores',
+  path: '/auditores',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedArquivosSemVinculoRoute =
+  AuthenticatedArquivosSemVinculoRouteImport.update({
+    id: '/arquivos-sem-vinculo',
+    path: '/arquivos-sem-vinculo',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAreasRoute = AuthenticatedAreasRouteImport.update({
+  id: '/areas',
+  path: '/areas',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAlertasRoute = AuthenticatedAlertasRouteImport.update({
+  id: '/alertas',
+  path: '/alertas',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAuditoriasIndexRoute =
@@ -122,16 +122,16 @@ const AuthenticatedAuditoriasIndexRoute =
     path: '/auditorias/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAuditoriasIdRoute =
-  AuthenticatedAuditoriasIdRouteImport.update({
-    id: '/auditorias/$id',
-    path: '/auditorias/$id',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedAuditoriasNovaRoute =
   AuthenticatedAuditoriasNovaRouteImport.update({
     id: '/auditorias/nova',
     path: '/auditorias/nova',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAuditoriasIdRoute =
+  AuthenticatedAuditoriasIdRouteImport.update({
+    id: '/auditorias/$id',
+    path: '/auditorias/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
@@ -276,18 +276,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/_authenticated': {
-      id: '/_authenticated'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/alterar-senha-obrigatoria': {
-      id: '/alterar-senha-obrigatoria'
-      path: '/alterar-senha-obrigatoria'
-      fullPath: '/alterar-senha-obrigatoria'
-      preLoaderRoute: typeof AlterarSenhaObrigatoriaRouteImport
+    '/redefinir-senha': {
+      id: '/redefinir-senha'
+      path: '/redefinir-senha'
+      fullPath: '/redefinir-senha'
+      preLoaderRoute: typeof RedefinirSenhaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -297,11 +290,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/redefinir-senha': {
-      id: '/redefinir-senha'
-      path: '/redefinir-senha'
-      fullPath: '/redefinir-senha'
-      preLoaderRoute: typeof RedefinirSenhaRouteImport
+    '/alterar-senha-obrigatoria': {
+      id: '/alterar-senha-obrigatoria'
+      path: '/alterar-senha-obrigatoria'
+      fullPath: '/alterar-senha-obrigatoria'
+      preLoaderRoute: typeof AlterarSenhaObrigatoriaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/': {
@@ -311,74 +311,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/alertas': {
-      id: '/_authenticated/alertas'
-      path: '/alertas'
-      fullPath: '/alertas'
-      preLoaderRoute: typeof AuthenticatedAlertasRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/areas': {
-      id: '/_authenticated/areas'
-      path: '/areas'
-      fullPath: '/areas'
-      preLoaderRoute: typeof AuthenticatedAreasRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/arquivos-sem-vinculo': {
-      id: '/_authenticated/arquivos-sem-vinculo'
-      path: '/arquivos-sem-vinculo'
-      fullPath: '/arquivos-sem-vinculo'
-      preLoaderRoute: typeof AuthenticatedArquivosSemVinculoRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/auditores': {
-      id: '/_authenticated/auditores'
-      path: '/auditores'
-      fullPath: '/auditores'
-      preLoaderRoute: typeof AuthenticatedAuditoresRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/gemba': {
-      id: '/_authenticated/gemba'
-      path: '/gemba'
-      fullPath: '/gemba'
-      preLoaderRoute: typeof AuthenticatedGembaRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/historico': {
-      id: '/_authenticated/historico'
-      path: '/historico'
-      fullPath: '/historico'
-      preLoaderRoute: typeof AuthenticatedHistoricoRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/melhorias': {
-      id: '/_authenticated/melhorias'
-      path: '/melhorias'
-      fullPath: '/melhorias'
-      preLoaderRoute: typeof AuthenticatedMelhoriasRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/minha-conta': {
-      id: '/_authenticated/minha-conta'
-      path: '/minha-conta'
-      fullPath: '/minha-conta'
-      preLoaderRoute: typeof AuthenticatedMinhaContaRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/nao-conformidades': {
-      id: '/_authenticated/nao-conformidades'
-      path: '/nao-conformidades'
-      fullPath: '/nao-conformidades'
-      preLoaderRoute: typeof AuthenticatedNaoConformidadesRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/perguntas': {
-      id: '/_authenticated/perguntas'
-      path: '/perguntas'
-      fullPath: '/perguntas'
-      preLoaderRoute: typeof AuthenticatedPerguntasRouteImport
+    '/_authenticated/usuarios': {
+      id: '/_authenticated/usuarios'
+      path: '/usuarios'
+      fullPath: '/usuarios'
+      preLoaderRoute: typeof AuthenticatedUsuariosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/unidades': {
@@ -388,11 +325,74 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUnidadesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/usuarios': {
-      id: '/_authenticated/usuarios'
-      path: '/usuarios'
-      fullPath: '/usuarios'
-      preLoaderRoute: typeof AuthenticatedUsuariosRouteImport
+    '/_authenticated/perguntas': {
+      id: '/_authenticated/perguntas'
+      path: '/perguntas'
+      fullPath: '/perguntas'
+      preLoaderRoute: typeof AuthenticatedPerguntasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/nao-conformidades': {
+      id: '/_authenticated/nao-conformidades'
+      path: '/nao-conformidades'
+      fullPath: '/nao-conformidades'
+      preLoaderRoute: typeof AuthenticatedNaoConformidadesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/minha-conta': {
+      id: '/_authenticated/minha-conta'
+      path: '/minha-conta'
+      fullPath: '/minha-conta'
+      preLoaderRoute: typeof AuthenticatedMinhaContaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/melhorias': {
+      id: '/_authenticated/melhorias'
+      path: '/melhorias'
+      fullPath: '/melhorias'
+      preLoaderRoute: typeof AuthenticatedMelhoriasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/historico': {
+      id: '/_authenticated/historico'
+      path: '/historico'
+      fullPath: '/historico'
+      preLoaderRoute: typeof AuthenticatedHistoricoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/gemba': {
+      id: '/_authenticated/gemba'
+      path: '/gemba'
+      fullPath: '/gemba'
+      preLoaderRoute: typeof AuthenticatedGembaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/auditores': {
+      id: '/_authenticated/auditores'
+      path: '/auditores'
+      fullPath: '/auditores'
+      preLoaderRoute: typeof AuthenticatedAuditoresRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/arquivos-sem-vinculo': {
+      id: '/_authenticated/arquivos-sem-vinculo'
+      path: '/arquivos-sem-vinculo'
+      fullPath: '/arquivos-sem-vinculo'
+      preLoaderRoute: typeof AuthenticatedArquivosSemVinculoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/areas': {
+      id: '/_authenticated/areas'
+      path: '/areas'
+      fullPath: '/areas'
+      preLoaderRoute: typeof AuthenticatedAreasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/alertas': {
+      id: '/_authenticated/alertas'
+      path: '/alertas'
+      fullPath: '/alertas'
+      preLoaderRoute: typeof AuthenticatedAlertasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/auditorias/': {
@@ -402,18 +402,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAuditoriasIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/auditorias/$id': {
-      id: '/_authenticated/auditorias/$id'
-      path: '/auditorias/$id'
-      fullPath: '/auditorias/$id'
-      preLoaderRoute: typeof AuthenticatedAuditoriasIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/auditorias/nova': {
       id: '/_authenticated/auditorias/nova'
       path: '/auditorias/nova'
       fullPath: '/auditorias/nova'
       preLoaderRoute: typeof AuthenticatedAuditoriasNovaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/auditorias/$id': {
+      id: '/_authenticated/auditorias/$id'
+      path: '/auditorias/$id'
+      fullPath: '/auditorias/$id'
+      preLoaderRoute: typeof AuthenticatedAuditoriasIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
   }
