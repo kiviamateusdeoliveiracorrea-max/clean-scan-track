@@ -1,4 +1,4 @@
-/// <reference types="bun-types" />
+// @ts-ignore bun runtime module (testes rodam com bun test)
 import { describe, expect, test } from "bun:test";
 import { calcularScore, type ItemScore } from "./audit-score";
 
