@@ -2,10 +2,13 @@ import { calcularScore } from "@/lib/audit-score";
 import { unitMatch, pickUnitQuestions } from "@/lib/active-unit";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { getActiveUnitId } from "@/lib/active-unit";
+import { draftStore } from "@/lib/audit-draft-store";
+import { singleFlight, validateAnswers, uploadProgress } from "@/lib/audit-save-flow";
+import { uploadAuditPhotos } from "@/lib/audit-photo-upload";
 import { supabase } from "@/integrations/supabase/client";
-import { uploadPhotos, rollbackUploads } from "@/lib/upload-photos";
-import { resolveImageMime, validateNcPhoto } from "@/lib/nc-photo-upload";
+import { rollbackUploads } from "@/lib/upload-photos";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -32,6 +35,7 @@ import {
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/auditorias/nova")({
+  head: () => ({ meta: [{ title: "Nova Auditoria 5S | AuditLog" }, { name: "description", content: "Registre uma auditoria 5S com respostas e evidências." }, { property: "og:title", content: "Nova Auditoria 5S | AuditLog" }, { property: "og:description", content: "Registro de auditorias e evidências 5S." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   component: NovaAuditoria,
 });
 
@@ -57,6 +61,17 @@ function NovaAuditoria() {
   const [data, setData] = useState(() => new Date().toISOString().slice(0, 10));
   const [observacoes, setObservacoes] = useState("");
   const [saving, setSaving] = useState(false);
+  const saveLock = useRef(false);
+  const finished = useRef(false);
+  const draftFlight = useRef(singleFlight<string | null>());
+  const draftRef = useRef<string | null>(null);
+  const answerQueue = useRef<Promise<unknown>>(Promise.resolve());
+  const controller = useRef<AbortController | null>(null);
+  const [progress, setProgress] = useState<ReturnType<typeof uploadProgress> | null>(null);
+  const [saveError, setSaveError] = useState("");
+  const [localKey, setLocalKey] = useState("");
+  const [restored, setRestored] = useState(false);
+  const [draftFeedback, setDraftFeedback] = useState("");
   const [fotos, setFotos] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   type RespostaItem = {
@@ -98,13 +113,7 @@ function NovaAuditoria() {
     if (!files || files.length === 0) return;
     const arr = Array.from(files);
     setFotos((f) => [...f, ...arr]);
-    arr.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setPreviews((p) => [...p, reader.result as string]);
-      };
-      reader.readAsDataURL(file);
-    });
+
   };
 
   const removeFoto = (idx: number) => {
@@ -113,29 +122,25 @@ function NovaAuditoria() {
   };
 
   // ---- Rascunho + salvamento automático das respostas ----
-  const ensureDraft = async (): Promise<string | null> => {
-    if (draftId) return draftId;
+  const ensureDraft = (): Promise<string | null> => draftFlight.current(async () => {
+    if (draftRef.current) return draftRef.current;
     if (!areaId || !auditorId) {
       toast.error("Selecione a área e o auditor antes de responder.");
       return null;
     }
-    const { data: d, error } = await supabase
-      .from("auditorias")
-      .insert(({
-        area_id: areaId,
-        auditor_id: auditorId,
-        data_auditoria: data,
-        status: "rascunho",
-      } as any))
-      .select("id")
-      .single();
+    const unitId = areasQ.data?.find((area) => area.id === areaId)?.unit_id;
+    if (!unitId) { toast.error("Não foi possível identificar a unidade da área."); return null; }
+    const { data: d, error } = await supabase.from("auditorias").insert({
+      area_id: areaId, unit_id: unitId, auditor_id: auditorId, data_auditoria: data, status: "rascunho",
+    }).select("id").single();
     if (error || !d) {
       toast.error("Erro ao iniciar auditoria: " + (error?.message ?? ""));
       return null;
     }
+    draftRef.current = d.id;
     setDraftId(d.id);
     return d.id;
-  };
+  });
 
   const respostaVazia: RespostaItem = {
     resposta: "SIM",
@@ -156,7 +161,7 @@ function NovaAuditoria() {
     }));
 
 
-  const persistResposta = async (
+  const persistRespostaNow = async (
     perguntaId: string,
     resposta: "SIM" | "NÃO",
     extra?: { observacao?: string; fotoPath?: string },
@@ -175,7 +180,18 @@ function NovaAuditoria() {
       { onConflict: "auditoria_id,pergunta_id" },
     );
     patchResposta(perguntaId, { salvando: false, salvo: !error });
-    if (error) toast.error("Erro ao salvar resposta: " + error.message);
+    if (error) {
+      const pergunta = perguntas.find((p) => p.id === perguntaId)?.pergunta ?? perguntaId;
+      setSaveError(`Falha ao salvar pergunta "${pergunta}": ${error.message}`);
+      toast.error(`Falha ao salvar pergunta "${pergunta}": ${error.message}`);
+    }
+  };
+
+  const persistResposta = (...args: Parameters<typeof persistRespostaNow>) => {
+    if (saveLock.current) return Promise.resolve();
+    const next = answerQueue.current.catch(() => undefined).then(() => persistRespostaNow(...args));
+    answerQueue.current = next;
+    return next;
   };
 
   const responder = async (perguntaId: string, resposta: "SIM" | "NÃO") => {
@@ -194,21 +210,16 @@ function NovaAuditoria() {
     const reader = new FileReader();
     reader.onload = () => patchResposta(perguntaId, { fotoPreview: reader.result as string });
     reader.readAsDataURL(file);
-    const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-    const path = `${id}/nc-${perguntaId}-${Date.now()}.${ext}`;
-    const invalid = validateNcPhoto(file);
-    if (invalid) {
-      toast.error(invalid);
+    let path: string;
+    const uploadController = new AbortController();
+    try {
+      const paths = await uploadAuditPhotos([file], id, setProgress, uploadController.signal);
+      if (!paths[0]) throw new Error("Foto não confirmada.");
+      path = paths[0];
+    } catch (error: any) {
+      toast.error(error?.message ?? "O envio da evidência foi interrompido.");
       return;
-    }
-    const contentType = resolveImageMime(file)!;
-    const { error } = await supabase.storage
-      .from("audit-photos")
-      .upload(path, file, { contentType, upsert: true });
-    if (error) {
-      toast.error("Erro no upload da evidência: " + error.message);
-      return;
-    }
+    } finally { setProgress(null); }
     patchResposta(perguntaId, { fotoPath: path });
     const atual = respostas[perguntaId];
     await persistResposta(perguntaId, "NÃO", {
@@ -294,7 +305,57 @@ function NovaAuditoria() {
   const cls = classificaPontuacao(percentual);
 
 
+  useEffect(() => {
+    const urls = fotos.map((f) => URL.createObjectURL(f));
+    setPreviews(urls);
+    return () => urls.forEach((url) => URL.revokeObjectURL(url));
+  }, [fotos]);
+
+  useEffect(() => {
+    let cancelled = false;
+    supabase.auth.getUser().then(async ({ data: auth }) => {
+      if (!auth.user) return;
+      const key = `${auth.user.id}:${getActiveUnitId() ?? "default"}`;
+      try {
+        const draft = await draftStore(key, "read");
+        if (cancelled) return;
+        if (draft) {
+          const { data: saved } = draft.draftId ? await supabase.from("auditorias").select("status").eq("id", draft.draftId).maybeSingle() : { data: null };
+          if (saved?.status === "concluida") await draftStore(key, "delete");
+          else {
+            setAreaId(draft.areaId); setAuditorId(draft.auditorId); setData(draft.data);
+            setObservacoes(draft.observacoes); setRespostas(draft.respostas); setScores(draft.scores);
+            setComentarios(draft.comentarios); setFotos(draft.fotos ?? []);
+            setDraftId(saved ? draft.draftId : null); draftRef.current = saved ? draft.draftId : null;
+            setNcResponsavelAcaoId(draft.ncResponsavelAcaoId ?? ""); setNcAprovadorId(draft.ncAprovadorId ?? ""); setNcPrazo(draft.ncPrazo ?? "");
+            setDraftFeedback("Rascunho recuperado neste aparelho.");
+          }
+        }
+        setLocalKey(key); setRestored(true);
+      } catch { setDraftFeedback("Não foi possível recuperar o rascunho neste aparelho."); setRestored(true); }
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (!restored || !localKey || saving || finished.current || !areaId) return;
+    const snapshot = { areaId, auditorId, data, observacoes, respostas, scores, comentarios, fotos, draftId,
+      ncResponsavelAcaoId, ncAprovadorId, ncPrazo };
+    void draftStore(localKey, "write", snapshot).then(() => setDraftFeedback("Rascunho salvo neste aparelho.")).catch(() => setDraftFeedback("Não foi possível salvar o rascunho neste aparelho. Mantenha esta tela aberta."));
+  }, [restored, localKey, saving, areaId, auditorId, data, observacoes, respostas, scores, comentarios, fotos, draftId, ncResponsavelAcaoId, ncAprovadorId, ncPrazo]);
+
+  useEffect(() => {
+    const beforeUnload = (event: BeforeUnloadEvent) => {
+      if (saveLock.current) { event.preventDefault(); event.returnValue = ""; }
+    };
+    const offline = () => { if (saveLock.current) { controller.current?.abort(); setSaveError("O envio foi interrompido antes da conclusão da auditoria. Rascunho preservado."); } };
+    window.addEventListener("beforeunload", beforeUnload); window.addEventListener("offline", offline);
+    return () => { window.removeEventListener("beforeunload", beforeUnload); window.removeEventListener("offline", offline); controller.current?.abort(); };
+  }, []);
+
   const handleSave = async () => {
+    if (saveLock.current) return;
+    try { validateAnswers(perguntas, respostas); } catch (e: any) { toast.error(e.message); return; }
     if (!areaId || !auditorId) {
       toast.error("Selecione a área e o auditor");
       return;
@@ -333,50 +394,23 @@ function NovaAuditoria() {
       );
       return;
     }
+    saveLock.current = true;
     setSaving(true);
-
-    const auditoriaId = await ensureDraft();
-    if (!auditoriaId) {
-      setSaving(false);
-      return;
-    }
-
+    setSaveError("");
+    controller.current = new AbortController();
     let uploadedPaths: string[] = [];
+    let committed = false;
     try {
-      uploadedPaths = await uploadPhotos(fotos, auditoriaId, "auditoria-fotos-gerais", auditoriaId);
-    } catch (e: any) {
-      setSaving(false);
-      toast.error(e?.message ?? "Erro no upload de foto.");
-      return;
-    }
-
-    const { error } = await supabase
-      .from("auditorias")
-      .update({
-        area_id: areaId,
-        auditor_id: auditorId,
-        data_auditoria: data,
-        seiri: scores.seiri,
-        seiton: scores.seiton,
-        seiso: scores.seiso,
-        seiketsu: scores.seiketsu,
-        shitsuke: scores.shitsuke,
-        pontuacao_total: total,
-        percentual: Number(percentual.toFixed(2)),
-        nota_pessoas: notaPessoas === null ? null : Number(notaPessoas.toFixed(2)),
-        nota_ambiente: notaAmbiente === null ? null : Number(notaAmbiente.toFixed(2)),
-        nota_processo: notaProcesso === null ? null : Number(notaProcesso.toFixed(2)),
-        observacoes,
-        status: "concluida",
-        ...(uploadedPaths.length > 0 ? { fotos: uploadedPaths } : {}),
-      })
-      .eq("id", auditoriaId);
-    if (error) {
-      await rollbackUploads(uploadedPaths, "auditoria-fotos-gerais", auditoriaId, error);
-      setSaving(false);
-      toast.error("Não foi possível salvar a auditoria. As fotos enviadas foram descartadas. " + error.message);
-      return;
-    }
+    await answerQueue.current;
+    const auditoriaId = await ensureDraft();
+    if (!auditoriaId) throw new Error("Não foi possível iniciar o rascunho.");
+    uploadedPaths = await uploadAuditPhotos(fotos, auditoriaId, setProgress, controller.current.signal);
+    const auditFields = {
+        area_id: areaId, auditor_id: auditorId, data_auditoria: data,
+        ...scores, pontuacao_total: total, percentual: Number(percentual.toFixed(2)),
+        nota_pessoas: notaPessoas, nota_ambiente: notaAmbiente, nota_processo: notaProcesso,
+        observacoes, fotos: uploadedPaths,
+    };
 
     // garante que todas as respostas estão gravadas
     const respostaRows = perguntas
@@ -391,13 +425,6 @@ function NovaAuditoria() {
             : respostas[p.id].observacao) || null,
         foto_url: respostas[p.id].fotoPath || null,
       }));
-    if (respostaRows.length > 0) {
-      const { error: respErr } = await supabase
-        .from("respostas_auditoria")
-        .upsert(respostaRows, { onConflict: "auditoria_id,pergunta_id" });
-      if (respErr) toast.error("Erro ao salvar respostas: " + respErr.message);
-    }
-
     const users = usuariosQ.data ?? [];
     const respUser = users.find((u: any) => u.id === ncResponsavelAcaoId) as any;
     const { data: userData } = await supabase.auth.getUser();
@@ -447,18 +474,38 @@ function NovaAuditoria() {
       });
 
     const ncRows = [...ncPerguntas, ...ncRows5S];
-    if (ncRows.length > 0) {
-      const { error: ncErr } = await supabase.from("nao_conformidades").insert(ncRows as any);
-      if (ncErr) toast.error("Erro ao gerar ações corretivas: " + ncErr.message);
+    const { error: completionError } = await supabase.rpc("complete_audit", {
+      p_id: auditoriaId, p_audit: auditFields, p_answers: respostaRows, p_ncs: ncRows,
+    });
+    if (completionError) {
+      // A lost response is ambiguous: read the status before removing possibly committed evidence.
+      const { data: state, error: stateError } = await supabase.from("auditorias").select("status").eq("id", auditoriaId).single();
+      if (stateError) {
+        uploadedPaths = []; // keep evidence until outcome can be confirmed; never break a committed audit
+        throw new Error("Não foi possível confirmar a conclusão. O rascunho foi preservado; verifique a auditoria antes de tentar novamente.");
+      }
+      if (state?.status !== "concluida") throw completionError;
     }
-
-    setSaving(false);
+    committed = true;
+    finished.current = true;
+    if (localKey) await draftStore(localKey, "delete").catch(() => undefined);
     toast.success(
       ncRows.length > 0
         ? `Auditoria salva! ${ncRows.length} ação(ões) corretiva(s) gerada(s).`
         : "Auditoria salva com sucesso!",
     );
     navigate({ to: "/auditorias/$id", params: { id: auditoriaId } });
+    } catch (error: any) {
+      if (!committed && uploadedPaths.length && draftRef.current) await rollbackUploads(uploadedPaths, "auditoria-fotos-gerais", draftRef.current, error);
+      const message = "O envio foi interrompido antes da conclusão da auditoria. " + (error?.message ?? "Tente novamente.");
+      setSaveError(message);
+      toast.error(message);
+    } finally {
+      saveLock.current = false;
+      setSaving(false);
+      setProgress(null);
+      controller.current = null;
+    }
   };
 
 
@@ -499,6 +546,9 @@ function NovaAuditoria() {
         </Card>
       )}
 
+      {draftFeedback && <p role="status" className="text-sm text-muted-foreground">{draftFeedback}</p>}
+      {saveError && <p role="alert" className="text-sm text-destructive">{saveError}</p>}
+      <fieldset disabled={saving} className="space-y-6 min-w-0">
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Dados gerais</CardTitle>
@@ -508,6 +558,7 @@ function NovaAuditoria() {
             <Label>Área</Label>
             <Select
               value={areaId}
+              disabled={!!draftId}
               onValueChange={(v) => {
                 setAreaId(v);
                 setRespostas({});
@@ -994,6 +1045,11 @@ function NovaAuditoria() {
         </Card>
       )}
 
+      </fieldset>
+      {(saving || progress) && <div role="status" aria-live="polite" className="space-y-2">
+        <p>{progress && progress.completed < progress.total ? `Enviando foto ${progress.completed + 1} de ${progress.total}` : "Gravando respostas e concluindo auditoria…"}</p>
+        {progress && <><progress className="w-full" value={progress.percent} max={100} aria-label="Progresso do envio" /><p>{progress.percent}% · {progress.secondsRemaining === null ? "Estimando tempo…" : `Tempo estimado restante: ${progress.secondsRemaining} s`}</p></>}
+      </div>}
       <Card className="bg-primary text-primary-foreground">
         <CardContent className="p-5 flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
           <div>
