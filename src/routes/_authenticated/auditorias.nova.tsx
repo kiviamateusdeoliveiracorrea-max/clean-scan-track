@@ -62,6 +62,7 @@ function NovaAuditoria() {
   const [observacoes, setObservacoes] = useState("");
   const [saving, setSaving] = useState(false);
   const saveLock = useRef(false);
+  const finished = useRef(false);
   const draftFlight = useRef(singleFlight<string | null>());
   const draftRef = useRef<string | null>(null);
   const answerQueue = useRef<Promise<unknown>>(Promise.resolve());
@@ -337,7 +338,7 @@ function NovaAuditoria() {
   }, []);
 
   useEffect(() => {
-    if (!restored || !localKey || saving || !areaId) return;
+    if (!restored || !localKey || saving || finished.current || !areaId) return;
     const snapshot = { areaId, auditorId, data, observacoes, respostas, scores, comentarios, fotos, draftId,
       ncResponsavelAcaoId, ncAprovadorId, ncPrazo };
     void draftStore(localKey, "write", snapshot).then(() => setDraftFeedback("Rascunho salvo neste aparelho.")).catch(() => setDraftFeedback("Não foi possível salvar o rascunho neste aparelho. Mantenha esta tela aberta."));
@@ -486,6 +487,7 @@ function NovaAuditoria() {
       if (state?.status !== "concluida") throw completionError;
     }
     committed = true;
+    finished.current = true;
     if (localKey) await draftStore(localKey, "delete").catch(() => undefined);
     toast.success(
       ncRows.length > 0
