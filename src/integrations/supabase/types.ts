@@ -1201,6 +1201,10 @@ export type Database = {
     Functions: {
       auditor_units: { Args: { _auditor: string }; Returns: string[] }
       can_view_admin_log: { Args: { _unit: string }; Returns: boolean }
+      complete_audit: {
+        Args: { p_answers: Json; p_audit: Json; p_id: string; p_ncs: Json }
+        Returns: string
+      }
       evidence_owner: {
         Args: { _path: string }
         Returns: {
