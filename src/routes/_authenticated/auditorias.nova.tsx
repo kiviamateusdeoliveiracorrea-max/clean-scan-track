@@ -127,8 +127,10 @@ function NovaAuditoria() {
       toast.error("Selecione a área e o auditor antes de responder.");
       return null;
     }
+    const unitId = areasQ.data?.find((area) => area.id === areaId)?.unit_id;
+    if (!unitId) { toast.error("Não foi possível identificar a unidade da área."); return null; }
     const { data: d, error } = await supabase.from("auditorias").insert({
-      area_id: areaId, auditor_id: auditorId, data_auditoria: data, status: "rascunho",
+      area_id: areaId, unit_id: unitId, auditor_id: auditorId, data_auditoria: data, status: "rascunho",
     }).select("id").single();
     if (error || !d) {
       toast.error("Erro ao iniciar auditoria: " + (error?.message ?? ""));
@@ -485,7 +487,6 @@ function NovaAuditoria() {
     }
     committed = true;
     if (localKey) await draftStore(localKey, "delete").catch(() => undefined);
-    setSaving(false);
     toast.success(
       ncRows.length > 0
         ? `Auditoria salva! ${ncRows.length} ação(ões) corretiva(s) gerada(s).`
