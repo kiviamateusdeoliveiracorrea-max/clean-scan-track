@@ -43,6 +43,13 @@
       "when": 1793711924896,
       "tag": "0005_create_independent_process_audits",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793712051301,
+      "tag": "0006_restrict_process_completion_execution",
+      "breakpoints": true
     }
   ]
 }
