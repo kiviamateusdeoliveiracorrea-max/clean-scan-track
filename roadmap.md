@@ -9,3 +9,8 @@
 - [x] Criar quatro tabelas independentes, permissões, conclusão transacional e validação.
 - [x] Confirmar as 11 áreas e importar as 288 perguntas literais.
 - [x] Executar 27 verificações reais de cálculo, conclusão, rollback e acesso; 20 testes de regressão do 5S aprovados.
+
+# Cadastro de Perguntas — Processos
+- [ ] Criar tela separada espelhando o cadastro 5S, incluindo ordem inteira e filtros.
+- [ ] Adicionar Perguntas — Processos logo abaixo do cadastro existente no menu.
+- [ ] Testar criação, edição, exclusão e ativação/desativação pela tela; preservar cadastro 5S.
