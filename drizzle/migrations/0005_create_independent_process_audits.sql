@@ -1,0 +1,71 @@
+CREATE TABLE public.perguntas_processo (id uuid PRIMARY KEY DEFAULT gen_random_uuid(),area_nome text NOT NULL,categoria text NOT NULL CHECK(categoria IN ('Pessoas','Ambiente','Processo')),ordem integer NOT NULL DEFAULT 0,pergunta text NOT NULL,peso numeric NOT NULL DEFAULT 1 CHECK(peso>0),ativo boolean NOT NULL DEFAULT true,unit_id uuid REFERENCES public.units(id),created_at timestamptz NOT NULL DEFAULT now(),updated_at timestamptz NOT NULL DEFAULT now());
+GRANT SELECT,INSERT,UPDATE,DELETE ON public.perguntas_processo TO authenticated;
+GRANT ALL ON public.perguntas_processo TO service_role;
+ALTER TABLE public.perguntas_processo ENABLE ROW LEVEL SECURITY;
+CREATE POLICY processo_perguntas_leitura ON public.perguntas_processo FOR SELECT TO authenticated USING(EXISTS(SELECT 1 FROM public.areas a WHERE a.nome=area_nome AND (perguntas_processo.unit_id IS NULL OR a.unit_id=perguntas_processo.unit_id) AND public.user_has_unit_access(a.unit_id) AND public.user_has_area_access(a.id)));
+CREATE POLICY processo_perguntas_escrita ON public.perguntas_processo FOR ALL TO authenticated USING((public.has_role(auth.uid(),'administrador') OR public.has_role(auth.uid(),'gestor') OR public.has_role(auth.uid(),'auditor')) AND EXISTS(SELECT 1 FROM public.areas a WHERE a.nome=area_nome AND (perguntas_processo.unit_id IS NULL OR a.unit_id=perguntas_processo.unit_id) AND public.user_has_unit_access(a.unit_id) AND public.user_has_area_access(a.id))) WITH CHECK((public.has_role(auth.uid(),'administrador') OR public.has_role(auth.uid(),'gestor') OR public.has_role(auth.uid(),'auditor')) AND EXISTS(SELECT 1 FROM public.areas a WHERE a.nome=area_nome AND (perguntas_processo.unit_id IS NULL OR a.unit_id=perguntas_processo.unit_id) AND public.user_has_unit_access(a.unit_id) AND public.user_has_area_access(a.id)));
+CREATE TABLE public.auditorias_processo(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),area_id uuid NOT NULL REFERENCES public.areas(id),unit_id uuid NOT NULL REFERENCES public.units(id),auditor_id uuid REFERENCES public.auditores(id),colaborador_auditado text,documento_referencia text,data_auditoria date NOT NULL DEFAULT current_date,status text NOT NULL DEFAULT 'rascunho',nota_pessoas numeric,nota_ambiente numeric,nota_processo numeric,nota_final numeric,processo_claro boolean,processo_claro_observacao text,observacoes text,fotos text[] NOT NULL DEFAULT '{}',created_at timestamptz NOT NULL DEFAULT now(),updated_at timestamptz NOT NULL DEFAULT now());
+GRANT SELECT,INSERT,UPDATE,DELETE ON public.auditorias_processo TO authenticated;
+GRANT ALL ON public.auditorias_processo TO service_role;
+ALTER TABLE public.auditorias_processo ENABLE ROW LEVEL SECURITY;
+CREATE POLICY processo_auditorias_leitura ON public.auditorias_processo FOR SELECT TO authenticated USING(public.user_has_unit_access(unit_id) AND public.user_has_area_access(area_id));
+CREATE POLICY processo_auditorias_escrita ON public.auditorias_processo FOR ALL TO authenticated USING((public.has_role(auth.uid(),'administrador') OR public.has_role(auth.uid(),'gestor') OR public.has_role(auth.uid(),'auditor')) AND public.user_has_unit_access(unit_id) AND public.user_has_area_access(area_id)) WITH CHECK((public.has_role(auth.uid(),'administrador') OR public.has_role(auth.uid(),'gestor') OR public.has_role(auth.uid(),'auditor')) AND public.user_has_unit_access(unit_id) AND public.user_has_area_access(area_id));
+CREATE TABLE public.respostas_processo(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),auditoria_processo_id uuid NOT NULL REFERENCES public.auditorias_processo(id) ON DELETE CASCADE,pergunta_id uuid NOT NULL REFERENCES public.perguntas_processo(id),resposta text NOT NULL CHECK(resposta IN ('SIM','NÃO')),observacao text,foto_url text,created_at timestamptz NOT NULL DEFAULT now(),UNIQUE(auditoria_processo_id,pergunta_id));
+GRANT SELECT,INSERT,UPDATE,DELETE ON public.respostas_processo TO authenticated;
+GRANT ALL ON public.respostas_processo TO service_role;
+ALTER TABLE public.respostas_processo ENABLE ROW LEVEL SECURITY;
+CREATE POLICY processo_respostas_leitura ON public.respostas_processo FOR SELECT TO authenticated USING(EXISTS(SELECT 1 FROM public.auditorias_processo a WHERE a.id=auditoria_processo_id AND public.user_has_unit_access(a.unit_id) AND public.user_has_area_access(a.area_id)));
+CREATE POLICY processo_respostas_escrita ON public.respostas_processo FOR ALL TO authenticated USING((public.has_role(auth.uid(),'administrador') OR public.has_role(auth.uid(),'gestor') OR public.has_role(auth.uid(),'auditor')) AND EXISTS(SELECT 1 FROM public.auditorias_processo a WHERE a.id=auditoria_processo_id AND public.user_has_unit_access(a.unit_id) AND public.user_has_area_access(a.area_id))) WITH CHECK((public.has_role(auth.uid(),'administrador') OR public.has_role(auth.uid(),'gestor') OR public.has_role(auth.uid(),'auditor')) AND EXISTS(SELECT 1 FROM public.auditorias_processo a WHERE a.id=auditoria_processo_id AND public.user_has_unit_access(a.unit_id) AND public.user_has_area_access(a.area_id)));
+CREATE TABLE public.acoes_processo(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),auditoria_processo_id uuid NOT NULL REFERENCES public.auditorias_processo(id) ON DELETE CASCADE,o_que text NOT NULL,como text,responsavel_id uuid REFERENCES public.profiles(id),prazo date,status text NOT NULL DEFAULT 'aberta',created_at timestamptz NOT NULL DEFAULT now(),updated_at timestamptz NOT NULL DEFAULT now());
+GRANT SELECT,INSERT,UPDATE,DELETE ON public.acoes_processo TO authenticated;
+GRANT ALL ON public.acoes_processo TO service_role;
+ALTER TABLE public.acoes_processo ENABLE ROW LEVEL SECURITY;
+CREATE POLICY processo_acoes_leitura ON public.acoes_processo FOR SELECT TO authenticated USING(EXISTS(SELECT 1 FROM public.auditorias_processo a WHERE a.id=auditoria_processo_id AND public.user_has_unit_access(a.unit_id) AND public.user_has_area_access(a.area_id)));
+CREATE POLICY processo_acoes_escrita ON public.acoes_processo FOR ALL TO authenticated USING((public.has_role(auth.uid(),'administrador') OR public.has_role(auth.uid(),'gestor') OR public.has_role(auth.uid(),'auditor')) AND EXISTS(SELECT 1 FROM public.auditorias_processo a WHERE a.id=auditoria_processo_id AND public.user_has_unit_access(a.unit_id) AND public.user_has_area_access(a.area_id))) WITH CHECK((public.has_role(auth.uid(),'administrador') OR public.has_role(auth.uid(),'gestor') OR public.has_role(auth.uid(),'auditor')) AND EXISTS(SELECT 1 FROM public.auditorias_processo a WHERE a.id=auditoria_processo_id AND public.user_has_unit_access(a.unit_id) AND public.user_has_area_access(a.area_id)));
+CREATE INDEX perguntas_processo_area_unit_idx ON public.perguntas_processo(area_nome,unit_id,ativo);
+CREATE INDEX auditorias_processo_unit_area_idx ON public.auditorias_processo(unit_id,area_id);
+CREATE INDEX respostas_processo_pergunta_idx ON public.respostas_processo(pergunta_id);
+CREATE INDEX acoes_processo_auditoria_idx ON public.acoes_processo(auditoria_processo_id);
+CREATE FUNCTION public.validate_new_audit_processo_completion() RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=public AS $$ BEGIN
+IF NOT EXISTS(SELECT 1 FROM public.areas a WHERE a.id=NEW.area_id AND a.unit_id=NEW.unit_id) THEN RAISE EXCEPTION 'A área deve pertencer à unidade da auditoria de processos.'; END IF;
+IF NEW.status='concluida' AND (TG_OP='INSERT' OR OLD.status IS DISTINCT FROM 'concluida') THEN
+IF NOT EXISTS(SELECT 1 FROM public.respostas_processo WHERE auditoria_processo_id=NEW.id) THEN RAISE EXCEPTION 'Não é permitido concluir auditoria de processos sem respostas válidas.'; END IF;
+END IF; RETURN NEW; END $$;
+REVOKE ALL ON FUNCTION public.validate_new_audit_processo_completion() FROM PUBLIC;
+CREATE TRIGGER validate_new_audit_processo_completion BEFORE INSERT OR UPDATE ON public.auditorias_processo FOR EACH ROW EXECUTE FUNCTION public.validate_new_audit_processo_completion();
+CREATE TRIGGER perguntas_processo_updated_at BEFORE UPDATE ON public.perguntas_processo FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+CREATE TRIGGER auditorias_processo_updated_at BEFORE UPDATE ON public.auditorias_processo FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+CREATE TRIGGER acoes_processo_updated_at BEFORE UPDATE ON public.acoes_processo FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+CREATE FUNCTION public.complete_audit_processo(p_id uuid,p_audit jsonb,p_answers jsonb,p_acoes jsonb) RETURNS uuid LANGUAGE plpgsql SECURITY INVOKER SET search_path=public AS $$
+DECLARE a public.auditorias_processo; r jsonb; q record; action jsonb; expected integer:=0; changed integer; np numeric; na numeric; npr numeric; cp integer:=0; ca integer:=0; cpr integer:=0; sp integer:=0; sa integer:=0; spr integer:=0;
+BEGIN
+SELECT * INTO a FROM public.auditorias_processo WHERE id=p_id FOR UPDATE;
+IF NOT FOUND THEN RAISE EXCEPTION 'Auditoria de processos indisponível ou sem permissão.'; END IF;
+IF a.status='concluida' THEN RETURN p_id; END IF;
+IF a.status<>'rascunho' THEN RAISE EXCEPTION 'Somente rascunhos podem ser concluídos.'; END IF;
+IF jsonb_typeof(p_audit) IS DISTINCT FROM 'object' OR jsonb_typeof(p_answers) IS DISTINCT FROM 'array' OR jsonb_typeof(p_acoes) IS DISTINCT FROM 'array' THEN RAISE EXCEPTION 'Cabeçalho inválido ou respostas e ações não são listas.'; END IF;
+IF (p_audit->>'area_id')::uuid IS DISTINCT FROM a.area_id THEN RAISE EXCEPTION 'A área do rascunho não pode ser alterada.'; END IF;
+IF p_audit ? 'unit_id' AND (p_audit->>'unit_id')::uuid IS DISTINCT FROM a.unit_id THEN RAISE EXCEPTION 'A unidade do rascunho não pode ser alterada.'; END IF;
+IF EXISTS(SELECT 1 FROM jsonb_array_elements(p_answers) x GROUP BY x->>'pergunta_id' HAVING count(*)>1) THEN RAISE EXCEPTION 'Perguntas duplicadas nas respostas.'; END IF;
+FOR q IN SELECT p.id,p.pergunta,p.categoria FROM public.perguntas_processo p JOIN public.areas ar ON ar.id=a.area_id WHERE p.ativo AND p.area_nome=ar.nome AND (p.unit_id=a.unit_id OR (p.unit_id IS NULL AND NOT EXISTS(SELECT 1 FROM public.perguntas_processo own WHERE own.ativo AND own.area_nome=ar.nome AND own.unit_id=a.unit_id))) ORDER BY p.categoria,p.ordem,p.id LOOP
+expected:=expected+1;
+SELECT value INTO r FROM jsonb_array_elements(p_answers) WHERE value->>'pergunta_id'=q.id::text;
+IF r IS NULL OR COALESCE(r->>'resposta','') NOT IN ('SIM','NÃO') THEN RAISE EXCEPTION 'Resposta inválida ou ausente: %',q.pergunta; END IF;
+INSERT INTO public.respostas_processo(auditoria_processo_id,pergunta_id,resposta,observacao,foto_url) VALUES(p_id,q.id,r->>'resposta',r->>'observacao',r->>'foto_url') ON CONFLICT(auditoria_processo_id,pergunta_id) DO UPDATE SET resposta=excluded.resposta,observacao=excluded.observacao,foto_url=excluded.foto_url;
+IF q.categoria='Pessoas' THEN cp:=cp+1; IF r->>'resposta'='SIM' THEN sp:=sp+1; END IF;
+ELSIF q.categoria='Ambiente' THEN ca:=ca+1; IF r->>'resposta'='SIM' THEN sa:=sa+1; END IF;
+ELSE cpr:=cpr+1; IF r->>'resposta'='SIM' THEN spr:=spr+1; END IF; END IF;
+END LOOP;
+IF expected=0 OR expected<>jsonb_array_length(p_answers) THEN RAISE EXCEPTION 'O checklist mudou ou não possui respostas válidas. Reabra a auditoria.'; END IF;
+IF cp=0 OR ca=0 OR cpr=0 THEN RAISE EXCEPTION 'Cadastre perguntas ativas nos três pilares antes de concluir.'; END IF;
+np:=100.0*sp/cp; na:=100.0*sa/ca; npr:=100.0*spr/cpr;
+FOR action IN SELECT value FROM jsonb_array_elements(p_acoes) LOOP
+IF jsonb_typeof(action) IS DISTINCT FROM 'object' OR NULLIF(btrim(action->>'o_que'),'') IS NULL THEN RAISE EXCEPTION 'Informe o que será feito em cada ação.'; END IF;
+INSERT INTO public.acoes_processo(auditoria_processo_id,o_que,como,responsavel_id,prazo,status) VALUES(p_id,action->>'o_que',action->>'como',(action->>'responsavel_id')::uuid,(action->>'prazo')::date,COALESCE(action->>'status','aberta'));
+END LOOP;
+UPDATE public.auditorias_processo SET auditor_id=x.auditor_id,colaborador_auditado=x.colaborador_auditado,documento_referencia=x.documento_referencia,data_auditoria=COALESCE(x.data_auditoria,a.data_auditoria),nota_pessoas=np,nota_ambiente=na,nota_processo=npr,nota_final=(np+na+npr)/3,processo_claro=x.processo_claro,processo_claro_observacao=x.processo_claro_observacao,observacoes=x.observacoes,fotos=COALESCE(x.fotos,'{}'),status='concluida' FROM jsonb_populate_record(NULL::public.auditorias_processo,p_audit) x WHERE auditorias_processo.id=p_id;
+GET DIAGNOSTICS changed=ROW_COUNT;
+IF changed<>1 THEN RAISE EXCEPTION 'Sem permissão para concluir auditoria de processos.'; END IF;
+RETURN p_id; END $$;
+REVOKE ALL ON FUNCTION public.complete_audit_processo(uuid,jsonb,jsonb,jsonb) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.complete_audit_processo(uuid,jsonb,jsonb,jsonb) TO authenticated;
