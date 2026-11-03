@@ -1,0 +1,20 @@
+import asyncio,json,os,requests
+from pathlib import Path
+from playwright.async_api import async_playwright
+ROOT=Path('/tmp/browser/process-question');ROOT.mkdir(parents=True,exist_ok=True)
+v={'email':os.environ['PROCESS_TEST_EMAIL'],'password':os.environ['PROCESS_TEST_PASSWORD']}
+async def main():
+ async with async_playwright() as p:
+  browser=await p.chromium.launch(headless=True);context=await browser.new_context(viewport={'width':1280,'height':1800});page=await context.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
+  await page.goto('http://localhost:8080/auth');await page.get_by_label('E-mail',exact=True).fill(v['email']);await page.get_by_label('Senha',exact=True).fill(v['password']);await page.get_by_role('button',name='Entrar',exact=True).click();await page.wait_for_url('http://localhost:8080/',timeout=30000);await page.evaluate('localStorage.setItem("active-unit-id","664abb8d-f9ae-4d7c-ae3d-6c719426679e")')
+  await page.goto('http://localhost:8080/perguntas-processo');await page.get_by_role('button',name='Nova pergunta',exact=True).wait_for(timeout=30000)
+  await page.get_by_role('link',name='Perguntas — Processos',exact=True).wait_for();await page.screenshot(path=str(ROOT/'1-list.png'))
+  await page.get_by_role('button',name='Nova pergunta',exact=True).click();dialog=page.get_by_role('dialog');await dialog.get_by_label('Área *',exact=True).fill('CTT');await dialog.get_by_role('combobox').nth(1).click();await page.get_by_role('option',name='Processo',exact=True).click();await dialog.get_by_label('Pergunta *',exact=True).fill('Teste UI processos temporário');await dialog.get_by_label('Ordem',exact=True).fill('12.5');await dialog.get_by_role('button',name='Salvar',exact=True).click();await page.get_by_text('Ordem deve ser um número inteiro',exact=True).wait_for();print('PASS integer order validation')
+  await dialog.get_by_label('Ordem',exact=True).fill('999');await dialog.get_by_role('button',name='Salvar',exact=True).click();await dialog.wait_for(state='hidden');text=page.get_by_text('Teste UI processos temporário',exact=True);await text.wait_for();print('PASS create question immediately listed')
+  card=text.locator('xpath=../..');await card.get_by_role('button',name='Editar pergunta',exact=True).click();await dialog.get_by_label('Pergunta *',exact=True).fill('Teste UI processos editado');await dialog.get_by_label('Peso *',exact=True).fill('2.5');await dialog.get_by_label('Ordem',exact=True).fill('998');await dialog.get_by_role('button',name='Salvar',exact=True).click();await dialog.wait_for(state='hidden');text=page.get_by_text('Teste UI processos editado',exact=True);await text.wait_for();card=text.locator('xpath=../..');await card.get_by_text('Peso 2.5',exact=True).wait_for();await card.get_by_text('Ordem 998',exact=True).wait_for();print('PASS edit text weight order immediately listed')
+  await card.get_by_role('button',name='Desativar',exact=True).click();await card.get_by_text('Inativo',exact=True).wait_for();print('PASS deactivate immediately listed');await card.get_by_role('button',name='Ativar',exact=True).click();await card.get_by_text('Ativo',exact=True).wait_for();print('PASS activate immediately listed');await card.screenshot(path=str(ROOT/'2-edited-card.png'))
+  page.once('dialog',lambda d:d.accept());await card.get_by_role('button',name='Excluir pergunta',exact=True).click();await text.wait_for(state='detached');print('PASS delete immediately removed')
+  # Filters use the same controls as the 5S screen.
+  combos=page.locator('main').get_by_role('combobox');await combos.nth(0).click();await page.get_by_role('option',name='CTT',exact=True).click();await combos.nth(1).click();await page.get_by_role('option',name='Processo',exact=True).click();await page.get_by_text('17 pergunta(s) exibida(s) de 33',exact=True).wait_for();print('PASS area category filters')
+  await page.screenshot(path=str(ROOT/'3-final.png'));assert not errors,errors;print('PASS no browser runtime errors');await browser.close()
+asyncio.run(main())
