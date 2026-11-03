@@ -168,6 +168,7 @@ const navItems: NavItem[] = [
   { to: "/alertas", label: "Alertas de Processo", icon: Megaphone },
   { to: "/historico", label: "Histórico", icon: History },
   { to: "/perguntas", label: "Cadastro de Perguntas", icon: ListChecks },
+  { to: "/auditorias-processo", label: "Auditorias de Processo", icon: ClipboardCheck },
   { to: "/perguntas-processo", label: "Perguntas — Processos", icon: ClipboardList },
   { to: "/areas", label: "Áreas", icon: MapPin },
   { to: "/auditores", label: "Auditores", icon: UserCog },
