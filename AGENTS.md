@@ -13,3 +13,4 @@
 - Audit creation persists device-local drafts in IndexedDB scoped by authenticated user and selected unit, including pending photo Files, so browser interruption does not lose form data.
 - Audit photo preparation and cancellable uploads run in browser-only helpers; shared validation and single-flight locking stay independently testable.
 - Process audits use independent tables and a SECURITY INVOKER completion RPC with existing permission helpers; scores are calculated in the database to prevent inconsistent client totals, and no 5S objects are modified.
+- The process question catalog uses its own protected route and query keys with the existing role hook and design components; unit-specific question fallback is applied per area so one area's overrides do not hide another area's global questions.
