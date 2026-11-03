@@ -11,6 +11,6 @@
 - [x] Executar 27 verificações reais de cálculo, conclusão, rollback e acesso; 20 testes de regressão do 5S aprovados.
 
 # Cadastro de Perguntas — Processos
-- [ ] Criar tela separada espelhando o cadastro 5S, incluindo ordem inteira e filtros.
-- [ ] Adicionar Perguntas — Processos logo abaixo do cadastro existente no menu.
-- [ ] Testar criação, edição, exclusão e ativação/desativação pela tela; preservar cadastro 5S.
+- [x] Criar tela separada espelhando o cadastro 5S, incluindo ordem inteira e filtros.
+- [x] Adicionar Perguntas — Processos logo abaixo do cadastro existente no menu.
+- [x] Testar criação, edição, exclusão, ativação/desativação, filtros e ordem inteira pela tela; preservar cadastro 5S e remover dados temporários.
