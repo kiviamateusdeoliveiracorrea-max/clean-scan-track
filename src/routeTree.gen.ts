@@ -27,6 +27,9 @@ import { Route as AuthenticatedPerguntasRouteImport } from './routes/_authentica
 import { Route as AuthenticatedPerguntasProcessoRouteImport } from './routes/_authenticated/perguntas-processo'
 import { Route as AuthenticatedUnidadesRouteImport } from './routes/_authenticated/unidades'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
+import { Route as AuthenticatedAuditoriasProcessoIndexRouteImport } from './routes/_authenticated/auditorias-processo.index'
+import { Route as AuthenticatedAuditoriasProcessoIdRouteImport } from './routes/_authenticated/auditorias-processo.$id'
+import { Route as AuthenticatedAuditoriasProcessoNovaRouteImport } from './routes/_authenticated/auditorias-processo.nova'
 import { Route as AuthenticatedAuditoriasIndexRouteImport } from './routes/_authenticated/auditorias.index'
 import { Route as AuthenticatedAuditoriasIdRouteImport } from './routes/_authenticated/auditorias.$id'
 import { Route as AuthenticatedAuditoriasNovaRouteImport } from './routes/_authenticated/auditorias.nova'
@@ -123,6 +126,24 @@ const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
   path: '/usuarios',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAuditoriasProcessoIndexRoute =
+  AuthenticatedAuditoriasProcessoIndexRouteImport.update({
+    id: '/auditorias-processo/',
+    path: '/auditorias-processo/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAuditoriasProcessoIdRoute =
+  AuthenticatedAuditoriasProcessoIdRouteImport.update({
+    id: '/auditorias-processo/$id',
+    path: '/auditorias-processo/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAuditoriasProcessoNovaRoute =
+  AuthenticatedAuditoriasProcessoNovaRouteImport.update({
+    id: '/auditorias-processo/nova',
+    path: '/auditorias-processo/nova',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAuditoriasIndexRoute =
   AuthenticatedAuditoriasIndexRouteImport.update({
     id: '/auditorias/',
@@ -160,8 +181,11 @@ export interface FileRoutesByFullPath {
   '/perguntas-processo': typeof AuthenticatedPerguntasProcessoRoute
   '/unidades': typeof AuthenticatedUnidadesRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
+  '/auditorias-processo/$id': typeof AuthenticatedAuditoriasProcessoIdRoute
+  '/auditorias-processo/nova': typeof AuthenticatedAuditoriasProcessoNovaRoute
   '/auditorias/$id': typeof AuthenticatedAuditoriasIdRoute
   '/auditorias/nova': typeof AuthenticatedAuditoriasNovaRoute
+  '/auditorias-processo/': typeof AuthenticatedAuditoriasProcessoIndexRoute
   '/auditorias/': typeof AuthenticatedAuditoriasIndexRoute
 }
 export interface FileRoutesByTo {
@@ -182,8 +206,11 @@ export interface FileRoutesByTo {
   '/unidades': typeof AuthenticatedUnidadesRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/': typeof AuthenticatedIndexRoute
+  '/auditorias-processo/$id': typeof AuthenticatedAuditoriasProcessoIdRoute
+  '/auditorias-processo/nova': typeof AuthenticatedAuditoriasProcessoNovaRoute
   '/auditorias/$id': typeof AuthenticatedAuditoriasIdRoute
   '/auditorias/nova': typeof AuthenticatedAuditoriasNovaRoute
+  '/auditorias-processo': typeof AuthenticatedAuditoriasProcessoIndexRoute
   '/auditorias': typeof AuthenticatedAuditoriasIndexRoute
 }
 export interface FileRoutesById {
@@ -206,8 +233,11 @@ export interface FileRoutesById {
   '/_authenticated/unidades': typeof AuthenticatedUnidadesRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/auditorias-processo/$id': typeof AuthenticatedAuditoriasProcessoIdRoute
+  '/_authenticated/auditorias-processo/nova': typeof AuthenticatedAuditoriasProcessoNovaRoute
   '/_authenticated/auditorias/$id': typeof AuthenticatedAuditoriasIdRoute
   '/_authenticated/auditorias/nova': typeof AuthenticatedAuditoriasNovaRoute
+  '/_authenticated/auditorias-processo/': typeof AuthenticatedAuditoriasProcessoIndexRoute
   '/_authenticated/auditorias/': typeof AuthenticatedAuditoriasIndexRoute
 }
 export interface FileRouteTypes {
@@ -230,8 +260,11 @@ export interface FileRouteTypes {
     | '/perguntas-processo'
     | '/unidades'
     | '/usuarios'
+    | '/auditorias-processo/$id'
+    | '/auditorias-processo/nova'
     | '/auditorias/$id'
     | '/auditorias/nova'
+    | '/auditorias-processo/'
     | '/auditorias/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -252,8 +285,11 @@ export interface FileRouteTypes {
     | '/unidades'
     | '/usuarios'
     | '/'
+    | '/auditorias-processo/$id'
+    | '/auditorias-processo/nova'
     | '/auditorias/$id'
     | '/auditorias/nova'
+    | '/auditorias-processo'
     | '/auditorias'
   id:
     | '__root__'
@@ -275,8 +311,11 @@ export interface FileRouteTypes {
     | '/_authenticated/unidades'
     | '/_authenticated/usuarios'
     | '/_authenticated/'
+    | '/_authenticated/auditorias-processo/$id'
+    | '/_authenticated/auditorias-processo/nova'
     | '/_authenticated/auditorias/$id'
     | '/_authenticated/auditorias/nova'
+    | '/_authenticated/auditorias-processo/'
     | '/_authenticated/auditorias/'
   fileRoutesById: FileRoutesById
 }
@@ -415,6 +454,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUsuariosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/auditorias-processo/': {
+      id: '/_authenticated/auditorias-processo/'
+      path: '/auditorias-processo'
+      fullPath: '/auditorias-processo/'
+      preLoaderRoute: typeof AuthenticatedAuditoriasProcessoIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/auditorias-processo/$id': {
+      id: '/_authenticated/auditorias-processo/$id'
+      path: '/auditorias-processo/$id'
+      fullPath: '/auditorias-processo/$id'
+      preLoaderRoute: typeof AuthenticatedAuditoriasProcessoIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/auditorias-processo/nova': {
+      id: '/_authenticated/auditorias-processo/nova'
+      path: '/auditorias-processo/nova'
+      fullPath: '/auditorias-processo/nova'
+      preLoaderRoute: typeof AuthenticatedAuditoriasProcessoNovaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/auditorias/': {
       id: '/_authenticated/auditorias/'
       path: '/auditorias'
@@ -454,8 +514,11 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedUnidadesRoute: typeof AuthenticatedUnidadesRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedAuditoriasProcessoIdRoute: typeof AuthenticatedAuditoriasProcessoIdRoute
+  AuthenticatedAuditoriasProcessoNovaRoute: typeof AuthenticatedAuditoriasProcessoNovaRoute
   AuthenticatedAuditoriasIdRoute: typeof AuthenticatedAuditoriasIdRoute
   AuthenticatedAuditoriasNovaRoute: typeof AuthenticatedAuditoriasNovaRoute
+  AuthenticatedAuditoriasProcessoIndexRoute: typeof AuthenticatedAuditoriasProcessoIndexRoute
   AuthenticatedAuditoriasIndexRoute: typeof AuthenticatedAuditoriasIndexRoute
 }
 
@@ -474,8 +537,14 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedUnidadesRoute: AuthenticatedUnidadesRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedAuditoriasProcessoIdRoute:
+    AuthenticatedAuditoriasProcessoIdRoute,
+  AuthenticatedAuditoriasProcessoNovaRoute:
+    AuthenticatedAuditoriasProcessoNovaRoute,
   AuthenticatedAuditoriasIdRoute: AuthenticatedAuditoriasIdRoute,
   AuthenticatedAuditoriasNovaRoute: AuthenticatedAuditoriasNovaRoute,
+  AuthenticatedAuditoriasProcessoIndexRoute:
+    AuthenticatedAuditoriasProcessoIndexRoute,
   AuthenticatedAuditoriasIndexRoute: AuthenticatedAuditoriasIndexRoute,
 }
 
