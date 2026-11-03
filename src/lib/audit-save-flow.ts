@@ -22,7 +22,7 @@ export function singleFlight<T>() {
 }
 
 export function validateAnswers(questions: { id: string; pergunta: string }[], answers: Record<string, { resposta: string }>) {
-  if (!questions.length) throw new Error("Não é permitido concluir auditoria sem perguntas válidas.");
+  // Área sem perguntas cadastradas: a auditoria pode ser concluída só com evidências e NCs.
   for (const q of questions) {
     if (!["SIM", "NÃO"].includes(answers[q.id]?.resposta)) throw new Error(`Resposta inválida ou ausente: ${q.pergunta}`);
   }

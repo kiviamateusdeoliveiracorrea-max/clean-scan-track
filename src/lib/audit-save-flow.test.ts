@@ -21,8 +21,8 @@ describe("audit save consistency", () => {
   test("failed answer identifies exact question and prevents completion", () => {
     expect(() => validateAnswers([{ id: "1", pergunta: "Organização" }], { "1": { resposta: "INVALID" } })).toThrow("Organização");
   });
-  test("empty checklist cannot be concluded", () => {
-    expect(() => validateAnswers([], {})).toThrow();
+  test("empty checklist can be concluded (evidence-only audit)", () => {
+    expect(() => validateAnswers([], {})).not.toThrow();
   });
   for (const clicks of [2, 10]) {
     test(`${clicks} simultaneous clicks create exactly one draft`, async () => {
