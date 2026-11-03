@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      acoes_processo: {
+        Row: {
+          auditoria_processo_id: string
+          como: string | null
+          created_at: string
+          id: string
+          o_que: string
+          prazo: string | null
+          responsavel_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          auditoria_processo_id: string
+          como?: string | null
+          created_at?: string
+          id?: string
+          o_que: string
+          prazo?: string | null
+          responsavel_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          auditoria_processo_id?: string
+          como?: string | null
+          created_at?: string
+          id?: string
+          o_que?: string
+          prazo?: string | null
+          responsavel_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "acoes_processo_auditoria_processo_id_fkey"
+            columns: ["auditoria_processo_id"]
+            isOneToOne: false
+            referencedRelation: "auditorias_processo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "acoes_processo_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_logs: {
         Row: {
           acao: string
@@ -343,6 +394,91 @@ export type Database = {
           },
           {
             foreignKeyName: "auditorias_log_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      auditorias_processo: {
+        Row: {
+          area_id: string
+          auditor_id: string | null
+          colaborador_auditado: string | null
+          created_at: string
+          data_auditoria: string
+          documento_referencia: string | null
+          fotos: string[]
+          id: string
+          nota_ambiente: number | null
+          nota_final: number | null
+          nota_pessoas: number | null
+          nota_processo: number | null
+          observacoes: string | null
+          processo_claro: boolean | null
+          processo_claro_observacao: string | null
+          status: string
+          unit_id: string
+          updated_at: string
+        }
+        Insert: {
+          area_id: string
+          auditor_id?: string | null
+          colaborador_auditado?: string | null
+          created_at?: string
+          data_auditoria?: string
+          documento_referencia?: string | null
+          fotos?: string[]
+          id?: string
+          nota_ambiente?: number | null
+          nota_final?: number | null
+          nota_pessoas?: number | null
+          nota_processo?: number | null
+          observacoes?: string | null
+          processo_claro?: boolean | null
+          processo_claro_observacao?: string | null
+          status?: string
+          unit_id: string
+          updated_at?: string
+        }
+        Update: {
+          area_id?: string
+          auditor_id?: string | null
+          colaborador_auditado?: string | null
+          created_at?: string
+          data_auditoria?: string
+          documento_referencia?: string | null
+          fotos?: string[]
+          id?: string
+          nota_ambiente?: number | null
+          nota_final?: number | null
+          nota_pessoas?: number | null
+          nota_processo?: number | null
+          observacoes?: string | null
+          processo_claro?: boolean | null
+          processo_claro_observacao?: string | null
+          status?: string
+          unit_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auditorias_processo_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "auditorias_processo_auditor_id_fkey"
+            columns: ["auditor_id"]
+            isOneToOne: false
+            referencedRelation: "auditores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "auditorias_processo_unit_id_fkey"
             columns: ["unit_id"]
             isOneToOne: false
             referencedRelation: "units"
@@ -855,6 +991,53 @@ export type Database = {
           },
         ]
       }
+      perguntas_processo: {
+        Row: {
+          area_nome: string
+          ativo: boolean
+          categoria: string
+          created_at: string
+          id: string
+          ordem: number
+          pergunta: string
+          peso: number
+          unit_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          area_nome: string
+          ativo?: boolean
+          categoria: string
+          created_at?: string
+          id?: string
+          ordem?: number
+          pergunta: string
+          peso?: number
+          unit_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          area_nome?: string
+          ativo?: boolean
+          categoria?: string
+          created_at?: string
+          id?: string
+          ordem?: number
+          pergunta?: string
+          peso?: number
+          unit_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "perguntas_processo_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           area_id: string | null
@@ -955,6 +1138,51 @@ export type Database = {
             columns: ["pergunta_id"]
             isOneToOne: false
             referencedRelation: "perguntas_auditoria"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      respostas_processo: {
+        Row: {
+          auditoria_processo_id: string
+          created_at: string
+          foto_url: string | null
+          id: string
+          observacao: string | null
+          pergunta_id: string
+          resposta: string
+        }
+        Insert: {
+          auditoria_processo_id: string
+          created_at?: string
+          foto_url?: string | null
+          id?: string
+          observacao?: string | null
+          pergunta_id: string
+          resposta: string
+        }
+        Update: {
+          auditoria_processo_id?: string
+          created_at?: string
+          foto_url?: string | null
+          id?: string
+          observacao?: string | null
+          pergunta_id?: string
+          resposta?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "respostas_processo_auditoria_processo_id_fkey"
+            columns: ["auditoria_processo_id"]
+            isOneToOne: false
+            referencedRelation: "auditorias_processo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "respostas_processo_pergunta_id_fkey"
+            columns: ["pergunta_id"]
+            isOneToOne: false
+            referencedRelation: "perguntas_processo"
             referencedColumns: ["id"]
           },
         ]
@@ -1203,6 +1431,10 @@ export type Database = {
       can_view_admin_log: { Args: { _unit: string }; Returns: boolean }
       complete_audit: {
         Args: { p_answers: Json; p_audit: Json; p_id: string; p_ncs: Json }
+        Returns: string
+      }
+      complete_audit_processo: {
+        Args: { p_acoes: Json; p_answers: Json; p_audit: Json; p_id: string }
         Returns: string
       }
       evidence_owner: {
