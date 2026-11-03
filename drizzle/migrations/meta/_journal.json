@@ -29,6 +29,13 @@
       "when": 1793708846105,
       "tag": "0003_validate_completion_allow_empty_checklist",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793709004180,
+      "tag": "0004_validate_completion_unit_aware",
+      "breakpoints": true
     }
   ]
 }
