@@ -24,6 +24,7 @@ import { Route as AuthenticatedMelhoriasRouteImport } from './routes/_authentica
 import { Route as AuthenticatedMinhaContaRouteImport } from './routes/_authenticated/minha-conta'
 import { Route as AuthenticatedNaoConformidadesRouteImport } from './routes/_authenticated/nao-conformidades'
 import { Route as AuthenticatedPerguntasRouteImport } from './routes/_authenticated/perguntas'
+import { Route as AuthenticatedPerguntasProcessoRouteImport } from './routes/_authenticated/perguntas-processo'
 import { Route as AuthenticatedUnidadesRouteImport } from './routes/_authenticated/unidades'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as AuthenticatedAuditoriasIndexRouteImport } from './routes/_authenticated/auditorias.index'
@@ -106,6 +107,12 @@ const AuthenticatedPerguntasRoute = AuthenticatedPerguntasRouteImport.update({
   path: '/perguntas',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPerguntasProcessoRoute =
+  AuthenticatedPerguntasProcessoRouteImport.update({
+    id: '/perguntas-processo',
+    path: '/perguntas-processo',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedUnidadesRoute = AuthenticatedUnidadesRouteImport.update({
   id: '/unidades',
   path: '/unidades',
@@ -150,6 +157,7 @@ export interface FileRoutesByFullPath {
   '/minha-conta': typeof AuthenticatedMinhaContaRoute
   '/nao-conformidades': typeof AuthenticatedNaoConformidadesRoute
   '/perguntas': typeof AuthenticatedPerguntasRoute
+  '/perguntas-processo': typeof AuthenticatedPerguntasProcessoRoute
   '/unidades': typeof AuthenticatedUnidadesRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/auditorias/$id': typeof AuthenticatedAuditoriasIdRoute
@@ -170,6 +178,7 @@ export interface FileRoutesByTo {
   '/minha-conta': typeof AuthenticatedMinhaContaRoute
   '/nao-conformidades': typeof AuthenticatedNaoConformidadesRoute
   '/perguntas': typeof AuthenticatedPerguntasRoute
+  '/perguntas-processo': typeof AuthenticatedPerguntasProcessoRoute
   '/unidades': typeof AuthenticatedUnidadesRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/': typeof AuthenticatedIndexRoute
@@ -193,6 +202,7 @@ export interface FileRoutesById {
   '/_authenticated/minha-conta': typeof AuthenticatedMinhaContaRoute
   '/_authenticated/nao-conformidades': typeof AuthenticatedNaoConformidadesRoute
   '/_authenticated/perguntas': typeof AuthenticatedPerguntasRoute
+  '/_authenticated/perguntas-processo': typeof AuthenticatedPerguntasProcessoRoute
   '/_authenticated/unidades': typeof AuthenticatedUnidadesRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -217,6 +227,7 @@ export interface FileRouteTypes {
     | '/minha-conta'
     | '/nao-conformidades'
     | '/perguntas'
+    | '/perguntas-processo'
     | '/unidades'
     | '/usuarios'
     | '/auditorias/$id'
@@ -237,6 +248,7 @@ export interface FileRouteTypes {
     | '/minha-conta'
     | '/nao-conformidades'
     | '/perguntas'
+    | '/perguntas-processo'
     | '/unidades'
     | '/usuarios'
     | '/'
@@ -259,6 +271,7 @@ export interface FileRouteTypes {
     | '/_authenticated/minha-conta'
     | '/_authenticated/nao-conformidades'
     | '/_authenticated/perguntas'
+    | '/_authenticated/perguntas-processo'
     | '/_authenticated/unidades'
     | '/_authenticated/usuarios'
     | '/_authenticated/'
@@ -381,6 +394,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPerguntasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/perguntas-processo': {
+      id: '/_authenticated/perguntas-processo'
+      path: '/perguntas-processo'
+      fullPath: '/perguntas-processo'
+      preLoaderRoute: typeof AuthenticatedPerguntasProcessoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/unidades': {
       id: '/_authenticated/unidades'
       path: '/unidades'
@@ -430,6 +450,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMinhaContaRoute: typeof AuthenticatedMinhaContaRoute
   AuthenticatedNaoConformidadesRoute: typeof AuthenticatedNaoConformidadesRoute
   AuthenticatedPerguntasRoute: typeof AuthenticatedPerguntasRoute
+  AuthenticatedPerguntasProcessoRoute: typeof AuthenticatedPerguntasProcessoRoute
   AuthenticatedUnidadesRoute: typeof AuthenticatedUnidadesRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -449,6 +470,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMinhaContaRoute: AuthenticatedMinhaContaRoute,
   AuthenticatedNaoConformidadesRoute: AuthenticatedNaoConformidadesRoute,
   AuthenticatedPerguntasRoute: AuthenticatedPerguntasRoute,
+  AuthenticatedPerguntasProcessoRoute: AuthenticatedPerguntasProcessoRoute,
   AuthenticatedUnidadesRoute: AuthenticatedUnidadesRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
