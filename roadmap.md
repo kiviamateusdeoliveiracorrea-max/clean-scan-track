@@ -5,6 +5,11 @@
 - [x] Executar testes automatizados e fluxos reais disponíveis; informar limitações e medições.
 - [x] Concluir testes reais de gravação e envio após concessão de execução de has_role, validada anteriormente.
 
+# Promoção das regras de segurança existentes
+- [ ] Conferir políticas reais e redundância de f2b_units_select; preservar regras de escrita e grants de auditores.
+- [ ] Aplicar em uma transação as regras de leitura e evidências solicitadas, sem mudar funções ou dados.
+- [ ] Testar acessos comuns, fallback, perguntas e envio/visualização de fotos; repetir verificação de segurança, sem publicar.
+
 # Estrutura de Auditoria de Processos
 - [x] Criar quatro tabelas independentes, permissões, conclusão transacional e validação.
 - [x] Confirmar as 11 áreas e importar as 288 perguntas literais.
