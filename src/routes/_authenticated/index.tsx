@@ -1,4 +1,4 @@
-import { unitMatch } from "@/lib/active-unit";
+import { byUnit, unitMatch } from "@/lib/active-unit";
 import logoAsset from "@/assets/logo-empresas.png.asset.json";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -29,6 +29,16 @@ import {
 import { classificaPontuacao, NC_STATUS_PENDENTES, NC_STATUS_FECHADOS } from "@/lib/audit-constants";
 
 export const Route = createFileRoute("/_authenticated/")({
+  head: () => ({
+    meta: [
+      { title: "Dashboard Executivo — AuditLog 5S e Processos" },
+      { name: "description", content: "Indicadores de auditorias 5S e de processos, não conformidades e ações abertas da unidade selecionada." },
+      { property: "og:title", content: "Dashboard Executivo — AuditLog 5S e Processos" },
+      { property: "og:description", content: "Indicadores de auditorias 5S e de processos, não conformidades e ações abertas da unidade selecionada." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: Dashboard,
 });
 
@@ -72,6 +82,42 @@ function Dashboard() {
       return data ?? [];
     },
   });
+
+  const auditoriasProcessoQuery = useQuery({
+    queryKey: ["auditorias-processo-dashboard"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("auditorias_processo")
+        .select("*, areas(nome)")
+        .match(unitMatch())
+        .eq("status", "concluida")
+        .order("data_auditoria", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const acoesProcessoQuery = useQuery({
+    queryKey: ["acoes-processo-dashboard"],
+    queryFn: async () => {
+      const { data, error } = await byUnit(
+        supabase
+          .from("acoes_processo")
+          .select("*, auditorias_processo!inner(unit_id, area_id)"),
+        "auditorias_processo.unit_id",
+      ).not("status", "in", "(concluida,cancelada)");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const auditoriasProcesso = auditoriasProcessoQuery.data ?? [];
+  const totalProcesso = auditoriasProcesso.length;
+  const mediaProcesso = totalProcesso > 0
+    ? auditoriasProcesso.reduce((s, a) => s + Number(a.nota_final || 0), 0) / totalProcesso
+    : 0;
+  const acoesProcessoAbertas = (acoesProcessoQuery.data ?? []).length;
 
   const auditorias = auditoriasQuery.data ?? [];
   const ncs = ncQuery.data ?? [];
@@ -481,6 +527,48 @@ function Dashboard() {
       </Card>
 
 
+
+      {/* Auditoria de Processos */}
+      <Card>
+        <CardHeader className="flex-col sm:flex-row gap-3 sm:items-center justify-between">
+          <CardTitle className="text-base flex items-center gap-2">
+            <ClipboardCheck className="h-4 w-4 text-accent shrink-0" />
+            Auditoria de Processos
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Button asChild variant="ghost" size="sm">
+              <Link to="/auditorias-processo">Ver todas</Link>
+            </Button>
+            <Button asChild size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90">
+              <Link to="/auditorias-processo/nova">
+                <Plus className="h-4 w-4 mr-1" />
+                Nova
+              </Link>
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="rounded-lg border p-4">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">Concluídas</p>
+            <p className="text-3xl font-bold text-primary">{totalProcesso}</p>
+          </div>
+          <div className="rounded-lg border p-4">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">Score médio</p>
+            <p className="text-3xl font-bold text-primary">
+              {totalProcesso > 0 ? `${mediaProcesso.toFixed(0)}%` : "—"}
+            </p>
+            {totalProcesso > 0 && (
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                {classificaPontuacao(mediaProcesso).label}
+              </p>
+            )}
+          </div>
+          <div className="rounded-lg border p-4">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">Ações abertas</p>
+            <p className="text-3xl font-bold text-accent">{acoesProcessoAbertas}</p>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Recentes */}
       <Card>
