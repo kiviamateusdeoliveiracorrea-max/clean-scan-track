@@ -15,3 +15,4 @@
 - Process audits use independent tables and a SECURITY INVOKER completion RPC with existing permission helpers; scores are calculated in the database to prevent inconsistent client totals, and no 5S objects are modified.
 - The process question catalog uses its own protected route and query keys with the existing role hook and design components; unit-specific question fallback is applied per area so one area's overrides do not hide another area's global questions.
 - Base read and audit-photos policies reuse the existing Fase 2B authorization helpers rather than redundant restrictive read layers; public write policies remain unchanged to preserve the explicitly approved scope.
+- Process dashboard ranking uses a browser-safe pure helper over the existing unit-filtered audit query so aggregation rules are testable without changing 5S data or queries.

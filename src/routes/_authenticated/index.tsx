@@ -1,4 +1,5 @@
 import { byUnit, unitMatch } from "@/lib/active-unit";
+import { rankProcessAreas } from "@/lib/process-dashboard-ranking";
 import logoAsset from "@/assets/logo-empresas.png.asset.json";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -118,6 +119,7 @@ function Dashboard() {
     ? auditoriasProcesso.reduce((s, a) => s + Number(a.nota_final || 0), 0) / totalProcesso
     : 0;
   const acoesProcessoAbertas = (acoesProcessoQuery.data ?? []).length;
+  const podioProcesso = rankProcessAreas(auditoriasProcesso);
 
   const auditorias = auditoriasQuery.data ?? [];
   const ncs = ncQuery.data ?? [];
@@ -529,6 +531,7 @@ function Dashboard() {
 
 
       {/* Auditoria de Processos */}
+      <div className="grid lg:grid-cols-2 gap-4">
       <Card>
         <CardHeader className="flex-col sm:flex-row gap-3 sm:items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
@@ -569,6 +572,31 @@ function Dashboard() {
           </div>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Ranking das áreas — Auditoria de Processo</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {podioProcesso.length === 0 ? (
+            <EmptyChart />
+          ) : (
+            podioProcesso.map((p, i) => (
+              <div key={p.nome} className="flex items-center justify-between gap-3 rounded-lg border px-4 py-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="text-2xl shrink-0">{medalha[i]}</span>
+                  <div className="min-w-0">
+                    <p className="font-semibold break-words">{p.nome}</p>
+                    <p className="text-xs text-muted-foreground">{p.auditorias} auditoria(s) · {i + 1}º lugar</p>
+                  </div>
+                </div>
+                <span className="text-xl font-bold text-primary shrink-0">{p.media}%</span>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
+      </div>
 
       {/* Recentes */}
       <Card>

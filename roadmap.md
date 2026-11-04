@@ -22,5 +22,7 @@
 - [x] Testar criação, edição, exclusão, ativação/desativação, filtros e ordem inteira pela tela; preservar cadastro 5S e remover dados temporários.
 
 # Indicadores de Processos no Dashboard
+- [x] Adicionar ranking independente por área ao lado dos indicadores; média, ordem, limite e ausência de dados validados em 4 testes; 20 testes 5S aprovados.
+- [ ] Conferir novo ranking na tela com conta autenticada — bloqueado: sessão da solicitante indisponível; requer entrada na prévia ou aprovação de uma conta explícita.
 - [x] Adicionar consultas independentes com filtro da unidade e três indicadores, sem modificar consultas ou seções 5S.
 - [x] Conferir Dashboard e destinos dos dois botões com sessão de gestora e LIDER; auditoria concluída e rascunho de processo disponíveis e detalhes acessíveis.
