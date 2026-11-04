@@ -14,3 +14,7 @@
 - [x] Criar tela separada espelhando o cadastro 5S, incluindo ordem inteira e filtros.
 - [x] Adicionar Perguntas — Processos logo abaixo do cadastro existente no menu.
 - [x] Testar criação, edição, exclusão, ativação/desativação, filtros e ordem inteira pela tela; preservar cadastro 5S e remover dados temporários.
+
+# Indicadores de Processos no Dashboard
+- [x] Adicionar consultas independentes com filtro da unidade e três indicadores, sem modificar consultas ou seções 5S.
+- [ ] Comparar indicadores com auditorias concluídas e validar os dois botões pela tela autenticada.
