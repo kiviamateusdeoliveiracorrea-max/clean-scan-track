@@ -29,7 +29,13 @@ async def main():
     for href in await links.evaluate_all('(a)=>a.map(x=>x.getAttribute("href")).filter(x=>!x.endsWith("/nova"))'):
      await page.goto('http://localhost:8080'+href); await page.wait_for_timeout(2500)
      assert 'Acesso negado' not in await page.locator('main').inner_text()
-     assert await page.get_by_text('Nota final',exact=False).count()>0
+     record_id=href.rsplit('/',1)[-1]
+     result=await page.evaluate('''async(id)=>{
+      const {supabase:s}=await import('/src/integrations/supabase/client.ts');
+      const r=await s.from('auditorias_processo').select('id').eq('id',id).single();
+      return {id:r.data?.id,error:r.error?.message};
+     }''',record_id)
+     assert result['id']==record_id and not result.get('error')
      print('PASS process detail')
    if route == '/nao-conformidades':
     selects=page.get_by_role('combobox')
