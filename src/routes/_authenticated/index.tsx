@@ -64,7 +64,7 @@ function Dashboard() {
       const { data, error } = await supabase
         .from("nao_conformidades")
         .select(
-          "*, resp_acao:profiles!nao_conformidades_responsavel_acao_id_fkey(id,nome,cargo,areas(nome))",
+          "*, areas(nome), resp_acao:profiles!nao_conformidades_responsavel_acao_id_fkey(id,nome,cargo,areas(nome))",
         )
         .eq("excluida", false)
         .match(unitMatch());
@@ -207,7 +207,7 @@ function Dashboard() {
   // Áreas com maior número de desvios (NCs ativas + oportunidades abertas)
   const desviosPorArea = new Map<string, number>();
   ncs.forEach((n: any) => {
-    const area = auditorias.find((a: any) => a.id === n.auditoria_id)?.areas?.nome ?? "Sem área";
+    const area = n.areas?.nome ?? "Sem área";
     desviosPorArea.set(area, (desviosPorArea.get(area) ?? 0) + 1);
   });
   const desviosChart = Array.from(desviosPorArea.entries())
