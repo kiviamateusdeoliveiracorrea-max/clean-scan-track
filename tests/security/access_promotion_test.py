@@ -38,8 +38,7 @@ async def main():
      assert result['id']==record_id and not result.get('error')
      print('PASS process detail')
    if route == '/nao-conformidades':
-    selects=page.get_by_role('combobox')
-    await selects.nth(1).click()
+    await page.get_by_role('combobox').filter(has_text='Todas as severidades').click()
     await page.get_by_role('option',name='Crítica',exact=False).first.click()
     await page.wait_for_timeout(500)
     print('PASS NC severity filter')
