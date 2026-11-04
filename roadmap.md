@@ -6,9 +6,10 @@
 - [x] Concluir testes reais de gravação e envio após concessão de execução de has_role, validada anteriormente.
 
 # Promoção das regras de segurança existentes
-- [ ] Conferir políticas reais e redundância de f2b_units_select; preservar regras de escrita e grants de auditores.
-- [ ] Aplicar em uma transação as regras de leitura e evidências solicitadas, sem mudar funções ou dados.
-- [ ] Testar acessos comuns, fallback, perguntas e envio/visualização de fotos; repetir verificação de segurança, sem publicar.
+- [x] Conferir políticas reais e redundância de f2b_units_select; preservar regras de escrita e grants de auditores.
+- [x] Aplicar em uma transação as regras de leitura e evidências solicitadas, sem mudar funções ou dados.
+- [x] Testar gestora e LIDER/fallback, listas, detalhes 5S/processo, filtros NC, perfis e foto compartilhada; 20 testes 5S aprovados; scanner básico sem achados e antigos marcados corrigidos; teste e foto removidos.
+- [ ] Fechar leitura de perguntas 5S entre unidades — bloqueado: requer autorização para alterar a política antiga FOR ALL perguntas_auditoria_write_admin_gestor_auditor, fora do escopo aprovado; LIDER/fallback ainda lê 14 perguntas específicas de unidades não autorizadas. Não publicar.
 
 # Estrutura de Auditoria de Processos
 - [x] Criar quatro tabelas independentes, permissões, conclusão transacional e validação.
@@ -22,4 +23,4 @@
 
 # Indicadores de Processos no Dashboard
 - [x] Adicionar consultas independentes com filtro da unidade e três indicadores, sem modificar consultas ou seções 5S.
-- [ ] Comparar indicadores com auditorias concluídas e validar os dois botões pela tela autenticada — bloqueado: nenhuma auditoria de processo concluída no banco e sessão da conta solicitante indisponível; requer entrada na prévia e auditoria concluída.
+- [x] Conferir Dashboard e destinos dos dois botões com sessão de gestora e LIDER; auditoria concluída e rascunho de processo disponíveis e detalhes acessíveis.
