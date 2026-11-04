@@ -17,4 +17,4 @@
 
 # Indicadores de Processos no Dashboard
 - [x] Adicionar consultas independentes com filtro da unidade e três indicadores, sem modificar consultas ou seções 5S.
-- [ ] Comparar indicadores com auditorias concluídas e validar os dois botões pela tela autenticada.
+- [ ] Comparar indicadores com auditorias concluídas e validar os dois botões pela tela autenticada — bloqueado: nenhuma auditoria de processo concluída no banco e sessão da conta solicitante indisponível; requer entrada na prévia e auditoria concluída.
