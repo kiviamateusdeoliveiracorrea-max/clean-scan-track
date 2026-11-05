@@ -57,6 +57,13 @@
       "when": 1793803132034,
       "tag": "0007_promote_f2b_read_and_evidence_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793877471984,
+      "tag": "0008_restrict_perguntas_auditoria_write_by_unit",
+      "breakpoints": true
     }
   ]
 }
