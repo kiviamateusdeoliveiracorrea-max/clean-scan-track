@@ -9,7 +9,7 @@
 - [x] Conferir políticas reais e redundância de f2b_units_select; preservar regras de escrita e grants de auditores.
 - [x] Aplicar em uma transação as regras de leitura e evidências solicitadas, sem mudar funções ou dados.
 - [x] Testar gestora e LIDER/fallback, listas, detalhes 5S/processo, filtros NC, perfis e foto compartilhada; 20 testes 5S aprovados; scanner básico sem achados e antigos marcados corrigidos; teste e foto removidos.
-- [ ] Fechar leitura de perguntas 5S entre unidades — bloqueado: requer autorização para alterar a política antiga FOR ALL perguntas_auditoria_write_admin_gestor_auditor, fora do escopo aprovado; LIDER/fallback ainda lê 14 perguntas específicas de unidades não autorizadas. Não publicar.
+- [x] Fechar leitura de perguntas 5S entre unidades: regra de escrita restrita por unidade/área; LIDER vê 0 de outras unidades; admin, auditor e gestor editam normalmente.
 
 # Estrutura de Auditoria de Processos
 - [x] Criar quatro tabelas independentes, permissões, conclusão transacional e validação.
