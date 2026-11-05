@@ -39,19 +39,6 @@ export const Route = createFileRoute("/_authenticated/auditorias/nova")({
   component: NovaAuditoria,
 });
 
-const AREAS_PADRAO = [
-  "Recebimento",
-  "Estocagem",
-  "Ativação",
-  "Almoxarifado",
-  "CEM",
-  "Expedição",
-  "Usinagem",
-  "Oleamento",
-  "Blocado",
-  "CTT",
-];
-
 const CATEGORIAS = ["Pessoas", "Ambiente", "Processo"] as const;
 
 function NovaAuditoria() {
@@ -260,12 +247,7 @@ function NovaAuditoria() {
     },
   });
 
-  const areasDisponiveis = (areasQ.data ?? [])
-    .filter((a: any) => AREAS_PADRAO.includes(a.nome))
-    .sort(
-      (a: any, b: any) =>
-        AREAS_PADRAO.indexOf(a.nome) - AREAS_PADRAO.indexOf(b.nome),
-    );
+  const areasDisponiveis = areasQ.data ?? [];
   const areaNome =
     (areasQ.data ?? []).find((a: any) => a.id === areaId)?.nome ?? "";
 
