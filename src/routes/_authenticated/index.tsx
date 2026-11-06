@@ -277,6 +277,11 @@ function Dashboard() {
         </Button>
       </header>
 
+      <div className="flex items-center gap-2 pt-2">
+        <ClipboardCheck className="h-5 w-5 text-primary" />
+        <h2 className="text-lg font-bold text-primary uppercase tracking-wide">Auditoria 5S</h2>
+      </div>
+
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
         <KpiCard
@@ -555,6 +560,59 @@ function Dashboard() {
 
 
 
+      {/* Recentes */}
+      <Card>
+        <CardHeader className="flex-row items-center justify-between">
+          <CardTitle className="text-base">Auditorias recentes</CardTitle>
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/auditorias">Ver todas</Link>
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {auditorias.length === 0 ? (
+            <div className="text-center py-10 text-sm text-muted-foreground">
+              Nenhuma auditoria registrada ainda.
+            </div>
+          ) : (
+            <ul className="divide-y">
+              {auditorias.slice(0, 5).map((a: any) => {
+                const cls = classificaPontuacao(Number(a.percentual));
+                return (
+                  <li key={a.id}>
+                    <Link
+                      to="/auditorias/$id"
+                      params={{ id: a.id }}
+                      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-3 hover:bg-muted/50 rounded px-2 -mx-2"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm truncate flex items-center gap-2">
+                          <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          {a.areas?.nome ?? "Sem área"}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2">
+                          <Calendar className="h-3 w-3" />
+                          {new Date(a.data_auditoria).toLocaleDateString("pt-BR")}
+                          {" · "}
+                          {a.auditores?.nome ?? "—"}
+                        </p>
+                      </div>
+                      <Badge className={`${cls.color} border-0 font-semibold shrink-0`}>
+                        {Number(a.percentual).toFixed(0)}%
+                      </Badge>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      <div className="flex items-center gap-2 pt-4">
+        <ClipboardCheck className="h-5 w-5 text-accent" />
+        <h2 className="text-lg font-bold text-accent uppercase tracking-wide">Auditoria de Processo</h2>
+      </div>
+
       {/* Auditoria de Processos */}
       <div className="grid lg:grid-cols-2 gap-4">
       <Card>
@@ -683,53 +741,7 @@ function Dashboard() {
         </Card>
       </div>
 
-      {/* Recentes */}
-      <Card>
-        <CardHeader className="flex-row items-center justify-between">
-          <CardTitle className="text-base">Auditorias recentes</CardTitle>
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/auditorias">Ver todas</Link>
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {auditorias.length === 0 ? (
-            <div className="text-center py-10 text-sm text-muted-foreground">
-              Nenhuma auditoria registrada ainda.
-            </div>
-          ) : (
-            <ul className="divide-y">
-              {auditorias.slice(0, 5).map((a: any) => {
-                const cls = classificaPontuacao(Number(a.percentual));
-                return (
-                  <li key={a.id}>
-                    <Link
-                      to="/auditorias/$id"
-                      params={{ id: a.id }}
-                      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-3 hover:bg-muted/50 rounded px-2 -mx-2"
-                    >
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm truncate flex items-center gap-2">
-                          <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                          {a.areas?.nome ?? "Sem área"}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2">
-                          <Calendar className="h-3 w-3" />
-                          {new Date(a.data_auditoria).toLocaleDateString("pt-BR")}
-                          {" · "}
-                          {a.auditores?.nome ?? "—"}
-                        </p>
-                      </div>
-                      <Badge className={`${cls.color} border-0 font-semibold shrink-0`}>
-                        {Number(a.percentual).toFixed(0)}%
-                      </Badge>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+
     </div>
   );
 }
