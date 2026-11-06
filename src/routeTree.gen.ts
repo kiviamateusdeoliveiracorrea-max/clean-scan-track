@@ -33,6 +33,7 @@ import { Route as AuthenticatedAuditoriasProcessoNovaRouteImport } from './route
 import { Route as AuthenticatedAuditoriasIndexRouteImport } from './routes/_authenticated/auditorias.index'
 import { Route as AuthenticatedAuditoriasIdRouteImport } from './routes/_authenticated/auditorias.$id'
 import { Route as AuthenticatedAuditoriasNovaRouteImport } from './routes/_authenticated/auditorias.nova'
+import { Route as AuthenticatedAuditoriasProcessoIdEditarRouteImport } from './routes/_authenticated/auditorias-processo.$id.editar'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -162,6 +163,12 @@ const AuthenticatedAuditoriasNovaRoute =
     path: '/auditorias/nova',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAuditoriasProcessoIdEditarRoute =
+  AuthenticatedAuditoriasProcessoIdEditarRouteImport.update({
+    id: '/editar',
+    path: '/editar',
+    getParentRoute: () => AuthenticatedAuditoriasProcessoIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -181,12 +188,13 @@ export interface FileRoutesByFullPath {
   '/perguntas-processo': typeof AuthenticatedPerguntasProcessoRoute
   '/unidades': typeof AuthenticatedUnidadesRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
-  '/auditorias-processo/$id': typeof AuthenticatedAuditoriasProcessoIdRoute
+  '/auditorias-processo/$id': typeof AuthenticatedAuditoriasProcessoIdRouteWithChildren
   '/auditorias-processo/nova': typeof AuthenticatedAuditoriasProcessoNovaRoute
   '/auditorias/$id': typeof AuthenticatedAuditoriasIdRoute
   '/auditorias/nova': typeof AuthenticatedAuditoriasNovaRoute
   '/auditorias-processo/': typeof AuthenticatedAuditoriasProcessoIndexRoute
   '/auditorias/': typeof AuthenticatedAuditoriasIndexRoute
+  '/auditorias-processo/$id/editar': typeof AuthenticatedAuditoriasProcessoIdEditarRoute
 }
 export interface FileRoutesByTo {
   '/alterar-senha-obrigatoria': typeof AlterarSenhaObrigatoriaRoute
@@ -206,12 +214,13 @@ export interface FileRoutesByTo {
   '/unidades': typeof AuthenticatedUnidadesRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/': typeof AuthenticatedIndexRoute
-  '/auditorias-processo/$id': typeof AuthenticatedAuditoriasProcessoIdRoute
+  '/auditorias-processo/$id': typeof AuthenticatedAuditoriasProcessoIdRouteWithChildren
   '/auditorias-processo/nova': typeof AuthenticatedAuditoriasProcessoNovaRoute
   '/auditorias/$id': typeof AuthenticatedAuditoriasIdRoute
   '/auditorias/nova': typeof AuthenticatedAuditoriasNovaRoute
   '/auditorias-processo': typeof AuthenticatedAuditoriasProcessoIndexRoute
   '/auditorias': typeof AuthenticatedAuditoriasIndexRoute
+  '/auditorias-processo/$id/editar': typeof AuthenticatedAuditoriasProcessoIdEditarRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -233,12 +242,13 @@ export interface FileRoutesById {
   '/_authenticated/unidades': typeof AuthenticatedUnidadesRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
-  '/_authenticated/auditorias-processo/$id': typeof AuthenticatedAuditoriasProcessoIdRoute
+  '/_authenticated/auditorias-processo/$id': typeof AuthenticatedAuditoriasProcessoIdRouteWithChildren
   '/_authenticated/auditorias-processo/nova': typeof AuthenticatedAuditoriasProcessoNovaRoute
   '/_authenticated/auditorias/$id': typeof AuthenticatedAuditoriasIdRoute
   '/_authenticated/auditorias/nova': typeof AuthenticatedAuditoriasNovaRoute
   '/_authenticated/auditorias-processo/': typeof AuthenticatedAuditoriasProcessoIndexRoute
   '/_authenticated/auditorias/': typeof AuthenticatedAuditoriasIndexRoute
+  '/_authenticated/auditorias-processo/$id/editar': typeof AuthenticatedAuditoriasProcessoIdEditarRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -266,6 +276,7 @@ export interface FileRouteTypes {
     | '/auditorias/nova'
     | '/auditorias-processo/'
     | '/auditorias/'
+    | '/auditorias-processo/$id/editar'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/alterar-senha-obrigatoria'
@@ -291,6 +302,7 @@ export interface FileRouteTypes {
     | '/auditorias/nova'
     | '/auditorias-processo'
     | '/auditorias'
+    | '/auditorias-processo/$id/editar'
   id:
     | '__root__'
     | '/_authenticated'
@@ -317,6 +329,7 @@ export interface FileRouteTypes {
     | '/_authenticated/auditorias/nova'
     | '/_authenticated/auditorias-processo/'
     | '/_authenticated/auditorias/'
+    | '/_authenticated/auditorias-processo/$id/editar'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -496,8 +509,30 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAuditoriasNovaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/auditorias-processo/$id/editar': {
+      id: '/_authenticated/auditorias-processo/$id/editar'
+      path: '/editar'
+      fullPath: '/auditorias-processo/$id/editar'
+      preLoaderRoute: typeof AuthenticatedAuditoriasProcessoIdEditarRouteImport
+      parentRoute: typeof AuthenticatedAuditoriasProcessoIdRoute
+    }
   }
 }
+
+interface AuthenticatedAuditoriasProcessoIdRouteChildren {
+  AuthenticatedAuditoriasProcessoIdEditarRoute: typeof AuthenticatedAuditoriasProcessoIdEditarRoute
+}
+
+const AuthenticatedAuditoriasProcessoIdRouteChildren: AuthenticatedAuditoriasProcessoIdRouteChildren =
+  {
+    AuthenticatedAuditoriasProcessoIdEditarRoute:
+      AuthenticatedAuditoriasProcessoIdEditarRoute,
+  }
+
+const AuthenticatedAuditoriasProcessoIdRouteWithChildren =
+  AuthenticatedAuditoriasProcessoIdRoute._addFileChildren(
+    AuthenticatedAuditoriasProcessoIdRouteChildren,
+  )
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAlertasRoute: typeof AuthenticatedAlertasRoute
@@ -514,7 +549,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedUnidadesRoute: typeof AuthenticatedUnidadesRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
-  AuthenticatedAuditoriasProcessoIdRoute: typeof AuthenticatedAuditoriasProcessoIdRoute
+  AuthenticatedAuditoriasProcessoIdRoute: typeof AuthenticatedAuditoriasProcessoIdRouteWithChildren
   AuthenticatedAuditoriasProcessoNovaRoute: typeof AuthenticatedAuditoriasProcessoNovaRoute
   AuthenticatedAuditoriasIdRoute: typeof AuthenticatedAuditoriasIdRoute
   AuthenticatedAuditoriasNovaRoute: typeof AuthenticatedAuditoriasNovaRoute
@@ -538,7 +573,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedAuditoriasProcessoIdRoute:
-    AuthenticatedAuditoriasProcessoIdRoute,
+    AuthenticatedAuditoriasProcessoIdRouteWithChildren,
   AuthenticatedAuditoriasProcessoNovaRoute:
     AuthenticatedAuditoriasProcessoNovaRoute,
   AuthenticatedAuditoriasIdRoute: AuthenticatedAuditoriasIdRoute,

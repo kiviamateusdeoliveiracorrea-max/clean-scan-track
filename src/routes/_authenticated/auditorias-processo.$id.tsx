@@ -1,4 +1,6 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { toast } from "sonner";
+import { useProcessAuditManager } from "@/hooks/use-process-audit-permission";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +11,7 @@ import {
   Dialog,
   DialogContent,
 } from "@/components/ui/dialog";
-import { ArrowLeft, Calendar, MapPin, User, Camera, FileImage, FileText, Clock, Lightbulb } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, User, Camera, FileImage, FileText, Clock, Lightbulb, Pencil, Trash2 } from "lucide-react";
 import { classificaPontuacao } from "@/lib/audit-constants";
 
 /** Visualização de fotos do bucket audit-photos com URL assinada (mesmo padrão de auditorias.$id.tsx). */
@@ -93,6 +95,7 @@ const ACAO_STATUS_LABEL: Record<string, string> = {
 
 function AuditoriaProcessoDetail() {
   const { id } = Route.useParams();
+  const navigate = useNavigate();
 
   const { data: audit } = useQuery({
     queryKey: ["auditoria-processo", id],
@@ -143,6 +146,8 @@ function AuditoriaProcessoDetail() {
     },
   });
 
+  const canManage = useProcessAuditManager([audit?.auditor_id]);
+
   if (!audit) {
     return <div className="p-8">Carregando...</div>;
   }
@@ -166,11 +171,36 @@ function AuditoriaProcessoDetail() {
   return (
     <div className="p-4 md:p-8 space-y-6 max-w-5xl mx-auto">
       <div>
-        <Button asChild variant="ghost" size="sm" className="mb-2">
-          <Link to="/auditorias-processo">
-            <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
-          </Link>
-        </Button>
+        <div className="flex flex-wrap items-center gap-2 mb-2">
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/auditorias-processo">
+              <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
+            </Link>
+          </Button>
+          {concluida && canManage(audit.auditor_id) && (
+            <>
+              <Button asChild variant="outline" size="sm">
+                <Link to="/auditorias-processo/$id/editar" params={{ id }}>
+                  <Pencil className="h-4 w-4 mr-1" /> Editar
+                </Link>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-destructive hover:text-destructive"
+                onClick={async () => {
+                  if (!confirm("Excluir esta auditoria de processo? Essa ação não pode ser desfeita e remove os dados dos indicadores do dashboard.")) return;
+                  const { data: removed, error } = await supabase.from("auditorias_processo").delete().eq("id", id).select("id");
+                  if (error || !removed?.length) return void toast.error(error?.message ?? "Sem permissão para excluir esta auditoria.");
+                  toast.success("Auditoria excluída");
+                  navigate({ to: "/auditorias-processo" });
+                }}
+              >
+                <Trash2 className="h-4 w-4 mr-1" /> Excluir
+              </Button>
+            </>
+          )}
+        </div>
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-primary flex items-center gap-2">

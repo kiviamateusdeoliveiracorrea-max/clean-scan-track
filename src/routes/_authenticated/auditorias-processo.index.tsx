@@ -11,6 +11,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Search, MapPin, Calendar, User, Trash2 } from "lucide-react";
 import { classificaPontuacao } from "@/lib/audit-constants";
 import { useCurrentRole } from "@/hooks/use-current-role";
+import { useProcessAuditManager } from "@/hooks/use-process-audit-permission";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/auditorias-processo/")({
@@ -39,7 +40,7 @@ function AuditoriasProcessoList() {
   const [filtro, setFiltro] = useState<Filtro>("todas");
   const { role } = useCurrentRole();
   const canCreate = role === "administrador" || role === "gestor" || role === "auditor";
-  const canDelete = role === "administrador" || role === "gestor";
+  const canDraftDelete = role === "administrador" || role === "gestor";
   const qc = useQueryClient();
 
   const { data = [], isLoading } = useQuery({
@@ -55,6 +56,9 @@ function AuditoriasProcessoList() {
     },
   });
 
+  const canManage = useProcessAuditManager(data.map((a: any) => a.auditor_id));
+  const canDelete = (a: any) => (a.status === "concluida" ? canManage(a.auditor_id) : canDraftDelete);
+
   const filtered = useMemo(() => {
     return data.filter((a: any) => {
       if (filtro !== "todas" && a.status !== filtro) return false;
@@ -69,16 +73,22 @@ function AuditoriasProcessoList() {
   }, [data, q, filtro]);
 
   const handleDelete = async (a: any) => {
-    if (!confirm("Excluir este rascunho de auditoria de processo?")) return;
-    // Remove dependentes antes da auditoria (rascunhos não deveriam ter, mas garante integridade).
-    await supabase.from("respostas_processo").delete().eq("auditoria_processo_id", a.id);
-    await supabase.from("acoes_processo").delete().eq("auditoria_processo_id", a.id);
-    const { error } = await supabase.from("auditorias_processo").delete().eq("id", a.id);
+    const concluida = a.status === "concluida";
+    const msg = concluida
+      ? "Excluir esta auditoria de processo JÁ CONCLUÍDA? Essa ação não pode ser desfeita e remove respostas, ações e os dados dos indicadores do dashboard."
+      : "Excluir este rascunho de auditoria de processo?";
+    if (!confirm(msg)) return;
+    // Respostas e ações são removidas em cascata pelo banco.
+    const { data: removed, error } = await supabase.from("auditorias_processo").delete().eq("id", a.id).select("id");
     if (error) {
       toast.error(error.message);
       return;
     }
-    toast.success("Rascunho excluído");
+    if (!removed?.length) {
+      toast.error("Sem permissão para excluir esta auditoria.");
+      return;
+    }
+    toast.success(concluida ? "Auditoria excluída" : "Rascunho excluído");
     qc.invalidateQueries({ queryKey: ["auditorias-processo-list"] });
   };
 
@@ -189,7 +199,7 @@ function AuditoriasProcessoList() {
                       </p>
                     </div>
                   </Link>
-                  {a.status === "rascunho" && canDelete && (
+                  {canDelete(a) && (
                     <div className="flex justify-end pt-1">
                       <Button
                         size="sm"

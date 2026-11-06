@@ -1443,6 +1443,10 @@ export type Database = {
         Args: { p_acoes: Json; p_answers: Json; p_audit: Json; p_id: string }
         Returns: string
       }
+      edit_completed_audit_processo: {
+        Args: { p_answers: Json; p_audit: Json; p_id: string }
+        Returns: string
+      }
       evidence_owner: {
         Args: { _path: string }
         Returns: {
@@ -1463,6 +1467,10 @@ export type Database = {
         Returns: boolean
       }
       is_global_admin: { Args: never; Returns: boolean }
+      is_processo_audit_owner: {
+        Args: { _auditor_id: string }
+        Returns: boolean
+      }
       is_unit_admin: { Args: { target_unit_id: string }; Returns: boolean }
       list_auditores: {
         Args: never
