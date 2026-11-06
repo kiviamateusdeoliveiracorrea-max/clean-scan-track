@@ -21,9 +21,9 @@ export function singleFlight<T>() {
   };
 }
 
-export function validateAnswers(questions: { id: string; pergunta: string }[], answers: Record<string, { resposta: string }>) {
+export function validateAnswers(questions: { id: string; pergunta: string }[], answers: Record<string, { resposta: string }>, allowed: readonly string[] = ["SIM", "NÃO"]) {
   // Área sem perguntas cadastradas: a auditoria pode ser concluída só com evidências e NCs.
   for (const q of questions) {
-    if (!["SIM", "NÃO"].includes(answers[q.id]?.resposta)) throw new Error(`Resposta inválida ou ausente: ${q.pergunta}`);
+    if (!allowed.includes(answers[q.id]?.resposta)) throw new Error(`Resposta inválida ou ausente: ${q.pergunta}`);
   }
 }

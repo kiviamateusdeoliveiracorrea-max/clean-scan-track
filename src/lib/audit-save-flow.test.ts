@@ -39,3 +39,10 @@ describe("audit save consistency", () => {
     expect(await run(async () => "retry")).toBe("retry");
   });
 });
+import { validateAnswers as va } from "./audit-save-flow";
+import { test as t2, expect as e2 } from "bun:test";
+t2("Processo aceita N/A; 5S continua só com SIM/NÃO", () => {
+  const q = [{ id: "1", pergunta: "P1" }];
+  e2(() => va(q, { "1": { resposta: "NA" } }, ["SIM", "NÃO", "NA"])).not.toThrow();
+  e2(() => va(q, { "1": { resposta: "NA" } })).toThrow();
+});

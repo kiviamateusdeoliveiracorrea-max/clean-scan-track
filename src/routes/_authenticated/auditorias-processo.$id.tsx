@@ -9,7 +9,7 @@ import {
   Dialog,
   DialogContent,
 } from "@/components/ui/dialog";
-import { ArrowLeft, Calendar, MapPin, User, Camera, FileImage, FileText } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, User, Camera, FileImage, FileText, Clock, Lightbulb } from "lucide-react";
 import { classificaPontuacao } from "@/lib/audit-constants";
 
 /** Visualização de fotos do bucket audit-photos com URL assinada (mesmo padrão de auditorias.$id.tsx). */
@@ -186,6 +186,12 @@ function AuditoriaProcessoDetail() {
                 <User className="h-4 w-4" />
                 {(audit as any).auditores?.nome ?? "—"}
               </span>
+              {(audit as any).turno && (
+                <span className="flex items-center gap-1">
+                  <Clock className="h-4 w-4" />
+                  {(audit as any).turno}
+                </span>
+              )}
               {audit.colaborador_auditado && (
                 <span>Colaborador: {audit.colaborador_auditado}</span>
               )}
@@ -275,12 +281,18 @@ function AuditoriaProcessoDetail() {
               <div key={r.id} className="border rounded-lg p-3 space-y-2">
                 <div className="flex items-start justify-between gap-3">
                   <p className="text-sm font-medium flex-1">{r.perguntas_processo?.pergunta ?? "Pergunta removida"}</p>
-                  <Badge className={r.resposta === "SIM" ? "bg-emerald-100 text-emerald-700 border-0 shrink-0" : "bg-red-100 text-red-700 border-0 shrink-0"}>
-                    {r.resposta}
+                  <Badge className={r.resposta === "SIM" ? "bg-emerald-100 text-emerald-700 border-0 shrink-0" : r.resposta === "NA" ? "bg-slate-100 text-slate-600 border-0 shrink-0" : "bg-red-100 text-red-700 border-0 shrink-0"}>
+                    {r.resposta === "NA" ? "N/A" : r.resposta}
                   </Badge>
                 </div>
                 {r.observacao && (
                   <p className="text-xs text-muted-foreground whitespace-pre-wrap">{r.observacao}</p>
+                )}
+                {r.oportunidade_melhoria && (
+                  <p className="text-xs whitespace-pre-wrap flex items-start gap-1">
+                    <Lightbulb className="h-3.5 w-3.5 text-accent shrink-0 mt-0.5" />
+                    <span><strong>Oportunidade de melhoria:</strong> {r.oportunidade_melhoria}</span>
+                  </p>
                 )}
                 {r.foto_url && <AuditPhotos paths={[r.foto_url]} />}
               </div>

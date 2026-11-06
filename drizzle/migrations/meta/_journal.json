@@ -64,6 +64,13 @@
       "when": 1793877471984,
       "tag": "0008_restrict_perguntas_auditoria_write_by_unit",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793969573800,
+      "tag": "0009_processo_turno_na_oportunidade",
+      "breakpoints": true
     }
   ]
 }

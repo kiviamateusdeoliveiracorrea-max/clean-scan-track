@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Save, Camera, X, AlertTriangle, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Save, Camera, X, AlertTriangle, Plus, Trash2, Lightbulb } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/auditorias-processo/nova")({
@@ -42,8 +42,9 @@ const PERGUNTA_ENCERRAMENTO =
   "Está clara a forma com que devem ser seguidos os processos bem como os impactos que o seu não-seguimento causam na nossa operação?";
 
 type RespostaItem = {
-  resposta: "SIM" | "NÃO";
+  resposta: "SIM" | "NÃO" | "NA";
   observacao: string;
+  oportunidadeMelhoria?: string;
   fotoPath: string;
   fotoPreview: string;
   salvando?: boolean;
@@ -72,6 +73,7 @@ function NovaAuditoriaProcesso() {
   const [auditorId, setAuditorId] = useState("");
   const [data, setData] = useState(() => new Date().toISOString().slice(0, 10));
   const [colaboradorAuditado, setColaboradorAuditado] = useState("");
+  const [turno, setTurno] = useState("");
   const [documentoReferencia, setDocumentoReferencia] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [processoClaro, setProcessoClaro] = useState<boolean | null>(null);
@@ -146,8 +148,8 @@ function NovaAuditoriaProcesso() {
 
   const persistRespostaNow = async (
     perguntaId: string,
-    resposta: "SIM" | "NÃO",
-    extra?: { observacao?: string; fotoPath?: string },
+    resposta: "SIM" | "NÃO" | "NA",
+    extra?: { observacao?: string; fotoPath?: string; oportunidadeMelhoria?: string },
   ) => {
     const id = await ensureDraft();
     if (!id) return;
@@ -159,6 +161,7 @@ function NovaAuditoriaProcesso() {
         resposta,
         observacao: extra?.observacao || null,
         foto_url: extra?.fotoPath || null,
+        oportunidade_melhoria: extra?.oportunidadeMelhoria || null,
       },
       { onConflict: "auditoria_processo_id,pergunta_id" },
     );
@@ -177,12 +180,13 @@ function NovaAuditoriaProcesso() {
     return next;
   };
 
-  const responder = async (perguntaId: string, resposta: "SIM" | "NÃO") => {
+  const responder = async (perguntaId: string, resposta: "SIM" | "NÃO" | "NA") => {
     patchResposta(perguntaId, { resposta });
     const atual = respostas[perguntaId];
     await persistResposta(perguntaId, resposta, {
       observacao: atual?.observacao,
       fotoPath: atual?.fotoPath,
+      oportunidadeMelhoria: atual?.oportunidadeMelhoria,
     });
   };
 
@@ -210,6 +214,7 @@ function NovaAuditoriaProcesso() {
     await persistResposta(perguntaId, atual?.resposta ?? "SIM", {
       observacao: atual?.observacao,
       fotoPath: path,
+      oportunidadeMelhoria: atual?.oportunidadeMelhoria,
     });
   };
 
@@ -288,6 +293,7 @@ function NovaAuditoriaProcesso() {
             setAuditorId(draft.auditorId);
             setData(draft.data);
             setColaboradorAuditado(draft.colaboradorAuditado ?? "");
+            setTurno(draft.turno ?? "");
             setDocumentoReferencia(draft.documentoReferencia ?? "");
             setObservacoes(draft.observacoes ?? "");
             setRespostas(draft.respostas ?? {});
@@ -315,7 +321,7 @@ function NovaAuditoriaProcesso() {
   useEffect(() => {
     if (!restored || !localKey || saving || finished.current || !areaId) return;
     const snapshot = {
-      areaId, auditorId, data, colaboradorAuditado, documentoReferencia, observacoes,
+      areaId, auditorId, data, turno, colaboradorAuditado, documentoReferencia, observacoes,
       respostas, processoClaro, processoClaroObservacao, acoes, fotos, draftId,
     };
     void draftStore(localKey, "write", snapshot)
@@ -323,7 +329,7 @@ function NovaAuditoriaProcesso() {
       .catch(() =>
         setDraftFeedback("Não foi possível salvar o rascunho neste aparelho. Mantenha esta tela aberta."),
       );
-  }, [restored, localKey, saving, areaId, auditorId, data, colaboradorAuditado, documentoReferencia, observacoes, respostas, processoClaro, processoClaroObservacao, acoes, fotos, draftId]);
+  }, [restored, localKey, saving, areaId, auditorId, data, turno, colaboradorAuditado, documentoReferencia, observacoes, respostas, processoClaro, processoClaroObservacao, acoes, fotos, draftId]);
 
   useEffect(() => {
     const urls = fotos.map((f) => URL.createObjectURL(f));
@@ -365,13 +371,17 @@ function NovaAuditoriaProcesso() {
   const handleSave = async () => {
     if (saveLock.current) return;
     try {
-      validateAnswers(perguntas, respostas);
+      validateAnswers(perguntas, respostas, ["SIM", "NÃO", "NA"]);
     } catch (e: any) {
       toast.error(e.message);
       return;
     }
     if (!areaId || !auditorId) {
       toast.error("Selecione a área e o auditor");
+      return;
+    }
+    if (!turno) {
+      toast.error("Selecione o turno");
       return;
     }
     const naoRespondidas = perguntas.filter((p: any) => !respostas[p.id]);
@@ -410,6 +420,7 @@ function NovaAuditoriaProcesso() {
           colaborador_auditado: colaboradorAuditado || null,
           documento_referencia: documentoReferencia || null,
           data_auditoria: data,
+          turno,
           processo_claro: processoClaro,
           processo_claro_observacao: processoClaroObservacao || null,
           observacoes: observacoes || null,
@@ -422,6 +433,7 @@ function NovaAuditoriaProcesso() {
             resposta: respostas[p.id].resposta,
             observacao: respostas[p.id].observacao || null,
             foto_url: respostas[p.id].fotoPath || null,
+            oportunidade_melhoria: respostas[p.id].oportunidadeMelhoria || null,
           })),
         p_acoes: acoes
           .filter((a) => a.oQue.trim())
@@ -554,6 +566,16 @@ function NovaAuditoriaProcesso() {
               <Input type="date" value={data} onChange={(e) => setData(e.target.value)} />
             </div>
             <div>
+              <Label>Turno</Label>
+              <Select value={turno} onValueChange={setTurno}>
+                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1º Turno">1º Turno</SelectItem>
+                  <SelectItem value="2º Turno">2º Turno</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
               <Label>Colaborador auditado</Label>
               <Input
                 value={colaboradorAuditado}
@@ -606,7 +628,7 @@ function NovaAuditoriaProcesso() {
                             {i + 1}. {p.pergunta}
                           </p>
                           <div className="flex items-center gap-2 flex-wrap">
-                            {(["SIM", "NÃO"] as const).map((op) => (
+                            {(["SIM", "NÃO", "NA"] as const).map((op) => (
                               <Button
                                 key={op}
                                 type="button"
@@ -615,11 +637,13 @@ function NovaAuditoriaProcesso() {
                                 className={
                                   r?.resposta === op && op === "NÃO"
                                     ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                    : ""
+                                    : r?.resposta === op && op === "NA"
+                                      ? "bg-muted-foreground/30 text-foreground hover:bg-muted-foreground/40"
+                                      : ""
                                 }
                                 onClick={() => responder(p.id, op)}
                               >
-                                {op === "SIM" ? "Sim" : "Não"}
+                                {op === "SIM" ? "Sim" : op === "NÃO" ? "Não" : "N/A"}
                               </Button>
                             ))}
                             <label className="inline-flex items-center gap-1 text-xs border rounded-md px-3 py-2 cursor-pointer hover:bg-muted/50">
@@ -658,9 +682,27 @@ function NovaAuditoriaProcesso() {
                                 persistResposta(p.id, r.resposta, {
                                   observacao: r.observacao,
                                   fotoPath: r.fotoPath,
+                                  oportunidadeMelhoria: r.oportunidadeMelhoria,
                                 });
                             }}
                           />
+                          <div className="flex items-start gap-2">
+                            <Lightbulb className="h-4 w-4 mt-2 text-accent shrink-0" />
+                            <Textarea
+                              rows={1}
+                              placeholder="Oportunidade de melhoria (opcional)..."
+                              value={r?.oportunidadeMelhoria ?? ""}
+                              onChange={(e) => patchResposta(p.id, { oportunidadeMelhoria: e.target.value })}
+                              onBlur={() => {
+                                if (r?.resposta)
+                                  persistResposta(p.id, r.resposta, {
+                                    observacao: r.observacao,
+                                    fotoPath: r.fotoPath,
+                                    oportunidadeMelhoria: r.oportunidadeMelhoria,
+                                  });
+                              }}
+                            />
+                          </div>
                         </div>
                       );
                     })}

@@ -419,6 +419,7 @@ export type Database = {
           processo_claro: boolean | null
           processo_claro_observacao: string | null
           status: string
+          turno: string | null
           unit_id: string
           updated_at: string
         }
@@ -439,6 +440,7 @@ export type Database = {
           processo_claro?: boolean | null
           processo_claro_observacao?: string | null
           status?: string
+          turno?: string | null
           unit_id: string
           updated_at?: string
         }
@@ -459,6 +461,7 @@ export type Database = {
           processo_claro?: boolean | null
           processo_claro_observacao?: string | null
           status?: string
+          turno?: string | null
           unit_id?: string
           updated_at?: string
         }
@@ -1149,6 +1152,7 @@ export type Database = {
           foto_url: string | null
           id: string
           observacao: string | null
+          oportunidade_melhoria: string | null
           pergunta_id: string
           resposta: string
         }
@@ -1158,6 +1162,7 @@ export type Database = {
           foto_url?: string | null
           id?: string
           observacao?: string | null
+          oportunidade_melhoria?: string | null
           pergunta_id: string
           resposta: string
         }
@@ -1167,6 +1172,7 @@ export type Database = {
           foto_url?: string | null
           id?: string
           observacao?: string | null
+          oportunidade_melhoria?: string | null
           pergunta_id?: string
           resposta?: string
         }
