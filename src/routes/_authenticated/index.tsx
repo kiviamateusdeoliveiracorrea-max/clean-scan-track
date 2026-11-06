@@ -105,7 +105,7 @@ function Dashboard() {
       const { data, error } = await byUnit(
         supabase
           .from("acoes_processo")
-          .select("*, auditorias_processo!inner(unit_id, area_id)"),
+          .select("*, auditorias_processo!inner(unit_id, area_id, areas(nome)), profiles(nome, cargo)"),
         "auditorias_processo.unit_id",
       ).not("status", "in", "(concluida,cancelada)");
       if (error) throw error;
@@ -120,6 +120,31 @@ function Dashboard() {
     : 0;
   const acoesProcessoAbertas = (acoesProcessoQuery.data ?? []).length;
   const podioProcesso = rankProcessAreas(auditoriasProcesso);
+
+  const acoesProcesso = acoesProcessoQuery.data ?? [];
+
+  const porAreaAcoesProcesso = new Map<string, number>();
+  acoesProcesso.forEach((a: any) => {
+    const nome = a.auditorias_processo?.areas?.nome ?? "Sem área";
+    porAreaAcoesProcesso.set(nome, (porAreaAcoesProcesso.get(nome) ?? 0) + 1);
+  });
+  const areaAcoesProcessoChart = Array.from(porAreaAcoesProcesso.entries())
+    .map(([nome, qtd]) => ({ nome, qtd }))
+    .sort((a, b) => b.qtd - a.qtd)
+    .slice(0, 6);
+
+  const porRespAcoesProcesso = new Map<string, { nome: string; cargo: string; count: number }>();
+  acoesProcesso.forEach((a: any) => {
+    const key = a.responsavel_id ?? "__sem__";
+    const nome = a.profiles?.nome ?? "Sem responsável";
+    const cargo = a.profiles?.cargo ?? "";
+    const cur = porRespAcoesProcesso.get(key) ?? { nome, cargo, count: 0 };
+    cur.count += 1;
+    porRespAcoesProcesso.set(key, cur);
+  });
+  const respAcoesProcessoChart = Array.from(porRespAcoesProcesso.values())
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 8);
 
   const auditorias = auditoriasQuery.data ?? [];
   const ncs = ncQuery.data ?? [];
@@ -596,6 +621,66 @@ function Dashboard() {
           )}
         </CardContent>
       </Card>
+      </div>
+
+      {/* Ações da Auditoria de Processo */}
+      <div className="grid lg:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Ações abertas por área — Auditoria de Processo</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {areaAcoesProcessoChart.length === 0 ? (
+              <EmptyChart />
+            ) : (
+              <ResponsiveContainer width="100%" height={240}>
+                <BarChart data={areaAcoesProcessoChart} layout="vertical" margin={{ left: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
+                  <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
+                  <YAxis dataKey="nome" type="category" tick={{ fontSize: 11 }} width={90} />
+                  <Tooltip />
+                  <Bar dataKey="qtd" fill="#F59E0B" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Ações abertas por responsável — Auditoria de Processo</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {respAcoesProcessoChart.length === 0 ? (
+              <EmptyChart />
+            ) : (
+              <ul className="space-y-2">
+                {respAcoesProcessoChart.map((r) => (
+                  <li
+                    key={r.nome + r.cargo}
+                    className="flex items-center gap-3 rounded border bg-muted/20 px-3 py-2"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{r.nome}</p>
+                      {r.cargo && (
+                        <p className="text-[11px] text-muted-foreground truncate">{r.cargo}</p>
+                      )}
+                    </div>
+                    <Badge
+                      className={
+                        r.count > 5
+                          ? "bg-red-100 text-red-700 border-0"
+                          : "bg-primary/10 text-primary border-0"
+                      }
+                    >
+                      {r.count} aberta{r.count === 1 ? "" : "s"}
+                    </Badge>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Recentes */}
