@@ -25,6 +25,7 @@ import { Route as AuthenticatedMinhaContaRouteImport } from './routes/_authentic
 import { Route as AuthenticatedNaoConformidadesRouteImport } from './routes/_authenticated/nao-conformidades'
 import { Route as AuthenticatedPerguntasRouteImport } from './routes/_authenticated/perguntas'
 import { Route as AuthenticatedPerguntasProcessoRouteImport } from './routes/_authenticated/perguntas-processo'
+import { Route as AuthenticatedPlanejamentoProcessosRouteImport } from './routes/_authenticated/planejamento-processos'
 import { Route as AuthenticatedUnidadesRouteImport } from './routes/_authenticated/unidades'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as AuthenticatedAuditoriasProcessoIndexRouteImport } from './routes/_authenticated/auditorias-processo.index'
@@ -117,6 +118,12 @@ const AuthenticatedPerguntasProcessoRoute =
     path: '/perguntas-processo',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPlanejamentoProcessosRoute =
+  AuthenticatedPlanejamentoProcessosRouteImport.update({
+    id: '/planejamento-processos',
+    path: '/planejamento-processos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedUnidadesRoute = AuthenticatedUnidadesRouteImport.update({
   id: '/unidades',
   path: '/unidades',
@@ -186,6 +193,7 @@ export interface FileRoutesByFullPath {
   '/nao-conformidades': typeof AuthenticatedNaoConformidadesRoute
   '/perguntas': typeof AuthenticatedPerguntasRoute
   '/perguntas-processo': typeof AuthenticatedPerguntasProcessoRoute
+  '/planejamento-processos': typeof AuthenticatedPlanejamentoProcessosRoute
   '/unidades': typeof AuthenticatedUnidadesRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/auditorias-processo/$id': typeof AuthenticatedAuditoriasProcessoIdRouteWithChildren
@@ -211,6 +219,7 @@ export interface FileRoutesByTo {
   '/nao-conformidades': typeof AuthenticatedNaoConformidadesRoute
   '/perguntas': typeof AuthenticatedPerguntasRoute
   '/perguntas-processo': typeof AuthenticatedPerguntasProcessoRoute
+  '/planejamento-processos': typeof AuthenticatedPlanejamentoProcessosRoute
   '/unidades': typeof AuthenticatedUnidadesRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/': typeof AuthenticatedIndexRoute
@@ -239,6 +248,7 @@ export interface FileRoutesById {
   '/_authenticated/nao-conformidades': typeof AuthenticatedNaoConformidadesRoute
   '/_authenticated/perguntas': typeof AuthenticatedPerguntasRoute
   '/_authenticated/perguntas-processo': typeof AuthenticatedPerguntasProcessoRoute
+  '/_authenticated/planejamento-processos': typeof AuthenticatedPlanejamentoProcessosRoute
   '/_authenticated/unidades': typeof AuthenticatedUnidadesRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -268,6 +278,7 @@ export interface FileRouteTypes {
     | '/nao-conformidades'
     | '/perguntas'
     | '/perguntas-processo'
+    | '/planejamento-processos'
     | '/unidades'
     | '/usuarios'
     | '/auditorias-processo/$id'
@@ -293,6 +304,7 @@ export interface FileRouteTypes {
     | '/nao-conformidades'
     | '/perguntas'
     | '/perguntas-processo'
+    | '/planejamento-processos'
     | '/unidades'
     | '/usuarios'
     | '/'
@@ -320,6 +332,7 @@ export interface FileRouteTypes {
     | '/_authenticated/nao-conformidades'
     | '/_authenticated/perguntas'
     | '/_authenticated/perguntas-processo'
+    | '/_authenticated/planejamento-processos'
     | '/_authenticated/unidades'
     | '/_authenticated/usuarios'
     | '/_authenticated/'
@@ -453,6 +466,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPerguntasProcessoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/planejamento-processos': {
+      id: '/_authenticated/planejamento-processos'
+      path: '/planejamento-processos'
+      fullPath: '/planejamento-processos'
+      preLoaderRoute: typeof AuthenticatedPlanejamentoProcessosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/unidades': {
       id: '/_authenticated/unidades'
       path: '/unidades'
@@ -546,6 +566,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedNaoConformidadesRoute: typeof AuthenticatedNaoConformidadesRoute
   AuthenticatedPerguntasRoute: typeof AuthenticatedPerguntasRoute
   AuthenticatedPerguntasProcessoRoute: typeof AuthenticatedPerguntasProcessoRoute
+  AuthenticatedPlanejamentoProcessosRoute: typeof AuthenticatedPlanejamentoProcessosRoute
   AuthenticatedUnidadesRoute: typeof AuthenticatedUnidadesRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -569,6 +590,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedNaoConformidadesRoute: AuthenticatedNaoConformidadesRoute,
   AuthenticatedPerguntasRoute: AuthenticatedPerguntasRoute,
   AuthenticatedPerguntasProcessoRoute: AuthenticatedPerguntasProcessoRoute,
+  AuthenticatedPlanejamentoProcessosRoute:
+    AuthenticatedPlanejamentoProcessosRoute,
   AuthenticatedUnidadesRoute: AuthenticatedUnidadesRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,

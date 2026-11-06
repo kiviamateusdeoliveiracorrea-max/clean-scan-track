@@ -78,6 +78,13 @@
       "when": 1793969735101,
       "tag": "0010_processo_editar_excluir_concluida",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793972667943,
+      "tag": "0011_create_metas_processo",
+      "breakpoints": true
     }
   ]
 }

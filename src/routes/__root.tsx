@@ -29,6 +29,7 @@ import {
   UserCircle,
   FileWarning,
   Building2,
+  Target,
 } from "lucide-react";
 
 import appCss from "../styles.css?url";
@@ -167,6 +168,7 @@ const navItems: NavItem[] = [
   { to: "/alertas", label: "Alertas de Processo", icon: Megaphone },
   { to: "/historico", label: "Histórico", icon: History },
   { to: "/auditorias-processo", label: "Auditorias de Processo", icon: ClipboardCheck },
+  { to: "/planejamento-processos", label: "Planejamento", icon: Target },
   { to: "/perguntas-processo", label: "Perguntas — Processos", icon: ClipboardList },
   { to: "/areas", label: "Áreas", icon: MapPin },
   { to: "/auditores", label: "Auditores", icon: UserCog },

@@ -26,3 +26,8 @@
 - [ ] Conferir novo ranking na tela com conta autenticada — bloqueado: sessão da solicitante indisponível; requer entrada na prévia ou aprovação de uma conta explícita.
 - [x] Adicionar consultas independentes com filtro da unidade e três indicadores, sem modificar consultas ou seções 5S.
 - [x] Conferir Dashboard e destinos dos dois botões com sessão de gestora e LIDER; auditoria concluída e rascunho de processo disponíveis e detalhes acessíveis.
+# Aba Planejamento (Auditoria de Processo)
+- [x] Tabela de metas por unidade com leitura por unidade e escrita restrita a administrador/gestor.
+- [x] Tela /planejamento-processos: metas editáveis (admin/gestor), resumo semana/mês com progresso, gráfico de cumprimento semanal com linha de meta, evolução da nota por área.
+- [x] Item "Planejamento" no menu após "Auditorias de Processo".
+- [x] Testes: 8 testes do cálculo aprovados; admin salvou metas (3/10) e persistiram; auditora vê somente leitura com dados limitados às áreas dela.

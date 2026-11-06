@@ -17,3 +17,4 @@
 - Base read and audit-photos policies reuse the existing Fase 2B authorization helpers rather than redundant restrictive read layers; public write policies remain unchanged to preserve the explicitly approved scope.
 - Process dashboard ranking uses a browser-safe pure helper over the existing unit-filtered audit query so aggregation rules are testable without changing 5S data or queries.
 - Completed process audits are edited only via a dedicated SECURITY INVOKER RPC and guarded by RESTRICTIVE update/delete policies on the old row (admin/gestor or the registered auditor by e-mail), so draft completion by any authorized auditor stays unchanged.
+- Process planning goals live in public.metas_processo (one row per unit, single current value, no history); all weekly/monthly/per-area aggregation is done in the browser-safe pure helper src/lib/process-planning.ts over the unit-filtered completed-audit query, with no new database functions.

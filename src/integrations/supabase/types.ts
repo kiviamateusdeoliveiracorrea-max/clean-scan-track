@@ -730,6 +730,45 @@ export type Database = {
           },
         ]
       }
+      metas_processo: {
+        Row: {
+          meta_mensal: number
+          meta_semanal: number
+          unit_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          meta_mensal?: number
+          meta_semanal?: number
+          unit_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          meta_mensal?: number
+          meta_semanal?: number
+          unit_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "metas_processo_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: true
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "metas_processo_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       nao_conformidades: {
         Row: {
           acao_corretiva: string | null
