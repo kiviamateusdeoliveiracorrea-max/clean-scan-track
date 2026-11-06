@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { useProcessAuditManager } from "@/hooks/use-process-audit-permission";
 import { useCurrentRole } from "@/hooks/use-current-role";
 
-export const Route = createFileRoute("/_authenticated/auditorias-processo/$id/editar")({
+export const Route = createFileRoute("/_authenticated/auditorias-processo/$id_/editar")({
   head: () => ({
     meta: [
       { title: "Editar Auditoria de Processo — AuditLog 5S" },
