@@ -21,6 +21,7 @@ export type Database = {
           created_at: string
           id: string
           o_que: string
+          pergunta_id: string | null
           prazo: string | null
           responsavel_id: string | null
           status: string
@@ -32,6 +33,7 @@ export type Database = {
           created_at?: string
           id?: string
           o_que: string
+          pergunta_id?: string | null
           prazo?: string | null
           responsavel_id?: string | null
           status?: string
@@ -43,6 +45,7 @@ export type Database = {
           created_at?: string
           id?: string
           o_que?: string
+          pergunta_id?: string | null
           prazo?: string | null
           responsavel_id?: string | null
           status?: string
@@ -54,6 +57,13 @@ export type Database = {
             columns: ["auditoria_processo_id"]
             isOneToOne: false
             referencedRelation: "auditorias_processo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "acoes_processo_pergunta_id_fkey"
+            columns: ["pergunta_id"]
+            isOneToOne: false
+            referencedRelation: "perguntas_processo"
             referencedColumns: ["id"]
           },
           {
@@ -1483,7 +1493,7 @@ export type Database = {
         Returns: string
       }
       edit_completed_audit_processo: {
-        Args: { p_answers: Json; p_audit: Json; p_id: string }
+        Args: { p_acoes: Json; p_answers: Json; p_audit: Json; p_id: string }
         Returns: string
       }
       evidence_owner: {

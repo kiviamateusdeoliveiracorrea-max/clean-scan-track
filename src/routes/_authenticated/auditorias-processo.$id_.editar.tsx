@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Save, Lightbulb } from "lucide-react";
+import { ArrowLeft, Save } from "lucide-react";
+import { UserPickerField } from "@/components/UserPickerField";
 import { toast } from "sonner";
 import { useProcessAuditManager } from "@/hooks/use-process-audit-permission";
 import { useCurrentRole } from "@/hooks/use-current-role";
@@ -31,7 +32,9 @@ const CATEGORIAS = ["Pessoas", "Ambiente", "Processo"] as const;
 const PERGUNTA_ENCERRAMENTO =
   "Está clara a forma com que devem ser seguidos os processos bem como os impactos que o seu não-seguimento causam na nossa operação?";
 type Resp = "SIM" | "NÃO" | "NA";
-type Item = { resposta: Resp; observacao: string; oportunidadeMelhoria: string; fotoPath: string | null };
+type Acao = { id?: string; oQue: string; como: string; responsavelId: string; prazo: string; status: string };
+type Item = { resposta: Resp; observacao: string; fotoPath: string | null; acao?: Acao };
+const acaoVazia: Acao = { oQue: "", como: "", responsavelId: "", prazo: "", status: "aberta" };
 
 function EditarAuditoriaProcesso() {
   const { id } = Route.useParams();
@@ -66,6 +69,32 @@ function EditarAuditoriaProcesso() {
     },
   });
 
+  const acoesQ = useQuery({
+    queryKey: ["acoes-processo-edit", id],
+    enabled: !!audit,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("acoes_processo")
+        .select("id, pergunta_id, o_que, como, responsavel_id, prazo, status")
+        .eq("auditoria_processo_id", id);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const usuariosQ = useQuery({
+    queryKey: ["profiles-ativos"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, nome, cargo, areas(nome)")
+        .eq("ativo", true)
+        .order("nome");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const canManage = useProcessAuditManager([audit?.auditor_id]);
 
   const [colaborador, setColaborador] = useState("");
@@ -95,12 +124,16 @@ function EditarAuditoriaProcesso() {
       map[r.pergunta_id] = {
         resposta: r.resposta,
         observacao: r.observacao ?? "",
-        oportunidadeMelhoria: r.oportunidade_melhoria ?? "",
         fotoPath: r.foto_url ?? null,
+      };
+      const a: any = (acoesQ.data ?? []).find((x: any) => x.pergunta_id === r.pergunta_id);
+      if (a) map[r.pergunta_id].acao = {
+        id: a.id, oQue: a.o_que ?? "", como: a.como ?? "", responsavelId: a.responsavel_id ?? "",
+        prazo: a.prazo ?? "", status: a.status ?? "aberta",
       };
     }
     setItens(map);
-  }, [perguntasQ.data]);
+  }, [perguntasQ.data, acoesQ.data]);
 
   const voltar = (
     <Button asChild variant="ghost" size="sm">
@@ -137,6 +170,10 @@ function EditarAuditoriaProcesso() {
   const salvar = async () => {
     if (!turno) return void toast.error("Selecione o turno");
     if (processoClaro === null) return void toast.error("Responda a pergunta de encerramento.");
+    const incompleta = Object.values(itens).some(
+      (it) => it.resposta === "NÃO" && it.acao && !it.acao.oQue.trim() && (it.acao.como.trim() || it.acao.responsavelId || it.acao.prazo),
+    );
+    if (incompleta) return void toast.error('Preencha o campo "O que" em todas as linhas do plano de ação ou remova a linha.');
     setSaving(true);
     const { error } = await (supabase.rpc as any)("edit_completed_audit_processo", {
       p_id: id,
@@ -156,14 +193,32 @@ function EditarAuditoriaProcesso() {
         resposta: it.resposta,
         observacao: it.observacao || null,
         foto_url: it.fotoPath,
-        oportunidade_melhoria: it.oportunidadeMelhoria || null,
       })),
+      p_acoes: [
+        // Ações antigas sem pergunta vinculada são mantidas como estão.
+        ...((acoesQ.data ?? []) as any[]).filter((a) => !a.pergunta_id).map((a) => ({
+          id: a.id, o_que: a.o_que, como: a.como, responsavel_id: a.responsavel_id, prazo: a.prazo, status: a.status,
+        })),
+        ...Object.entries(itens)
+          .filter(([, it]) => it.resposta === "NÃO" && it.acao?.oQue.trim())
+          .map(([pergunta_id, it]) => ({
+            id: it.acao!.id ?? null,
+            pergunta_id,
+            o_que: it.acao!.oQue.trim(),
+            como: it.acao!.como.trim() || null,
+            responsavel_id: it.acao!.responsavelId || null,
+            prazo: it.acao!.prazo || null,
+            status: it.acao!.status || "aberta",
+          })),
+      ],
     });
     setSaving(false);
     if (error) return void toast.error(error.message);
     toast.success("Auditoria atualizada");
     qc.invalidateQueries({ queryKey: ["auditoria-processo", id] });
     qc.invalidateQueries({ queryKey: ["respostas-processo", id] });
+    qc.invalidateQueries({ queryKey: ["acoes-processo", id] });
+    qc.invalidateQueries({ queryKey: ["acoes-processo-edit", id] });
     qc.invalidateQueries({ queryKey: ["auditorias-processo-list"] });
     navigate({ to: "/auditorias-processo/$id", params: { id } });
   };
@@ -176,7 +231,7 @@ function EditarAuditoriaProcesso() {
           Editar auditoria — {audit.areas?.nome ?? "Sem área"}
         </h1>
         <p className="text-sm text-muted-foreground">
-          Auditor: {audit.auditores?.nome ?? "—"}. Área, unidade, fotos e plano de ação não são alterados aqui.
+          Auditor: {audit.auditores?.nome ?? "—"}. Área, unidade e fotos não são alterados aqui.
         </p>
       </div>
 
@@ -250,15 +305,38 @@ function EditarAuditoriaProcesso() {
                         value={r.observacao}
                         onChange={(e) => patch(p.id, { observacao: e.target.value })}
                       />
-                      <div className="flex items-start gap-2">
-                        <Lightbulb className="h-4 w-4 mt-2 text-accent shrink-0" />
-                        <Textarea
-                          rows={1}
-                          placeholder="Oportunidade de melhoria (opcional)..."
-                          value={r.oportunidadeMelhoria}
-                          onChange={(e) => patch(p.id, { oportunidadeMelhoria: e.target.value })}
-                        />
-                      </div>
+                      {r.resposta === "NÃO" && (
+                        <div className="rounded-md border border-amber-300 bg-amber-50 p-3 space-y-2 dark:border-amber-700 dark:bg-amber-950/30">
+                          <p className="text-xs font-semibold text-amber-800 dark:text-amber-200">Ação para esta não conformidade (opcional)</p>
+                          <Textarea rows={1} placeholder="O que será feito..." value={r.acao?.oQue ?? ""}
+                            onChange={(e) => patch(p.id, { acao: { ...(r.acao ?? acaoVazia), oQue: e.target.value } })} />
+                          <Textarea rows={1} placeholder="Como (opcional)..." value={r.acao?.como ?? ""}
+                            onChange={(e) => patch(p.id, { acao: { ...(r.acao ?? acaoVazia), como: e.target.value } })} />
+                          <div className="grid gap-2 sm:grid-cols-3">
+                            <UserPickerField label="Quem" value={r.acao?.responsavelId ?? ""}
+                              onChange={(v) => patch(p.id, { acao: { ...(r.acao ?? acaoVazia), responsavelId: v } })}
+                              users={(usuariosQ.data ?? []) as any} />
+                            <div>
+                              <Label className="text-xs">Quando (opcional)</Label>
+                              <Input type="date" value={r.acao?.prazo ?? ""}
+                                onChange={(e) => patch(p.id, { acao: { ...(r.acao ?? acaoVazia), prazo: e.target.value } })} />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Status</Label>
+                              <Select value={r.acao?.status ?? "aberta"}
+                                onValueChange={(v) => patch(p.id, { acao: { ...(r.acao ?? acaoVazia), status: v } })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="aberta">Aberta</SelectItem>
+                                  <SelectItem value="em_andamento">Em andamento</SelectItem>
+                                  <SelectItem value="concluida">Concluída</SelectItem>
+                                  <SelectItem value="cancelada">Cancelada</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}

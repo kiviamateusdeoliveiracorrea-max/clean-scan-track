@@ -325,6 +325,18 @@ function AuditoriaProcessoDetail() {
                   </p>
                 )}
                 {r.foto_url && <AuditPhotos paths={[r.foto_url]} />}
+                {r.resposta === "NÃO" && (() => {
+                  const vinculada: any = (acoes as any[]).find((x: any) => x.pergunta_id === r.pergunta_id);
+                  if (!vinculada) return null;
+                  return (
+                    <div className="rounded-md border border-amber-200 bg-amber-50 p-2 text-xs dark:border-amber-800 dark:bg-amber-950/30">
+                      <p><strong>Ação:</strong> {vinculada.o_que}</p>
+                      <p className="text-muted-foreground">
+                        {vinculada.profiles?.nome ?? "Sem responsável"} · {ACAO_STATUS_LABEL[vinculada.status] ?? vinculada.status}
+                      </p>
+                    </div>
+                  );
+                })()}
               </div>
             ))}
           </CardContent>
