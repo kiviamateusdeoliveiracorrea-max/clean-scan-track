@@ -183,8 +183,8 @@ function EditarAuditoriaProcesso() {
   const salvar = async () => {
     if (!turno) return void toast.error("Selecione o turno");
     if (processoClaro === null) return void toast.error("Responda a pergunta de encerramento.");
-    const naoSemAcao = Object.values(itens).filter((it) => it.resposta === "NÃO" && !it.acao?.oQue.trim()).length;
-    if (naoSemAcao) return void toast.error(`Cadastre a ação em ${naoSemAcao} pergunta(s) respondida(s) como Não. A foto não substitui a ação.`);
+    const semAcao = perguntas.find((p: any) => itens[p.id]?.resposta === "NÃO" && !itens[p.id]?.acao?.oQue.trim());
+    if (semAcao) return void toast.error('Preencha a ação ("O que será feito") para a pergunta: ' + semAcao.pergunta);
     const incompleta = Object.values(itens).some(
       (it) => it.resposta === "NÃO" && it.acao && !it.acao.oQue.trim() && (it.acao.como.trim() || it.acao.responsavelId || it.acao.prazo),
     );
@@ -328,7 +328,8 @@ function EditarAuditoriaProcesso() {
                       />
                       {r.resposta === "NÃO" && (
                         <div className="rounded-md border border-amber-300 bg-amber-50 p-3 space-y-2 dark:border-amber-700 dark:bg-amber-950/30">
-                          <p className="text-xs font-semibold text-amber-800 dark:text-amber-200">Ação para esta não conformidade (obrigatória)</p>
+                          <p className="text-xs font-semibold text-amber-800 dark:text-amber-200">Ação para esta não conformidade (obrigatório)</p>
+                          <Label className="text-xs">O que será feito *</Label>
                           <Textarea rows={1} placeholder="O que será feito..." value={r.acao?.oQue ?? ""}
                             onChange={(e) => patch(p.id, { acao: { ...(r.acao ?? acaoVazia), oQue: e.target.value } })} />
                           <Textarea rows={1} placeholder="Como (opcional)..." value={r.acao?.como ?? ""}

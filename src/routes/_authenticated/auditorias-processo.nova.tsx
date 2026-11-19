@@ -388,9 +388,7 @@ function NovaAuditoriaProcesso() {
       (p: any) => respostas[p.id]?.resposta === "NÃO" && !respostas[p.id]?.acao?.oQue?.trim(),
     );
     if (naoSemAcao.length > 0) {
-      toast.error(
-        `Cadastre a ação (campo "O que será feito") em ${naoSemAcao.length} pergunta(s) respondida(s) como Não. A foto não substitui a ação.`,
-      );
+      toast.error('Preencha a ação ("O que será feito") para a pergunta: ' + naoSemAcao[0].pergunta);
       return;
     }
     const acaoIncompleta = perguntas.some((p: any) => {
@@ -679,7 +677,8 @@ function NovaAuditoriaProcesso() {
                           />
                           {r?.resposta === "NÃO" && (
                             <div className="rounded-md border border-amber-300 bg-amber-50 p-3 space-y-2 dark:border-amber-700 dark:bg-amber-950/30">
-                              <p className="text-xs font-semibold text-amber-800 dark:text-amber-200">Ação para esta não conformidade (obrigatória)</p>
+                              <p className="text-xs font-semibold text-amber-800 dark:text-amber-200">Ação para esta não conformidade (obrigatório)</p>
+                              <Label className="text-xs">O que será feito *</Label>
                               <Textarea rows={1} placeholder="O que será feito..." value={r?.acao?.oQue ?? ""}
                                 onChange={(e) => patchResposta(p.id, { acao: { ...(r?.acao ?? acaoPerguntaVazia), oQue: e.target.value } })} />
                               <Textarea rows={1} placeholder="Como (opcional)..." value={r?.acao?.como ?? ""}
