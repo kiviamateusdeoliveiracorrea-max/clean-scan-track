@@ -324,7 +324,7 @@ function AuditoriaProcessoDetail() {
                     <span><strong>Oportunidade de melhoria:</strong> {r.oportunidade_melhoria}</span>
                   </p>
                 )}
-                {r.foto_url && <AuditPhotos paths={[r.foto_url]} />}
+                {(() => { const fs: string[] = (r as any).foto_urls?.length ? (r as any).foto_urls : r.foto_url ? [r.foto_url] : []; return fs.length ? <AuditPhotos paths={fs} /> : null; })()}
                 {r.resposta === "NÃO" && (() => {
                   const vinculada: any = (acoes as any[]).find((x: any) => x.pergunta_id === r.pergunta_id);
                   if (!vinculada) return null;

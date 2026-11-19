@@ -1199,6 +1199,7 @@ export type Database = {
           auditoria_processo_id: string
           created_at: string
           foto_url: string | null
+          foto_urls: string[]
           id: string
           observacao: string | null
           oportunidade_melhoria: string | null
@@ -1209,6 +1210,7 @@ export type Database = {
           auditoria_processo_id: string
           created_at?: string
           foto_url?: string | null
+          foto_urls?: string[]
           id?: string
           observacao?: string | null
           oportunidade_melhoria?: string | null
@@ -1219,6 +1221,7 @@ export type Database = {
           auditoria_processo_id?: string
           created_at?: string
           foto_url?: string | null
+          foto_urls?: string[]
           id?: string
           observacao?: string | null
           oportunidade_melhoria?: string | null

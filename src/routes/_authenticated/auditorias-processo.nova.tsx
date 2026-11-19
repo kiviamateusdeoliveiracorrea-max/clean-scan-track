@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { ArrowLeft, Save, Camera, X } from "lucide-react";
 import { UserPickerField } from "@/components/UserPickerField";
+import { QuestionPhotos } from "@/components/QuestionPhotos";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/auditorias-processo/nova")({
@@ -46,8 +47,10 @@ type RespostaItem = {
   resposta: "SIM" | "NÃO" | "NA";
   observacao: string;
   acao?: { oQue: string; como: string; responsavelId: string; prazo: string };
-  fotoPath: string;
-  fotoPreview: string;
+  fotoPath?: string;
+  fotoPreview?: string;
+  fotoPaths?: string[];
+  enviandoFoto?: boolean;
   salvando?: boolean;
   salvo?: boolean;
 };
@@ -55,8 +58,7 @@ type RespostaItem = {
 const respostaVazia: RespostaItem = {
   resposta: "SIM",
   observacao: "",
-  fotoPath: "",
-  fotoPreview: "",
+  fotoPaths: [],
 };
 
 const acaoPerguntaVazia = { oQue: "", como: "", responsavelId: "", prazo: "" };
@@ -142,7 +144,7 @@ function NovaAuditoriaProcesso() {
   const persistRespostaNow = async (
     perguntaId: string,
     resposta: "SIM" | "NÃO" | "NA",
-    extra?: { observacao?: string; fotoPath?: string },
+    extra?: { observacao?: string; fotoPaths?: string[] },
   ) => {
     const id = await ensureDraft();
     if (!id) return;
@@ -153,7 +155,8 @@ function NovaAuditoriaProcesso() {
         pergunta_id: perguntaId,
         resposta,
         observacao: extra?.observacao || null,
-        foto_url: extra?.fotoPath || null,
+        foto_url: extra?.fotoPaths?.[0] ?? null,
+        foto_urls: extra?.fotoPaths ?? [],
       },
       { onConflict: "auditoria_processo_id,pergunta_id" },
     );
@@ -177,35 +180,42 @@ function NovaAuditoriaProcesso() {
     const atual = respostas[perguntaId];
     await persistResposta(perguntaId, resposta, {
       observacao: atual?.observacao,
-      fotoPath: atual?.fotoPath,
+      fotoPaths: fotosDe(atual),
     });
   };
 
-  const uploadFotoPergunta = async (perguntaId: string, file: File | undefined) => {
-    if (!file) return;
+  const respostasRef = useRef(respostas);
+  respostasRef.current = respostas;
+  const fotosDe = (r?: RespostaItem) => r?.fotoPaths ?? (r?.fotoPath ? [r.fotoPath] : []);
+
+  const uploadFotosPergunta = async (perguntaId: string, files: File[]) => {
+    if (!files.length) return;
     const id = await ensureDraft();
     if (!id) return;
-    const reader = new FileReader();
-    reader.onload = () => patchResposta(perguntaId, { fotoPreview: reader.result as string });
-    reader.readAsDataURL(file);
-    let path: string;
-    const uploadController = new AbortController();
+    patchResposta(perguntaId, { enviandoFoto: true });
+    let novos: string[] = [];
     try {
-      const paths = await uploadAuditPhotos([file], id, setProgress, uploadController.signal);
-      if (!paths[0]) throw new Error("Foto não confirmada.");
-      path = paths[0];
+      novos = await uploadAuditPhotos(files, id, setProgress, new AbortController().signal);
     } catch (error: any) {
       toast.error(error?.message ?? "O envio da evidência foi interrompido.");
+      patchResposta(perguntaId, { enviandoFoto: false });
       return;
     } finally {
       setProgress(null);
     }
-    patchResposta(perguntaId, { fotoPath: path });
-    const atual = respostas[perguntaId];
-    await persistResposta(perguntaId, atual?.resposta ?? "SIM", {
-      observacao: atual?.observacao,
-      fotoPath: path,
-    });
+    const prev = respostasRef.current[perguntaId] ?? respostaVazia;
+    const atual: RespostaItem = { ...prev, fotoPaths: [...fotosDe(prev), ...novos], fotoPath: undefined, fotoPreview: undefined, enviandoFoto: false };
+    respostasRef.current = { ...respostasRef.current, [perguntaId]: atual };
+    setRespostas((s) => ({ ...s, [perguntaId]: { ...(s[perguntaId] ?? respostaVazia), fotoPaths: atual.fotoPaths, fotoPath: undefined, fotoPreview: undefined, enviandoFoto: false } }));
+    await persistResposta(perguntaId, atual.resposta, { observacao: atual.observacao, fotoPaths: atual.fotoPaths });
+  };
+
+  const removerFotoPergunta = async (perguntaId: string, path: string) => {
+    const prev = respostasRef.current[perguntaId] ?? respostaVazia;
+    const atual: RespostaItem = { ...prev, fotoPaths: fotosDe(prev).filter((x) => x !== path), fotoPath: undefined, fotoPreview: undefined };
+    respostasRef.current = { ...respostasRef.current, [perguntaId]: atual };
+    setRespostas((s) => ({ ...s, [perguntaId]: { ...(s[perguntaId] ?? respostaVazia), fotoPaths: atual.fotoPaths, fotoPath: undefined, fotoPreview: undefined } }));
+    await persistResposta(perguntaId, atual.resposta, { observacao: atual.observacao, fotoPaths: atual.fotoPaths });
   };
 
   // ---- Consultas ----
@@ -374,6 +384,15 @@ function NovaAuditoriaProcesso() {
       toast.error("Responda a pergunta de encerramento antes de concluir.");
       return;
     }
+    const naoSemAcao = perguntas.filter(
+      (p: any) => respostas[p.id]?.resposta === "NÃO" && !respostas[p.id]?.acao?.oQue?.trim(),
+    );
+    if (naoSemAcao.length > 0) {
+      toast.error(
+        `Cadastre a ação (campo "O que será feito") em ${naoSemAcao.length} pergunta(s) respondida(s) como Não. A foto não substitui a ação.`,
+      );
+      return;
+    }
     const acaoIncompleta = perguntas.some((p: any) => {
       const r = respostas[p.id];
       const a = r?.acao;
@@ -415,7 +434,7 @@ function NovaAuditoriaProcesso() {
             pergunta_id: p.id,
             resposta: respostas[p.id].resposta,
             observacao: respostas[p.id].observacao || null,
-            foto_url: respostas[p.id].fotoPath || null,
+            foto_urls: fotosDe(respostas[p.id]),
           })),
         p_acoes: perguntas
           .filter((p: any) => respostas[p.id]?.resposta === "NÃO" && respostas[p.id]?.acao?.oQue?.trim())
@@ -632,18 +651,6 @@ function NovaAuditoriaProcesso() {
                                 {op === "SIM" ? "Sim" : op === "NÃO" ? "Não" : "N/A"}
                               </Button>
                             ))}
-                            <label className="inline-flex items-center gap-1 text-xs border rounded-md px-3 py-2 cursor-pointer hover:bg-muted/50">
-                              <Camera className="h-4 w-4" /> Anexar foto
-                              <input
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                onChange={(e) => {
-                                  uploadFotoPergunta(p.id, e.target.files?.[0]);
-                                  e.target.value = "";
-                                }}
-                              />
-                            </label>
                             {r?.salvando && (
                               <span className="text-[11px] text-muted-foreground">salvando...</span>
                             )}
@@ -651,13 +658,12 @@ function NovaAuditoriaProcesso() {
                               <span className="text-[11px] text-emerald-600">salvo automaticamente</span>
                             )}
                           </div>
-                          {r?.fotoPreview && (
-                            <img
-                              src={r.fotoPreview}
-                              alt="Evidência"
-                              className="h-14 w-14 object-cover rounded border"
-                            />
-                          )}
+                          <QuestionPhotos
+                            paths={fotosDe(r)}
+                            busy={r?.enviandoFoto}
+                            onAdd={(files) => uploadFotosPergunta(p.id, files)}
+                            onRemove={(path) => removerFotoPergunta(p.id, path)}
+                          />
                           <Textarea
                             rows={1}
                             placeholder="Observação (opcional)..."
@@ -667,13 +673,13 @@ function NovaAuditoriaProcesso() {
                               if (r?.resposta)
                                 persistResposta(p.id, r.resposta, {
                                   observacao: r.observacao,
-                                  fotoPath: r.fotoPath,
+                                  fotoPaths: fotosDe(r),
                                 });
                             }}
                           />
                           {r?.resposta === "NÃO" && (
                             <div className="rounded-md border border-amber-300 bg-amber-50 p-3 space-y-2 dark:border-amber-700 dark:bg-amber-950/30">
-                              <p className="text-xs font-semibold text-amber-800 dark:text-amber-200">Ação para esta não conformidade (opcional)</p>
+                              <p className="text-xs font-semibold text-amber-800 dark:text-amber-200">Ação para esta não conformidade (obrigatória)</p>
                               <Textarea rows={1} placeholder="O que será feito..." value={r?.acao?.oQue ?? ""}
                                 onChange={(e) => patchResposta(p.id, { acao: { ...(r?.acao ?? acaoPerguntaVazia), oQue: e.target.value } })} />
                               <Textarea rows={1} placeholder="Como (opcional)..." value={r?.acao?.como ?? ""}

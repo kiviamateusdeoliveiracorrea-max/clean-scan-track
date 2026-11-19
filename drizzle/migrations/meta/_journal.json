@@ -92,6 +92,13 @@
       "when": 1795115868956,
       "tag": "0012_processo_acao_por_pergunta",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1795116215883,
+      "tag": "0013_processo_fotos_por_pergunta",
+      "breakpoints": true
     }
   ]
 }

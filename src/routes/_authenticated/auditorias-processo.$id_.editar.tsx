@@ -10,6 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Save } from "lucide-react";
 import { UserPickerField } from "@/components/UserPickerField";
+import { QuestionPhotos } from "@/components/QuestionPhotos";
+import { uploadAuditPhotos } from "@/lib/audit-photo-upload";
 import { toast } from "sonner";
 import { useProcessAuditManager } from "@/hooks/use-process-audit-permission";
 import { useCurrentRole } from "@/hooks/use-current-role";
@@ -33,7 +35,7 @@ const PERGUNTA_ENCERRAMENTO =
   "Está clara a forma com que devem ser seguidos os processos bem como os impactos que o seu não-seguimento causam na nossa operação?";
 type Resp = "SIM" | "NÃO" | "NA";
 type Acao = { id?: string; oQue: string; como: string; responsavelId: string; prazo: string; status: string };
-type Item = { resposta: Resp; observacao: string; fotoPath: string | null; acao?: Acao };
+type Item = { resposta: Resp; observacao: string; fotoPaths: string[]; enviando?: boolean; acao?: Acao };
 const acaoVazia: Acao = { oQue: "", como: "", responsavelId: "", prazo: "", status: "aberta" };
 
 function EditarAuditoriaProcesso() {
@@ -124,7 +126,7 @@ function EditarAuditoriaProcesso() {
       map[r.pergunta_id] = {
         resposta: r.resposta,
         observacao: r.observacao ?? "",
-        fotoPath: r.foto_url ?? null,
+        fotoPaths: (r.foto_urls?.length ? r.foto_urls : r.foto_url ? [r.foto_url] : []) as string[],
       };
       const a: any = (acoesQ.data ?? []).find((x: any) => x.pergunta_id === r.pergunta_id);
       if (a) map[r.pergunta_id].acao = {
@@ -167,9 +169,22 @@ function EditarAuditoriaProcesso() {
   const patch = (pid: string, p: Partial<Item>) =>
     setItens((s) => ({ ...s, [pid]: { ...s[pid], ...p } }));
 
+  const addFotos = async (pid: string, files: File[]) => {
+    patch(pid, { enviando: true });
+    try {
+      const novos = await uploadAuditPhotos(files, id, () => undefined, new AbortController().signal);
+      setItens((s) => ({ ...s, [pid]: { ...s[pid], enviando: false, fotoPaths: [...s[pid].fotoPaths, ...novos] } }));
+    } catch (e: any) {
+      toast.error(e?.message ?? "O envio da foto foi interrompido.");
+      patch(pid, { enviando: false });
+    }
+  };
+
   const salvar = async () => {
     if (!turno) return void toast.error("Selecione o turno");
     if (processoClaro === null) return void toast.error("Responda a pergunta de encerramento.");
+    const naoSemAcao = Object.values(itens).filter((it) => it.resposta === "NÃO" && !it.acao?.oQue.trim()).length;
+    if (naoSemAcao) return void toast.error(`Cadastre a ação em ${naoSemAcao} pergunta(s) respondida(s) como Não. A foto não substitui a ação.`);
     const incompleta = Object.values(itens).some(
       (it) => it.resposta === "NÃO" && it.acao && !it.acao.oQue.trim() && (it.acao.como.trim() || it.acao.responsavelId || it.acao.prazo),
     );
@@ -192,7 +207,7 @@ function EditarAuditoriaProcesso() {
         pergunta_id,
         resposta: it.resposta,
         observacao: it.observacao || null,
-        foto_url: it.fotoPath,
+        foto_urls: it.fotoPaths,
       })),
       p_acoes: [
         // Ações antigas sem pergunta vinculada são mantidas como estão.
@@ -231,7 +246,7 @@ function EditarAuditoriaProcesso() {
           Editar auditoria — {audit.areas?.nome ?? "Sem área"}
         </h1>
         <p className="text-sm text-muted-foreground">
-          Auditor: {audit.auditores?.nome ?? "—"}. Área, unidade e fotos não são alterados aqui.
+          Auditor: {audit.auditores?.nome ?? "—"}. Área, unidade e fotos gerais não são alterados aqui.
         </p>
       </div>
 
@@ -305,9 +320,15 @@ function EditarAuditoriaProcesso() {
                         value={r.observacao}
                         onChange={(e) => patch(p.id, { observacao: e.target.value })}
                       />
+                      <QuestionPhotos
+                        paths={r.fotoPaths}
+                        busy={r.enviando}
+                        onAdd={(files) => addFotos(p.id, files)}
+                        onRemove={(path) => patch(p.id, { fotoPaths: r.fotoPaths.filter((x) => x !== path) })}
+                      />
                       {r.resposta === "NÃO" && (
                         <div className="rounded-md border border-amber-300 bg-amber-50 p-3 space-y-2 dark:border-amber-700 dark:bg-amber-950/30">
-                          <p className="text-xs font-semibold text-amber-800 dark:text-amber-200">Ação para esta não conformidade (opcional)</p>
+                          <p className="text-xs font-semibold text-amber-800 dark:text-amber-200">Ação para esta não conformidade (obrigatória)</p>
                           <Textarea rows={1} placeholder="O que será feito..." value={r.acao?.oQue ?? ""}
                             onChange={(e) => patch(p.id, { acao: { ...(r.acao ?? acaoVazia), oQue: e.target.value } })} />
                           <Textarea rows={1} placeholder="Como (opcional)..." value={r.acao?.como ?? ""}
@@ -374,7 +395,7 @@ function EditarAuditoriaProcesso() {
       </Card>
 
       <div className="flex justify-end">
-        <Button onClick={salvar} disabled={saving}>
+        <Button onClick={salvar} disabled={saving || Object.values(itens).some((it) => it.enviando)}>
           <Save className="h-4 w-4 mr-1" /> {saving ? "Salvando..." : "Salvar alterações"}
         </Button>
       </div>
