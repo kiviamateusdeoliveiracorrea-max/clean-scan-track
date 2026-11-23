@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Calendar, Camera, MapPin, User, X } from "lucide-react";
+import { Calendar, Camera, MapPin, Pencil, User, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { UserPickerField } from "@/components/UserPickerField";
 import { EvidenceThumbs } from "@/components/EvidenceThumbs";
 import { uploadAuditPhotos } from "@/lib/audit-photo-upload";
 import { toast } from "sonner";
@@ -38,6 +40,36 @@ export function AcoesProcessoTab() {
   const [filtro, setFiltro] = useState<string>("pendentes");
   const [areaF, setAreaF] = useState("todas");
   const [respF, setRespF] = useState("todos");
+  const [editando, setEditando] = useState<any | null>(null);
+  const [ed, setEd] = useState({ o_que: "", como: "", responsavelId: "", prazo: "" });
+  const [edSaving, setEdSaving] = useState(false);
+  const usuariosQ = useQuery({
+    queryKey: ["profiles-ativos"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("profiles").select("id, nome, cargo, areas(nome)").eq("ativo", true).order("nome");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const openEdit = (a: any) => {
+    setEditando(a);
+    setEd({ o_que: a.o_que ?? "", como: a.como ?? "", responsavelId: a.responsavel_id ?? "", prazo: a.prazo ?? "" });
+  };
+  const saveEdit = async () => {
+    if (!editando) return;
+    if (!ed.o_que.trim()) return toast.error('Preencha "O que será feito".');
+    setEdSaving(true);
+    const { data, error } = await supabase
+      .from("acoes_processo")
+      .update({ o_que: ed.o_que.trim(), como: ed.como.trim() || null, responsavel_id: ed.responsavelId || null, prazo: ed.prazo || null })
+      .eq("id", editando.id)
+      .select("id");
+    setEdSaving(false);
+    if (error || !data?.length) return toast.error(error?.message ?? "Sem permissão para editar esta ação.");
+    toast.success("Ação atualizada.");
+    setEditando(null);
+    refresh();
+  };
   const [tratando, setTratando] = useState<any | null>(null);
   const [texto, setTexto] = useState("");
   const [files, setFiles] = useState<File[]>([]);
@@ -60,6 +92,7 @@ export function AcoesProcessoTab() {
 
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["acoes-processo-tratativas"] });
+    qc.invalidateQueries({ queryKey: ["acoes-processo"] });
   };
 
   const setStatus = async (acao: any, status: string) => {
@@ -186,7 +219,12 @@ export function AcoesProcessoTab() {
                   {acao.pergunta_id ? acao.perguntas_processo?.pergunta : "Sem pergunta vinculada"}
                 </p>
               </div>
-              <Badge className={STATUS_COLOR[acao.status] ?? ""}>{ACAO_STATUS_LABEL[acao.status] ?? acao.status}</Badge>
+              <div className="flex items-center gap-1">
+                <Badge className={STATUS_COLOR[acao.status] ?? ""}>{ACAO_STATUS_LABEL[acao.status] ?? acao.status}</Badge>
+                <Button size="icon" variant="ghost" className="h-7 w-7" aria-label="Editar ação" onClick={() => openEdit(acao)}>
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
             <p className="font-medium">{acao.o_que}</p>
             {acao.como && <p className="text-sm"><span className="text-muted-foreground">Como: </span>{acao.como}</p>}
@@ -225,6 +263,31 @@ export function AcoesProcessoTab() {
           </CardContent>
         </Card>
       ))}
+
+      <Dialog open={!!editando} onOpenChange={(o) => !o && !edSaving && setEditando(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Editar ação</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label>O que será feito *</Label>
+              <Textarea rows={3} value={ed.o_que} onChange={(e) => setEd({ ...ed, o_que: e.target.value })} />
+            </div>
+            <div className="space-y-1">
+              <Label>Como</Label>
+              <Textarea rows={2} value={ed.como} onChange={(e) => setEd({ ...ed, como: e.target.value })} />
+            </div>
+            <UserPickerField label="Responsável" value={ed.responsavelId} onChange={(v) => setEd({ ...ed, responsavelId: v })} users={(usuariosQ.data ?? []) as any} />
+            <div className="space-y-1">
+              <Label>Prazo</Label>
+              <Input type="date" value={ed.prazo} onChange={(e) => setEd({ ...ed, prazo: e.target.value })} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditando(null)} disabled={edSaving}>Voltar</Button>
+            <Button onClick={saveEdit} disabled={edSaving}>{edSaving ? "Salvando..." : "Salvar"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!tratando} onOpenChange={(o) => !o && !saving && close()}>
         <DialogContent>
