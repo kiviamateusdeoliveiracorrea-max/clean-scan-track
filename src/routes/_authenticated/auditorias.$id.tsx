@@ -32,57 +32,11 @@ import {
   Trash2,
   Camera,
   FileImage,
+  Pencil,
 } from "lucide-react";
 
-function AuditPhotos({ paths }: { paths: string[] }) {
-  const [urls, setUrls] = useState<Record<string, string>>({});
-  const [open, setOpen] = useState<string | null>(null);
-
-  const loadUrl = async (path: string) => {
-    if (urls[path]) return urls[path];
-    const { data } = await supabase.storage
-      .from("audit-photos")
-      .createSignedUrl(path, 3600);
-    if (data?.signedUrl) {
-      setUrls((u) => ({ ...u, [path]: data.signedUrl }));
-      return data.signedUrl;
-    }
-    return null;
-  };
-
-  useEffect(() => {
-    paths.forEach((p) => void loadUrl(p));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paths.join("|")]);
-
-  return (
-    <>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-        {paths.map((p) => (
-          <button
-            key={p}
-            type="button"
-            onClick={() => urls[p] && setOpen(urls[p])}
-            className="relative aspect-square rounded-md overflow-hidden border bg-muted"
-          >
-            {urls[p] ? (
-              <img src={urls[p]} alt="Foto da auditoria" className="w-full h-full object-cover" />
-            ) : (
-              <div className="flex items-center justify-center h-full text-muted-foreground">
-                <FileImage className="h-6 w-6" />
-              </div>
-            )}
-          </button>
-        ))}
-      </div>
-      <Dialog open={!!open} onOpenChange={(o) => !o && setOpen(null)}>
-        <DialogContent className="max-w-3xl">
-          {open && <img src={open} alt="Foto" className="w-full h-auto rounded-md" />}
-        </DialogContent>
-      </Dialog>
-    </>
-  );
-}
+import { AuditPhotos } from "@/components/AuditPhotos";
+import { useProcessAuditManager } from "@/hooks/use-process-audit-permission";
 import {
   CRITERIOS_5S,
   SEVERIDADES,
@@ -108,7 +62,7 @@ function AuditoriaDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("auditorias")
-        .select("*, areas(nome, setor), auditores(nome)")
+        .select("*, areas(nome, setor), auditores(nome, email)")
         .eq("id", id)
         .maybeSingle();
       if (error) throw error;
@@ -138,6 +92,8 @@ function AuditoriaDetail() {
       return data ?? [];
     },
   });
+
+  const canManage = useProcessAuditManager([audit?.auditor_id]);
 
   if (!audit) {
     return <div className="p-8">Carregando...</div>;
@@ -177,9 +133,18 @@ function AuditoriaDetail() {
               </span>
             </div>
           </div>
-          <Badge className={`${cls.color} border-0 font-bold text-lg px-4 py-2`}>
-            {Number(audit.percentual).toFixed(0)}% · {cls.label}
-          </Badge>
+          <div className="flex items-center gap-2">
+            {audit.status === "concluida" && canManage(audit.auditor_id) && (
+              <Button asChild variant="outline" size="sm">
+                <Link to="/auditorias/$id/editar" params={{ id }}>
+                  <Pencil className="h-4 w-4 mr-1" /> Editar
+                </Link>
+              </Button>
+            )}
+            <Badge className={`${cls.color} border-0 font-bold text-lg px-4 py-2`}>
+              {Number(audit.percentual).toFixed(0)}% · {cls.label}
+            </Badge>
+          </div>
         </div>
       </div>
 

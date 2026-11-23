@@ -1495,6 +1495,10 @@ export type Database = {
         Args: { p_acoes: Json; p_answers: Json; p_audit: Json; p_id: string }
         Returns: string
       }
+      edit_completed_audit: {
+        Args: { p_audit: Json; p_id: string }
+        Returns: string
+      }
       edit_completed_audit_processo: {
         Args: { p_acoes: Json; p_answers: Json; p_audit: Json; p_id: string }
         Returns: string
