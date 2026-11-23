@@ -62,7 +62,7 @@ function AuditoriaDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("auditorias")
-        .select("*, areas(nome, setor), auditores(nome, email)")
+        .select("*, areas(nome, setor), auditores(nome)")
         .eq("id", id)
         .maybeSingle();
       if (error) throw error;

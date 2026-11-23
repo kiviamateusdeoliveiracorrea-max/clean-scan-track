@@ -31,7 +31,7 @@ function EditarAuditoria() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("auditorias")
-        .select("*, areas(nome), auditores(nome, email)")
+        .select("*, areas(nome), auditores(nome)")
         .eq("id", id)
         .maybeSingle();
       if (error) throw error;
