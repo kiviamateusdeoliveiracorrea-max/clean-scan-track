@@ -11,6 +11,7 @@ import { Calendar, Camera, MapPin, User, X } from "lucide-react";
 import { EvidenceThumbs } from "@/components/EvidenceThumbs";
 import { uploadAuditPhotos } from "@/lib/audit-photo-upload";
 import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const ACAO_STATUS_LABEL: Record<string, string> = {
   aberta: "Aberta",
@@ -35,6 +36,8 @@ const fmtDate = (d?: string | null) => (d ? new Date(d.length === 10 ? d + "T00:
 export function AcoesProcessoTab() {
   const qc = useQueryClient();
   const [filtro, setFiltro] = useState<string>("pendentes");
+  const [areaF, setAreaF] = useState("todas");
+  const [respF, setRespF] = useState("todos");
   const [tratando, setTratando] = useState<any | null>(null);
   const [texto, setTexto] = useState("");
   const [files, setFiles] = useState<File[]>([]);
@@ -107,9 +110,14 @@ export function AcoesProcessoTab() {
     }
   };
 
-  const lista = acoesProcesso.filter((a) =>
-    filtro === "pendentes" ? a.status === "aberta" || a.status === "em_andamento" : filtro === "todos" || a.status === filtro,
-  );
+  const areasOpts = Array.from(new Set(acoesProcesso.map((a) => a.auditorias_processo?.areas?.nome).filter(Boolean))).sort() as string[];
+  const respOpts = Array.from(new Set(acoesProcesso.map((a) => a.profiles?.nome).filter(Boolean))).sort() as string[];
+  const lista = acoesProcesso.filter((a) => {
+    const okStatus = filtro === "pendentes" ? a.status === "aberta" || a.status === "em_andamento" : filtro === "todos" || a.status === filtro;
+    const okArea = areaF === "todas" || a.auditorias_processo?.areas?.nome === areaF;
+    const okResp = respF === "todos" || (respF === "__sem__" ? !a.profiles?.nome : a.profiles?.nome === respF);
+    return okStatus && okArea && okResp;
+  });
 
   return (
     <div className="space-y-4">
@@ -133,6 +141,23 @@ export function AcoesProcessoTab() {
             </button>
           );
         })}
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <Select value={areaF} onValueChange={setAreaF}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todas">Todas as áreas</SelectItem>
+            {areasOpts.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={respF} onValueChange={setRespF}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos os responsáveis</SelectItem>
+            <SelectItem value="__sem__">Sem responsável</SelectItem>
+            {respOpts.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
       <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         <span>
