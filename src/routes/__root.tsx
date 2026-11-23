@@ -162,7 +162,7 @@ type NavItem = {
 const navItems: NavItem[] = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/auditorias", label: "Auditorias", icon: ClipboardCheck },
-  { to: "/nao-conformidades", label: "Não Conformidades", icon: AlertTriangle },
+  { to: "/nao-conformidades", label: "Tratativas", icon: AlertTriangle },
   { to: "/melhorias", label: "Melhorias", icon: Lightbulb },
   { to: "/gemba", label: "Gemba", icon: Footprints },
   { to: "/alertas", label: "Alertas de Processo", icon: Megaphone },

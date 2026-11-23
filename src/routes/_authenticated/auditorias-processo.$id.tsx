@@ -138,7 +138,7 @@ function AuditoriaProcessoDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("acoes_processo")
-        .select("*, profiles(nome)")
+        .select("*, profiles:profiles!acoes_processo_responsavel_id_fkey(nome)")
         .eq("auditoria_processo_id", id)
         .order("created_at", { ascending: true });
       if (error) throw error;

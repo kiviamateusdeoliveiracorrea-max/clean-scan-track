@@ -39,6 +39,8 @@ import {
 } from "lucide-react";
 import { STATUS_NC, SEVERIDADES, NC_STATUS_PENDENTES, NC_STATUS_FECHADOS } from "@/lib/audit-constants";
 import { EvidenceThumbs } from "@/components/EvidenceThumbs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AcoesProcessoTab } from "@/components/AcoesProcessoTab";
 
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
 const MAX_UPLOAD_MB = 10;
@@ -530,13 +532,23 @@ function NCList() {
       <header>
         <h1 className="text-2xl md:text-3xl font-bold text-primary flex items-center gap-2">
           <AlertTriangle className="h-7 w-7 text-accent" />
-          Não Conformidades
+          Tratativas
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">
+      </header>
+
+      <Tabs defaultValue="nc" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="nc">Não Conformidades (5S)</TabsTrigger>
+          <TabsTrigger value="acoes">Ações (Processo)</TabsTrigger>
+        </TabsList>
+        <TabsContent value="acoes">
+          <AcoesProcessoTab />
+        </TabsContent>
+        <TabsContent value="nc" className="space-y-6">
+        <p className="text-sm text-muted-foreground">
           {pendentes.length} pendente(s) · {ativas.length} ativa(s) · {excluidas.length} excluída(s)
           {canManageNC && " · Você pode editar responsáveis e prazos"}
         </p>
-      </header>
 
       {/* Indicadores por criticidade */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -1159,6 +1171,8 @@ function NCList() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

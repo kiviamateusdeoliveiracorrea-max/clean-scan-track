@@ -19,36 +19,48 @@ export type Database = {
           auditoria_processo_id: string
           como: string | null
           created_at: string
+          evidencias: string[]
           id: string
           o_que: string
           pergunta_id: string | null
           prazo: string | null
           responsavel_id: string | null
           status: string
+          tratado_em: string | null
+          tratado_por: string | null
+          tratativa: string | null
           updated_at: string
         }
         Insert: {
           auditoria_processo_id: string
           como?: string | null
           created_at?: string
+          evidencias?: string[]
           id?: string
           o_que: string
           pergunta_id?: string | null
           prazo?: string | null
           responsavel_id?: string | null
           status?: string
+          tratado_em?: string | null
+          tratado_por?: string | null
+          tratativa?: string | null
           updated_at?: string
         }
         Update: {
           auditoria_processo_id?: string
           como?: string | null
           created_at?: string
+          evidencias?: string[]
           id?: string
           o_que?: string
           pergunta_id?: string | null
           prazo?: string | null
           responsavel_id?: string | null
           status?: string
+          tratado_em?: string | null
+          tratado_por?: string | null
+          tratativa?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -69,6 +81,13 @@ export type Database = {
           {
             foreignKeyName: "acoes_processo_responsavel_id_fkey"
             columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "acoes_processo_tratado_por_fkey"
+            columns: ["tratado_por"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

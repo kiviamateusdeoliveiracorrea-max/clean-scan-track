@@ -105,7 +105,7 @@ function Dashboard() {
       const { data, error } = await byUnit(
         supabase
           .from("acoes_processo")
-          .select("*, auditorias_processo!inner(unit_id, area_id, areas(nome)), profiles(nome, cargo)"),
+          .select("*, auditorias_processo!inner(unit_id, area_id, areas(nome)), profiles:profiles!acoes_processo_responsavel_id_fkey(nome, cargo)"),
         "auditorias_processo.unit_id",
       ).not("status", "in", "(concluida,cancelada)");
       if (error) throw error;
