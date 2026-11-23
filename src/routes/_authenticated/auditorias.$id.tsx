@@ -57,7 +57,7 @@ function AuditoriaDetail() {
   const qc = useQueryClient();
   const { canResolveNC } = useCurrentRole();
 
-  const { data: audit } = useQuery({
+  const { data: audit, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["auditoria", id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -95,8 +95,24 @@ function AuditoriaDetail() {
 
   const canManage = useProcessAuditManager([audit?.auditor_id]);
 
-  if (!audit) {
+  if (isLoading) {
     return <div className="p-8">Carregando...</div>;
+  }
+
+  if (isError || !audit) {
+    return (
+      <div className="p-8 space-y-4 max-w-xl mx-auto">
+        <p className="text-sm text-destructive">
+          {(error as any)?.message ?? "Não foi possível abrir esta auditoria."}
+        </p>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => refetch()}>Tentar novamente</Button>
+          <Button asChild variant="ghost">
+            <Link to="/auditorias">Voltar</Link>
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   const scores = [
