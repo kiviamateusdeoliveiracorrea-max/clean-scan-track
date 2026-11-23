@@ -1,11 +1,10 @@
-import { calcularScore } from "@/lib/audit-score";
-import { unitMatch, pickUnitQuestions } from "@/lib/active-unit";
+import { unitMatch } from "@/lib/active-unit";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { getActiveUnitId } from "@/lib/active-unit";
 import { draftStore } from "@/lib/audit-draft-store";
-import { singleFlight, validateAnswers, uploadProgress } from "@/lib/audit-save-flow";
+import { singleFlight, uploadProgress } from "@/lib/audit-save-flow";
 import { uploadAuditPhotos } from "@/lib/audit-photo-upload";
 import { supabase } from "@/integrations/supabase/client";
 import { rollbackUploads } from "@/lib/upload-photos";
@@ -39,7 +38,6 @@ export const Route = createFileRoute("/_authenticated/auditorias/nova")({
   component: NovaAuditoria,
 });
 
-const CATEGORIAS = ["Pessoas", "Ambiente", "Processo"] as const;
 
 function NovaAuditoria() {
   const navigate = useNavigate();
@@ -61,21 +59,7 @@ function NovaAuditoria() {
   const [draftFeedback, setDraftFeedback] = useState("");
   const [fotos, setFotos] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
-  type RespostaItem = {
-    resposta: "SIM" | "NÃO";
-    observacao: string;
-    descricao: string;
-    fotoPath: string;
-    fotoPreview: string;
-    responsavelId: string;
-    prazo: string;
-    planoAcao: string;
-    statusAcao: "aberta" | "em_andamento" | "concluida";
-    salvando?: boolean;
-    salvo?: boolean;
-  };
   const [draftId, setDraftId] = useState<string | null>(null);
-  const [respostas, setRespostas] = useState<Record<string, RespostaItem>>({});
 
 
   const [scores, setScores] = useState<Record<Criterio5SKey, number>>({
@@ -129,92 +113,6 @@ function NovaAuditoria() {
     return d.id;
   });
 
-  const respostaVazia: RespostaItem = {
-    resposta: "SIM",
-    observacao: "",
-    descricao: "",
-    fotoPath: "",
-    fotoPreview: "",
-    responsavelId: "",
-    prazo: "",
-    planoAcao: "",
-    statusAcao: "aberta",
-  };
-
-  const patchResposta = (perguntaId: string, patch: Partial<RespostaItem>) =>
-    setRespostas((s) => ({
-      ...s,
-      [perguntaId]: { ...respostaVazia, ...(s[perguntaId] ?? {}), ...patch },
-    }));
-
-
-  const persistRespostaNow = async (
-    perguntaId: string,
-    resposta: "SIM" | "NÃO",
-    extra?: { observacao?: string; fotoPath?: string },
-  ) => {
-    const id = await ensureDraft();
-    if (!id) return;
-    patchResposta(perguntaId, { salvando: true });
-    const { error } = await supabase.from("respostas_auditoria").upsert(
-      {
-        auditoria_id: id,
-        pergunta_id: perguntaId,
-        resposta,
-        observacao: extra?.observacao || null,
-        foto_url: extra?.fotoPath || null,
-      },
-      { onConflict: "auditoria_id,pergunta_id" },
-    );
-    patchResposta(perguntaId, { salvando: false, salvo: !error });
-    if (error) {
-      const pergunta = perguntas.find((p) => p.id === perguntaId)?.pergunta ?? perguntaId;
-      setSaveError(`Falha ao salvar pergunta "${pergunta}": ${error.message}`);
-      toast.error(`Falha ao salvar pergunta "${pergunta}": ${error.message}`);
-    }
-  };
-
-  const persistResposta = (...args: Parameters<typeof persistRespostaNow>) => {
-    if (saveLock.current) return Promise.resolve();
-    const next = answerQueue.current.catch(() => undefined).then(() => persistRespostaNow(...args));
-    answerQueue.current = next;
-    return next;
-  };
-
-  const responder = async (perguntaId: string, resposta: "SIM" | "NÃO") => {
-    patchResposta(perguntaId, { resposta });
-    const atual = respostas[perguntaId];
-    await persistResposta(perguntaId, resposta, {
-      observacao: resposta === "NÃO" ? atual?.descricao || atual?.observacao : "",
-      fotoPath: resposta === "NÃO" ? atual?.fotoPath : "",
-    });
-  };
-
-  const uploadNcFoto = async (perguntaId: string, file: File | undefined) => {
-    if (!file) return;
-    const id = await ensureDraft();
-    if (!id) return;
-    const reader = new FileReader();
-    reader.onload = () => patchResposta(perguntaId, { fotoPreview: reader.result as string });
-    reader.readAsDataURL(file);
-    let path: string;
-    const uploadController = new AbortController();
-    try {
-      const paths = await uploadAuditPhotos([file], id, setProgress, uploadController.signal);
-      if (!paths[0]) throw new Error("Foto não confirmada.");
-      path = paths[0];
-    } catch (error: any) {
-      toast.error(error?.message ?? "O envio da evidência foi interrompido.");
-      return;
-    } finally { setProgress(null); }
-    patchResposta(perguntaId, { fotoPath: path });
-    const atual = respostas[perguntaId];
-    await persistResposta(perguntaId, "NÃO", {
-      observacao: atual?.descricao,
-      fotoPath: path,
-    });
-  };
-
 
 
   const areasQ = useQuery({
@@ -251,39 +149,9 @@ function NovaAuditoria() {
   const areaNome =
     (areasQ.data ?? []).find((a: any) => a.id === areaId)?.nome ?? "";
 
-  const perguntasQ = useQuery({
-    queryKey: ["perguntas-auditoria", areaNome],
-    enabled: !!areaNome,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("perguntas_auditoria")
-        .select("*")
-        .eq("area_nome", areaNome)
-        .eq("ativo", true)
-        .order("created_at", { ascending: true });
-      if (error) throw error;
-      return pickUnitQuestions(data ?? []);
-    },
-  });
-
-  const perguntas = perguntasQ.data ?? [];
-
-  // ---- Notas: pontos obtidos / pontos possíveis (peso), NA excluído ----
-  const scoreDe = (lista: any[]) =>
-    calcularScore(
-      lista
-        .filter((p: any) => respostas[p.id])
-        .map((p: any) => ({ resposta: respostas[p.id].resposta as any, peso: p.peso })),
-    ).percentual;
-  const notaCategoria = (cat: string) =>
-    scoreDe(perguntas.filter((p: any) => p.categoria === cat));
-  const notaPessoas = notaCategoria("Pessoas");
-  const notaAmbiente = notaCategoria("Ambiente");
-  const notaProcesso = notaCategoria("Processo");
-  const notaFinal = scoreDe(perguntas);
 
   const total = Object.values(scores).reduce((a, b) => a + b, 0);
-  const percentual = notaFinal ?? (total / 50) * 100;
+  const percentual = (total / 50) * 100;
   const cls = classificaPontuacao(percentual);
 
 
@@ -306,7 +174,7 @@ function NovaAuditoria() {
           if (saved?.status === "concluida") await draftStore(key, "delete");
           else {
             setAreaId(draft.areaId); setAuditorId(draft.auditorId); setData(draft.data);
-            setObservacoes(draft.observacoes); setRespostas(draft.respostas); setScores(draft.scores);
+            setObservacoes(draft.observacoes); setScores(draft.scores);
             setComentarios(draft.comentarios); setFotos(draft.fotos ?? []);
             setDraftId(saved ? draft.draftId : null); draftRef.current = saved ? draft.draftId : null;
             setNcResponsavelAcaoId(draft.ncResponsavelAcaoId ?? ""); setNcAprovadorId(draft.ncAprovadorId ?? ""); setNcPrazo(draft.ncPrazo ?? "");
@@ -321,10 +189,10 @@ function NovaAuditoria() {
 
   useEffect(() => {
     if (!restored || !localKey || saving || finished.current || !areaId) return;
-    const snapshot = { areaId, auditorId, data, observacoes, respostas, scores, comentarios, fotos, draftId,
+    const snapshot = { areaId, auditorId, data, observacoes, scores, comentarios, fotos, draftId,
       ncResponsavelAcaoId, ncAprovadorId, ncPrazo };
     void draftStore(localKey, "write", snapshot).then(() => setDraftFeedback("Rascunho salvo neste aparelho.")).catch(() => setDraftFeedback("Não foi possível salvar o rascunho neste aparelho. Mantenha esta tela aberta."));
-  }, [restored, localKey, saving, areaId, auditorId, data, observacoes, respostas, scores, comentarios, fotos, draftId, ncResponsavelAcaoId, ncAprovadorId, ncPrazo]);
+  }, [restored, localKey, saving, areaId, auditorId, data, observacoes, scores, comentarios, fotos, draftId, ncResponsavelAcaoId, ncAprovadorId, ncPrazo]);
 
   useEffect(() => {
     const beforeUnload = (event: BeforeUnloadEvent) => {
@@ -337,35 +205,9 @@ function NovaAuditoria() {
 
   const handleSave = async () => {
     if (saveLock.current) return;
-    try { validateAnswers(perguntas, respostas); } catch (e: any) { toast.error(e.message); return; }
     if (!areaId || !auditorId) {
       toast.error("Selecione a área e o auditor");
       return;
-    }
-    const naoRespondidas = perguntas.filter((p: any) => !respostas[p.id]);
-    if (naoRespondidas.length > 0) {
-      toast.error(`Responda todas as perguntas (${naoRespondidas.length} pendente(s)).`);
-      return;
-    }
-    const naos = perguntas.filter((p: any) => respostas[p.id]?.resposta === "NÃO");
-    for (const p of naos) {
-      const r = respostas[p.id];
-      if (!r.descricao.trim()) {
-        toast.error("Descrição da não conformidade obrigatória: " + p.pergunta);
-        return;
-      }
-      if (!r.fotoPath) {
-        toast.error("Evidência fotográfica obrigatória: " + p.pergunta);
-        return;
-      }
-      if (!r.responsavelId) {
-        toast.error("Responsável pela ação obrigatório: " + p.pergunta);
-        return;
-      }
-      if (!r.prazo) {
-        toast.error("Prazo obrigatório: " + p.pergunta);
-        return;
-      }
     }
     const semComentario = CRITERIOS_5S.filter(
       (c) => scores[c.key] < 8 && !comentarios[c.key].trim(),
@@ -390,48 +232,15 @@ function NovaAuditoria() {
     const auditFields = {
         area_id: areaId, auditor_id: auditorId, data_auditoria: data,
         ...scores, pontuacao_total: total, percentual: Number(percentual.toFixed(2)),
-        nota_pessoas: notaPessoas, nota_ambiente: notaAmbiente, nota_processo: notaProcesso,
+        nota_pessoas: Number(percentual.toFixed(2)), nota_ambiente: Number(percentual.toFixed(2)), nota_processo: Number(percentual.toFixed(2)),
         observacoes, fotos: uploadedPaths,
     };
 
-    // garante que todas as respostas estão gravadas
-    const respostaRows = perguntas
-      .filter((p: any) => respostas[p.id])
-      .map((p: any) => ({
-        auditoria_id: auditoriaId,
-        pergunta_id: p.id,
-        resposta: respostas[p.id].resposta,
-        observacao:
-          (respostas[p.id].resposta === "NÃO"
-            ? respostas[p.id].descricao
-            : respostas[p.id].observacao) || null,
-        foto_url: respostas[p.id].fotoPath || null,
-      }));
     const users = usuariosQ.data ?? [];
     const respUser = users.find((u: any) => u.id === ncResponsavelAcaoId) as any;
     const { data: userData } = await supabase.auth.getUser();
     const criadorId = userData.user?.id ?? null;
 
-    // NC + Plano de Ação para cada resposta "NÃO"
-    const ncPerguntas = naos.map((p: any) => {
-      const r = respostas[p.id];
-      const alvo = users.find((u: any) => u.id === r.responsavelId) as any;
-      return {
-        auditoria_id: auditoriaId,
-        area_id: areaId,
-        criterio: `${p.categoria} · ${p.pergunta}`,
-        descricao: r.descricao.trim(),
-        severidade: "media",
-        status: r.statusAcao,
-        plano_acao: r.planoAcao.trim() || null,
-        responsavel: alvo?.nome ?? null,
-        responsavel_nc_id: criadorId,
-        responsavel_acao_id: r.responsavelId || null,
-        aprovador_id: ncAprovadorId || null,
-        prazo: r.prazo,
-        foto_urls: r.fotoPath ? [r.fotoPath] : [],
-      };
-    });
 
     // Ação corretiva automática para todo critério 5S com nota < 6
     const ncRows5S = CRITERIOS_5S
@@ -455,9 +264,9 @@ function NovaAuditoria() {
         };
       });
 
-    const ncRows = [...ncPerguntas, ...ncRows5S];
+    const ncRows = ncRows5S;
     const { error: completionError } = await supabase.rpc("complete_audit", {
-      p_id: auditoriaId, p_audit: auditFields, p_answers: respostaRows, p_ncs: ncRows,
+      p_id: auditoriaId, p_audit: auditFields, p_answers: [], p_ncs: ncRows,
     });
     if (completionError) {
       // A lost response is ambiguous: read the status before removing possibly committed evidence.
@@ -543,7 +352,6 @@ function NovaAuditoria() {
               disabled={!!draftId}
               onValueChange={(v) => {
                 setAreaId(v);
-                setRespostas({});
               }}
             >
               <SelectTrigger>
@@ -581,200 +389,6 @@ function NovaAuditoria() {
         </CardContent>
       </Card>
 
-      {areaId && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">
-              Checklist da área {areaNome}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {perguntasQ.isLoading && (
-              <p className="text-sm text-muted-foreground">Carregando perguntas...</p>
-            )}
-            {!perguntasQ.isLoading && perguntas.length === 0 && (
-              <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
-                <p>
-                  Esta área não possui perguntas cadastradas. A auditoria será
-                  concluída utilizando apenas as evidências e não conformidades
-                  registradas.
-                </p>
-                <Link to="/perguntas" className="underline">
-                  Cadastrar perguntas
-                </Link>
-              </div>
-            )}
-            {CATEGORIAS.map((cat) => {
-              const lista = perguntas.filter((p: any) => p.categoria === cat);
-              if (lista.length === 0) return null;
-              return (
-                <div key={cat} className="space-y-3">
-                  <h3 className="font-semibold text-primary border-b pb-1">{cat}</h3>
-                  {lista.map((p: any, i: number) => {
-                    const r = respostas[p.id];
-                    return (
-                      <div key={p.id} className="rounded-md border p-3 space-y-2">
-                        <p className="text-sm font-medium">
-                          {i + 1}. {p.pergunta}{" "}
-                          <span className="text-xs text-muted-foreground">
-                            (peso {p.peso})
-                          </span>
-                        </p>
-                        <div className="flex items-center gap-2">
-                          {(["SIM", "NÃO"] as const).map((op) => (
-                            <Button
-                              key={op}
-                              type="button"
-                              size="sm"
-                              variant={r?.resposta === op ? "default" : "outline"}
-                              className={
-                                r?.resposta === op && op === "NÃO"
-                                  ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                  : ""
-                              }
-                              onClick={() => responder(p.id, op)}
-                            >
-                              {op === "SIM" ? "Sim" : "Não"}
-                            </Button>
-                          ))}
-                          {r?.salvando && (
-                            <span className="text-[11px] text-muted-foreground">
-                              salvando...
-                            </span>
-                          )}
-                          {!r?.salvando && r?.salvo && (
-                            <span className="text-[11px] text-emerald-600">
-                              salvo automaticamente
-                            </span>
-                          )}
-                        </div>
-                        {r?.resposta === "NÃO" && (
-                          <div className="rounded-md border border-red-300 bg-red-50/60 p-3 space-y-3">
-                            <p className="text-xs font-semibold text-red-700 flex items-center gap-1.5">
-                              <AlertTriangle className="h-3.5 w-3.5" />
-                              Não conformidade — todos os campos são obrigatórios
-                            </p>
-                            <div>
-                              <Label className="text-xs">Descrição da não conformidade *</Label>
-                              <Textarea
-                                rows={2}
-                                placeholder="Descreva o desvio observado..."
-                                value={r.descricao}
-                                onChange={(e) =>
-                                  patchResposta(p.id, { descricao: e.target.value })
-                                }
-                                onBlur={() =>
-                                  persistResposta(p.id, "NÃO", {
-                                    observacao: r.descricao,
-                                    fotoPath: r.fotoPath,
-                                  })
-                                }
-                              />
-                            </div>
-                            <div>
-                              <Label className="text-xs">Evidência fotográfica *</Label>
-                              <div className="flex items-center gap-2 mt-1">
-                                <label className="inline-flex items-center gap-1 text-xs border rounded-md px-3 py-2 cursor-pointer hover:bg-muted/50">
-                                  <Camera className="h-4 w-4" /> Tirar foto
-                                  <input
-                                    type="file"
-                                    accept="image/*"
-                                    capture="environment"
-                                    className="hidden"
-                                    onChange={(e) => {
-                                      uploadNcFoto(p.id, e.target.files?.[0]);
-                                      e.target.value = "";
-                                    }}
-                                  />
-                                </label>
-                                <label className="inline-flex items-center gap-1 text-xs border rounded-md px-3 py-2 cursor-pointer hover:bg-muted/50">
-                                  <Camera className="h-4 w-4" /> Selecionar arquivo
-                                  <input
-                                    type="file"
-                                    accept="image/jpeg,image/jpg,image/png,image/webp"
-                                    className="hidden"
-                                    onChange={(e) => {
-                                      uploadNcFoto(p.id, e.target.files?.[0]);
-                                      e.target.value = "";
-                                    }}
-                                  />
-                                </label>
-                                {r.fotoPreview && (
-                                  <img
-                                    src={r.fotoPreview}
-                                    alt="Evidência"
-                                    className="h-14 w-14 object-cover rounded border"
-                                  />
-                                )}
-                              </div>
-                            </div>
-                            <div className="grid gap-3 sm:grid-cols-2">
-                              <UserPickerField
-                                label="Responsável pela ação *"
-                                value={r.responsavelId}
-                                onChange={(v) => patchResposta(p.id, { responsavelId: v })}
-                                users={usuariosQ.data ?? []}
-                              />
-                              <div>
-                                <Label className="text-xs">Prazo *</Label>
-                                <Input
-                                  type="date"
-                                  value={r.prazo}
-                                  onChange={(e) => patchResposta(p.id, { prazo: e.target.value })}
-                                />
-                              </div>
-                            </div>
-                            <div className="rounded-md border bg-background p-3 space-y-3">
-                              <p className="text-xs font-semibold text-primary">
-                                Plano de Ação
-                              </p>
-                              <div>
-                                <Label className="text-xs">O que será feito</Label>
-                                <Textarea
-                                  rows={2}
-                                  placeholder="Descreva a ação que será executada..."
-                                  value={r.planoAcao}
-                                  onChange={(e) =>
-                                    patchResposta(p.id, { planoAcao: e.target.value })
-                                  }
-                                />
-                              </div>
-                              <div>
-                                <Label className="text-xs">Status</Label>
-                                <Select
-                                  value={r.statusAcao}
-                                  onValueChange={(v) =>
-                                    patchResposta(p.id, {
-                                      statusAcao: v as RespostaItem["statusAcao"],
-                                    })
-                                  }
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="aberta">Aberto</SelectItem>
-                                    <SelectItem value="em_andamento">Em andamento</SelectItem>
-                                    <SelectItem value="concluida">Concluído</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <p className="text-[11px] text-muted-foreground">
-                                Responsável e prazo do plano seguem os campos acima.
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
-      )}
 
 
 
@@ -1006,30 +620,6 @@ function NovaAuditoria() {
 
 
 
-      {perguntas.length > 0 && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Notas do checklist</CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {[
-              { l: "Pessoas", v: notaPessoas },
-              { l: "Ambiente", v: notaAmbiente },
-              { l: "Processo", v: notaProcesso },
-              { l: "Nota Final", v: notaFinal },
-            ].map((n) => (
-              <div key={n.l} className="rounded-lg border p-3">
-                <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                  {n.l}
-                </p>
-                <p className="text-2xl font-bold text-primary">
-                  {n.v === null ? "—" : `${n.v.toFixed(0)}%`}
-                </p>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
 
       </fieldset>
       {(saving || progress) && <div role="status" aria-live="polite" className="space-y-2">
